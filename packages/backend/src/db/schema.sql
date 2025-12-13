@@ -1,0 +1,107 @@
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    name TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Medical sessions table
+CREATE TABLE IF NOT EXISTS medical_sessions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    video_s3_key TEXT,
+    video_original_name TEXT,
+    video_duration_seconds INTEGER,
+    video_size_bytes INTEGER,
+    video_mime_type TEXT,
+    summary TEXT,
+    keywords TEXT, -- JSON array
+    user_tags TEXT, -- JSON array
+    notes TEXT,
+    error_message TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    completed_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_medical_sessions_user_id ON medical_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_medical_sessions_status ON medical_sessions(status);
+CREATE INDEX IF NOT EXISTS idx_medical_sessions_created_at ON medical_sessions(created_at);
+
+-- Transcript sections table
+CREATE TABLE IF NOT EXISTS transcript_sections (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    section_type TEXT NOT NULL,
+    section_order INTEGER NOT NULL,
+    speaker TEXT,
+    content TEXT NOT NULL,
+    start_time_seconds REAL,
+    end_time_seconds REAL,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_transcript_sections_session_id ON transcript_sections(session_id);
+CREATE INDEX IF NOT EXISTS idx_transcript_sections_section_type ON transcript_sections(section_type);
+
+-- Section summaries table (one summary per section type per session)
+CREATE TABLE IF NOT EXISTS section_summaries (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    section_type TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE,
+    UNIQUE(session_id, section_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_section_summaries_session_id ON section_summaries(session_id);
+
+-- Processing jobs table
+CREATE TABLE IF NOT EXISTS processing_jobs (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    job_type TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    priority INTEGER DEFAULT 0,
+    attempts INTEGER DEFAULT 0,
+    max_attempts INTEGER DEFAULT 3,
+    error_message TEXT,
+    started_at TEXT,
+    completed_at TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_processing_jobs_status ON processing_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_processing_jobs_session_id ON processing_jobs(session_id);
+
+-- FTS5 virtual table for full-text search on transcripts
+CREATE VIRTUAL TABLE IF NOT EXISTS transcript_fts USING fts5(
+    session_id,
+    content,
+    tokenize='porter unicode61'
+);
+
+-- Triggers to keep FTS in sync
+CREATE TRIGGER IF NOT EXISTS transcript_sections_ai AFTER INSERT ON transcript_sections BEGIN
+    INSERT INTO transcript_fts(session_id, content) VALUES (NEW.session_id, NEW.content);
+END;
+
+CREATE TRIGGER IF NOT EXISTS transcript_sections_ad AFTER DELETE ON transcript_sections BEGIN
+    DELETE FROM transcript_fts WHERE session_id = OLD.session_id AND content = OLD.content;
+END;
+
+CREATE TRIGGER IF NOT EXISTS transcript_sections_au AFTER UPDATE ON transcript_sections BEGIN
+    DELETE FROM transcript_fts WHERE session_id = OLD.session_id AND content = OLD.content;
+    INSERT INTO transcript_fts(session_id, content) VALUES (NEW.session_id, NEW.content);
+END;

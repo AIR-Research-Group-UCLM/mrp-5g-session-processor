@@ -1,0 +1,53 @@
+services:
+  garage:
+    image: dxflrs/garage:v2.1.0
+    container_name: mrp-garage-s3
+    restart: unless-stopped
+    ports:
+      - 3900:3900
+      - 3901:3901
+      - 3902:3902
+      - 3903:3903
+    volumes:
+      - ./garage/garage.toml:/etc/garage.toml:ro
+      - garage_data:/var/lib/garage/data
+      - garage_meta:/var/lib/garage/meta
+    environment:
+      - GARAGE_ALLOW_WORLD_READABLE_SECRETS=true
+    networks:
+      - mrp-network
+
+  garage-webui:
+    image: khairul169/garage-webui:latest
+    container_name: mrp-garage-webui
+    restart: unless-stopped
+    volumes:
+      - ./garage/garage.toml:/etc/garage.toml:ro
+    ports:
+      - 3909:3909
+    environment:
+      API_BASE_URL: "http://garage:3903"
+      S3_ENDPOINT_URL: "http://garage:3900"
+    networks:
+      - mrp-network
+
+  redis:
+    image: redis:8.4.0-alpine
+    container_name: mrp-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - mrp-network
+
+volumes:
+  garage_data:
+  garage_meta:
+  redis_data:
+
+networks:
+  mrp-network:
+    driver: bridge
