@@ -1,4 +1,5 @@
 import type { HTMLAttributes } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/utils/cn";
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -34,17 +35,19 @@ export function Badge({
 }
 
 export function SessionStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
+
   const statusConfig: Record<
     string,
-    { label: string; variant: BadgeProps["variant"] }
+    { labelKey: string; variant: BadgeProps["variant"] }
   > = {
-    pending: { label: "Pendiente", variant: "default" },
-    processing: { label: "Procesando", variant: "warning" },
-    completed: { label: "Completado", variant: "success" },
-    failed: { label: "Error", variant: "error" },
+    pending: { labelKey: "status.pending", variant: "default" },
+    processing: { labelKey: "status.processing", variant: "warning" },
+    completed: { labelKey: "status.completed", variant: "success" },
+    failed: { labelKey: "status.failed", variant: "error" },
   };
 
-  const config = statusConfig[status] ?? { label: status, variant: "default" };
+  const config = statusConfig[status] ?? { labelKey: status, variant: "default" };
 
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  return <Badge variant={config.variant}>{t(config.labelKey)}</Badge>;
 }

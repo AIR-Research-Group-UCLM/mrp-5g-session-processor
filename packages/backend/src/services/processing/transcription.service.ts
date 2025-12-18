@@ -28,6 +28,7 @@ interface DiarizedSegment {
 
 interface TranscriptionResponse {
   text: string;
+  language?: string; // ISO 639-1 code (e.g., "es", "en")
   segments?: DiarizedSegment[];
   words?: Array<{
     word: string;
@@ -126,6 +127,7 @@ export async function processTranscription(sessionId: string): Promise<void> {
       throw err;
     }
 
+    const detectedLanguage = transcription.language ?? "es";
     logger.info(
       {
         sessionId,
@@ -133,6 +135,7 @@ export async function processTranscription(sessionId: string): Promise<void> {
         segmentCount: transcription.segments?.length,
         wordCount: transcription.words?.length,
         hasText: !!transcription.text,
+        language: detectedLanguage,
       },
       "Transcription received"
     );
@@ -140,6 +143,7 @@ export async function processTranscription(sessionId: string): Promise<void> {
     // Trim whitespace from all text fields
     const transcriptData = {
       text: transcription.text?.trim() ?? "",
+      language: detectedLanguage,
       segments: (transcription.segments ?? []).map((seg) => ({
         ...seg,
         text: seg.text?.trim() ?? "",
@@ -154,10 +158,10 @@ export async function processTranscription(sessionId: string): Promise<void> {
     db.prepare(
       `
       UPDATE medical_sessions
-      SET video_duration_seconds = ?, updated_at = datetime('now')
+      SET video_duration_seconds = ?, language = ?, updated_at = datetime('now')
       WHERE id = ?
     `
-    ).run(durationSeconds, sessionId);
+    ).run(durationSeconds, detectedLanguage, sessionId);
 
     const transcriptPath = path.join(tempDir, "transcript.json");
     await fs.writeFile(transcriptPath, JSON.stringify(transcriptData, null, 2));

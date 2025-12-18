@@ -12,8 +12,8 @@ import type {
   ProcessingProgress,
   CreateSessionInput,
   UpdateSessionInput,
+  ClinicalIndicators,
 } from "@mrp/shared";
-import { JOB_TYPE_LABELS } from "@mrp/shared";
 import fs from "node:fs/promises";
 
 interface DbSession {
@@ -26,6 +26,7 @@ interface DbSession {
   video_duration_seconds: number | null;
   video_size_bytes: number | null;
   video_mime_type: string | null;
+  language: string | null;
   summary: string | null;
   keywords: string | null;
   user_tags: string | null;
@@ -70,6 +71,25 @@ interface DbSectionSummary {
   created_at: string;
 }
 
+interface DbClinicalIndicators {
+  id: string;
+  session_id: string;
+  urgency_level: string | null;
+  appointment_priority: string | null;
+  reason_for_visit: string | null;
+  consulted_specialty: string | null;
+  main_clinical_problem: string | null;
+  problem_status: string | null;
+  diagnostic_hypothesis: string | null;
+  requested_tests: string | null;
+  treatment_plan: string | null;
+  patient_education: string | null;
+  warning_signs: string | null;
+  follow_up_plan: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 function mapDbSession(row: DbSession): MedicalSession {
   return {
     id: row.id,
@@ -81,6 +101,7 @@ function mapDbSession(row: DbSession): MedicalSession {
     videoDurationSeconds: row.video_duration_seconds,
     videoSizeBytes: row.video_size_bytes,
     videoMimeType: row.video_mime_type,
+    language: row.language,
     summary: row.summary,
     keywords: row.keywords ? JSON.parse(row.keywords) : null,
     userTags: row.user_tags ? JSON.parse(row.user_tags) : null,
@@ -116,6 +137,27 @@ function mapDbSectionSummary(row: DbSectionSummary): SectionSummary {
   };
 }
 
+function mapDbClinicalIndicators(row: DbClinicalIndicators): ClinicalIndicators {
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    urgencyLevel: row.urgency_level as ClinicalIndicators["urgencyLevel"],
+    appointmentPriority: row.appointment_priority as ClinicalIndicators["appointmentPriority"],
+    reasonForVisit: row.reason_for_visit,
+    consultedSpecialty: row.consulted_specialty,
+    mainClinicalProblem: row.main_clinical_problem,
+    problemStatus: row.problem_status as ClinicalIndicators["problemStatus"],
+    diagnosticHypothesis: row.diagnostic_hypothesis ? JSON.parse(row.diagnostic_hypothesis) : null,
+    requestedTests: row.requested_tests ? JSON.parse(row.requested_tests) : null,
+    treatmentPlan: row.treatment_plan ? JSON.parse(row.treatment_plan) : null,
+    patientEducation: row.patient_education ? JSON.parse(row.patient_education) : null,
+    warningSigns: row.warning_signs ? JSON.parse(row.warning_signs) : null,
+    followUpPlan: row.follow_up_plan ? JSON.parse(row.follow_up_plan) : null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 interface ListOptions {
   page: number;
   pageSize: number;
@@ -132,7 +174,7 @@ async function listByUser(
   const offset = (page - 1) * pageSize;
 
   let query = `
-    SELECT id, title, status, summary, keywords, user_tags, video_duration_seconds, created_at, completed_at
+    SELECT id, title, status, summary, keywords, user_tags, video_duration_seconds, language, created_at, completed_at
     FROM medical_sessions
     WHERE user_id = ?
   `;
@@ -162,6 +204,7 @@ async function listByUser(
     keywords: row.keywords ? JSON.parse(row.keywords) : null,
     userTags: row.user_tags ? JSON.parse(row.user_tags) : null,
     videoDurationSeconds: row.video_duration_seconds,
+    language: row.language,
     createdAt: row.created_at,
     completedAt: row.completed_at,
   }));
@@ -241,9 +284,14 @@ async function getByIdWithTranscript(
     .prepare("SELECT * FROM section_summaries WHERE session_id = ?")
     .all(sessionId) as DbSectionSummary[];
 
+  const indicatorsRow = db
+    .prepare("SELECT * FROM clinical_indicators WHERE session_id = ?")
+    .get(sessionId) as DbClinicalIndicators | undefined;
+
   const session = mapDbSession(sessionRow);
   const transcript = transcriptRows.map(mapDbTranscriptSection);
   const sectionSummaries = summaryRows.map(mapDbSectionSummary);
+  const clinicalIndicators = indicatorsRow ? mapDbClinicalIndicators(indicatorsRow) : null;
 
   let videoUrl: string | null = null;
   if (session.videoS3Key) {
@@ -255,6 +303,7 @@ async function getByIdWithTranscript(
       ...session,
       transcript,
       sectionSummaries,
+      clinicalIndicators,
     },
     videoUrl,
   };
@@ -286,7 +335,6 @@ async function getProcessingStatus(
     return {
       type,
       status: (job?.status ?? "pending") as ProcessingProgress["status"],
-      label: JOB_TYPE_LABELS[type],
     };
   });
 

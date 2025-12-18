@@ -27,7 +27,6 @@ export interface ProcessingProgress {
   steps: {
     type: JobType;
     status: JobStatus;
-    label: string;
   }[];
   errorMessage: string | null;
 }

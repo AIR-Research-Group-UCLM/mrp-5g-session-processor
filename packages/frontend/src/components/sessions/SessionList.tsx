@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { SessionListItem } from "@mrp/shared";
 import { SessionCard } from "./SessionCard";
 import { Spinner } from "@/components/ui/Spinner";
@@ -9,6 +10,8 @@ interface SessionListProps {
 }
 
 export function SessionList({ sessions, isLoading }: SessionListProps) {
+  const { t } = useTranslation();
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -21,7 +24,7 @@ export function SessionList({ sessions, isLoading }: SessionListProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-500">
         <FolderOpen className="mb-4 h-12 w-12" />
-        <p>No hay sesiones</p>
+        <p>{t("sessions.noSessions")}</p>
       </div>
     );
   }

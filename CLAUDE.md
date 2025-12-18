@@ -13,6 +13,7 @@ Aplicación para procesar vídeos de sesiones médicas. Permite subir grabacione
 - **Almacenamiento de vídeos**: S3 (Garage para desarrollo local)
 - **Cola de procesamiento**: BullMQ + Redis
 - **IA**: OpenAI SDK (gpt-4o-transcribe-diarize para transcripción con identificación de hablantes, gpt-5.1 para segmentación y metadatos)
+- **i18n**: react-i18next (es-ES, en-GB)
 
 ## Estructura del Proyecto
 
@@ -94,22 +95,23 @@ OPENAI_API_KEY=sk-...
 ### Tablas principales:
 - `users` - Usuarios del sistema (email, password_hash con Argon2)
 - `auth_sessions` - Sesiones de autenticación (almacenadas en Redis)
-- `medical_sessions` - Sesiones médicas (vídeo, estado, metadatos)
+- `medical_sessions` - Sesiones médicas (vídeo, estado, metadatos, idioma detectado)
 - `transcript_sections` - Secciones de transcripción segmentadas
 - `section_summaries` - Resúmenes por tipo de sección (generados por GPT-5.1)
+- `clinical_indicators` - Indicadores clínicos extraídos (urgencia, diagnóstico, tratamiento, etc.)
 
 ### Secciones médicas:
-1. `presentacion` - Presentación inicial
-2. `sintomas` - Exposición de síntomas
-3. `diagnostico` - Diagnóstico médico
-4. `tratamiento` - Asignación de tratamiento
-5. `despedida` - Despedida
+1. `introduction` - Presentación inicial
+2. `symptoms` - Exposición de síntomas
+3. `diagnosis` - Diagnóstico médico
+4. `treatment` - Asignación de tratamiento
+5. `closing` - Despedida
 
 ### Tipos de hablantes:
-- `Doctor` - El médico de cabecera o general
-- `Paciente` - El paciente
-- `Especialista` - Un médico especialista
-- `Otro` - Acompañante u otra persona
+- `DOCTOR` - El médico de cabecera o general
+- `PATIENT` - El paciente
+- `SPECIALIST` - Un médico especialista
+- `OTHER` - Acompañante u otra persona
 
 ## API Endpoints
 
@@ -155,15 +157,18 @@ OPENAI_API_KEY=sk-...
       },
       ...
    - Genera timestamps por segmento
+   - Detecta idioma automáticamente (código ISO 639-1, ej: `es`, `en`)
 5. **Segmentación** con `gpt-5.1`:
-   - Clasifica en secciones médicas (presentación, síntomas, etc.)
-   - Re-etiqueta speakers semánticamente (Doctor, Paciente, Especialista)
-   - Genera resumen por cada tipo de sección
+   - Clasifica en secciones médicas (introduction, symptoms, diagnosis, treatment, closing)
+   - Re-etiqueta speakers semánticamente (DOCTOR, PATIENT, SPECIALIST, OTHER)
+   - Genera resumen por cada tipo de sección en el idioma de la transcripción
 6. **Generación de metadatos** con `gpt-5.1`:
    - Resumen general de la consulta
    - Keywords para búsqueda
    - Título automático (si no se proporcionó)
    - Etiquetas automáticas (si no se proporcionaron)
+   - Indicadores clínicos estructurados (urgencia, hipótesis diagnósticas, plan de tratamiento, etc.)
+   - Todo el contenido generado en el idioma de la transcripción
 7. Estado actualizado a "completed"
 
 ## Convenciones de Código
@@ -199,7 +204,16 @@ pnpm --filter frontend test  # Solo frontend
 - Los vídeos se almacenan en S3 bajo `/{user_uuid}/{session_id}/video.mp4`
 - El streaming de vídeo pasa por el backend (proxy) para evitar problemas CORS con S3
 - El procesamiento es asíncrono; el frontend hace polling del estado
-- La búsqueda usa FTS5 de SQLite para transcripciones + LIKE para metadatos
+- La búsqueda usa FTS5 de SQLite para transcripciones + LIKE para metadatos (incluye indicadores clínicos)
 - Las fechas se muestran en la zona horaria local del usuario (dayjs con plugin utc)
 - El frontend resalta automáticamente la sección de transcripción durante la reproducción del vídeo
-- Los resultados de búsqueda muestran el origen del match (transcripción, título, resumen, keywords, etiquetas) con highlighting
+- Los resultados de búsqueda muestran el origen del match (transcripción, título, resumen, keywords, etiquetas, indicadores clínicos) con highlighting
+
+## Internacionalización (i18n)
+
+- Frontend localizado con react-i18next (idiomas: es-ES, en-GB)
+- Traducciones en `packages/frontend/src/i18n/{es-ES,en-GB}.json`
+- Fechas relativas localizadas con dayjs (sincronizado con idioma de UI)
+- Prompts del backend en inglés, con instrucción de generar contenido en el idioma de la transcripción
+- Constantes compartidas en `packages/shared/src/constants/languages.ts` para mapeo de códigos ISO a nombres de idioma
+- Los identificadores de secciones y speakers son claves neutrales (inglés) traducidas en frontend

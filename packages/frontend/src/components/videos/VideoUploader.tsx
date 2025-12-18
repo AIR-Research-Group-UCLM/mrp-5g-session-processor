@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { useDropzone, type FileRejection } from "react-dropzone";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/utils/cn";
 import { Upload, X, Film } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -28,6 +29,7 @@ export function VideoUploader({
   onClear,
   disabled,
 }: VideoUploaderProps) {
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
 
   const onDrop = useCallback(
@@ -36,7 +38,7 @@ export function VideoUploader({
 
       if (fileRejections.length > 0) {
         const firstError = fileRejections[0]?.errors[0]?.message;
-        setError(firstError ?? "Archivo no válido");
+        setError(firstError ?? t("upload.invalidFile"));
         return;
       }
 
@@ -44,7 +46,7 @@ export function VideoUploader({
         onFileSelect(acceptedFiles[0]);
       }
     },
-    [onFileSelect]
+    [onFileSelect, t]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -104,11 +106,11 @@ export function VideoUploader({
         />
         <p className="mb-2 text-center font-medium text-gray-700">
           {isDragActive
-            ? "Suelta el archivo aquí"
-            : "Arrastra un video o haz clic para seleccionar"}
+            ? t("upload.dropzoneActive")
+            : t("upload.dropzone")}
         </p>
         <p className="text-center text-sm text-gray-500">
-          MP4, WebM, MOV, AVI, MKV hasta 500MB
+          {t("upload.acceptedFormats")}
         </p>
       </div>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}

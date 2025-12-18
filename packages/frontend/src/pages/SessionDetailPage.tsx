@@ -1,3 +1,4 @@
+import { ClinicalIndicatorsPanel } from "@/components/sessions/ClinicalIndicatorsPanel";
 import { TranscriptViewer } from "@/components/sessions/TranscriptViewer";
 import { Badge, SessionStatusBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -8,11 +9,22 @@ import { ProcessingProgress } from "@/components/videos/ProcessingProgress";
 import { useDeleteSession, useSession, useUpdateSession } from "@/hooks/useSessions";
 import { cn } from "@/utils/cn";
 import { formatDate, formatDuration } from "@/utils/format";
-import { ArrowLeft, Calendar, Clock, FileText, Navigation, Save, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  FileText,
+  Languages,
+  Navigation,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 
 export function SessionDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const videoRef = useRef<HTMLVideoElement>(null);
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
@@ -44,9 +56,9 @@ export function SessionDetailPage() {
   if (!data) {
     return (
       <div className="text-center">
-        <p className="text-gray-500">Sesión no encontrada</p>
-        <Link to="/sesiones" className="mt-4 text-primary-600">
-          Volver a sesiones
+        <p className="text-gray-500">{t("sessions.notFound")}</p>
+        <Link to="/sessions" className="mt-4 text-primary-600">
+          {t("sessions.backToSessions")}
         </Link>
       </div>
     );
@@ -81,9 +93,9 @@ export function SessionDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (confirm("¿Estás seguro de eliminar esta sesión?")) {
+    if (confirm(t("sessions.confirmDelete"))) {
       await deleteSession.mutateAsync(session.id);
-      window.location.href = "/sesiones";
+      window.location.href = "/sessions";
     }
   };
 
@@ -100,14 +112,14 @@ export function SessionDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/sesiones">
+          <Link to="/sessions">
             <Button variant="secondary" size="sm">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {session.title ?? "Sesión sin título"}
+              {session.title ?? t("sessions.untitledSession")}
             </h1>
             <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
               <span className="flex items-center gap-1">
@@ -120,6 +132,14 @@ export function SessionDetailPage() {
                   {formatDuration(session.videoDurationSeconds)}
                 </span>
               )}
+              {session.language && (
+                <span className="flex items-center gap-1">
+                  <Languages className="h-4 w-4" />
+                  {t(`languages.${session.language}`, {
+                    defaultValue: session.language.toUpperCase(),
+                  })}
+                </span>
+              )}
               <SessionStatusBadge status={session.status} />
             </div>
           </div>
@@ -128,7 +148,7 @@ export function SessionDetailPage() {
           {!isEditing ? (
             <>
               <Button variant="secondary" onClick={handleStartEdit}>
-                Editar
+                {t("common.edit")}
               </Button>
               <Button variant="danger" onClick={handleDelete}>
                 <Trash2 className="h-4 w-4" />
@@ -137,11 +157,11 @@ export function SessionDetailPage() {
           ) : (
             <>
               <Button variant="secondary" onClick={() => setIsEditing(false)}>
-                Cancelar
+                {t("common.cancel")}
               </Button>
               <Button onClick={handleSave} isLoading={updateSession.isPending}>
                 <Save className="h-4 w-4" />
-                Guardar
+                {t("common.save")}
               </Button>
             </>
           )}
@@ -151,7 +171,7 @@ export function SessionDetailPage() {
       {isProcessing ? (
         <Card>
           <CardHeader>
-            <CardTitle>Procesando sesión</CardTitle>
+            <CardTitle>{t("sessionDetail.processingSession")}</CardTitle>
           </CardHeader>
           <CardContent>
             <ProcessingProgress sessionId={session.id} onComplete={() => refetch()} />
@@ -178,24 +198,24 @@ export function SessionDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Información</CardTitle>
+                <CardTitle>{t("sessionDetail.information")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {isEditing ? (
                   <>
                     <Input
-                      label="Título"
+                      label={t("newSession.sessionTitle")}
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
                     />
                     <Input
-                      label="Etiquetas (separadas por comas)"
+                      label={t("newSession.tags")}
                       value={editTags}
                       onChange={(e) => setEditTags(e.target.value)}
                     />
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                        Notas
+                        {t("sessionDetail.notes")}
                       </label>
                       <textarea
                         value={editNotes}
@@ -211,7 +231,7 @@ export function SessionDetailPage() {
                       <div>
                         <h4 className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-700">
                           <FileText className="h-4 w-4" />
-                          Resumen
+                          {t("sessionDetail.summary")}
                         </h4>
                         <p className="text-sm text-gray-600">{session.summary}</p>
                       </div>
@@ -219,7 +239,9 @@ export function SessionDetailPage() {
 
                     {session.keywords && session.keywords.length > 0 && (
                       <div>
-                        <h4 className="mb-2 text-sm font-medium text-gray-700">Palabras clave</h4>
+                        <h4 className="mb-2 text-sm font-medium text-gray-700">
+                          {t("sessionDetail.keywords")}
+                        </h4>
                         <div className="flex flex-wrap gap-1">
                           {session.keywords.map((kw) => (
                             <Badge key={kw} variant="default">
@@ -232,7 +254,9 @@ export function SessionDetailPage() {
 
                     {session.userTags && session.userTags.length > 0 && (
                       <div>
-                        <h4 className="mb-2 text-sm font-medium text-gray-700">Etiquetas</h4>
+                        <h4 className="mb-2 text-sm font-medium text-gray-700">
+                          {t("sessionDetail.tags")}
+                        </h4>
                         <div className="flex flex-wrap gap-1">
                           {session.userTags.map((tag) => (
                             <Badge key={tag} variant="info">
@@ -245,7 +269,9 @@ export function SessionDetailPage() {
 
                     {session.notes && (
                       <div>
-                        <h4 className="mb-1 text-sm font-medium text-gray-700">Notas</h4>
+                        <h4 className="mb-1 text-sm font-medium text-gray-700">
+                          {t("sessionDetail.notes")}
+                        </h4>
                         <p className="text-sm text-gray-600">{session.notes}</p>
                       </div>
                     )}
@@ -253,11 +279,15 @@ export function SessionDetailPage() {
                 )}
               </CardContent>
             </Card>
+
+            {session.clinicalIndicators && (
+              <ClinicalIndicatorsPanel indicators={session.clinicalIndicators} />
+            )}
           </div>
 
           <Card className="h-fit lg:sticky lg:top-6">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Transcripción</CardTitle>
+              <CardTitle>{t("sessionDetail.transcript")}</CardTitle>
               {session.transcript.length > 0 && (
                 <button
                   onClick={() => setAutoScrollTranscript(!autoScrollTranscript)}
@@ -267,10 +297,14 @@ export function SessionDetailPage() {
                       ? "bg-primary-100 text-primary-700"
                       : "text-gray-500 hover:bg-gray-100"
                   )}
-                  title={autoScrollTranscript ? "Desactivar seguimiento" : "Activar seguimiento"}
+                  title={
+                    autoScrollTranscript
+                      ? t("sessionDetail.disableTracking")
+                      : t("sessionDetail.enableTracking")
+                  }
                 >
                   <Navigation className={cn("h-4 w-4", autoScrollTranscript && "fill-current")} />
-                  Auto-scroll
+                  {t("sessionDetail.autoScroll")}
                 </button>
               )}
             </CardHeader>
@@ -287,7 +321,7 @@ export function SessionDetailPage() {
                   />
                 ) : (
                   <p className="py-8 text-center text-sm text-gray-500">
-                    No hay transcripción disponible
+                    {t("sessionDetail.noTranscript")}
                   </p>
                 )}
               </div>

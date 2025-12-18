@@ -1,13 +1,15 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useCreateSession } from "@/hooks/useSessions";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { VideoUploader } from "@/components/videos/VideoUploader";
 import { ProcessingProgress } from "@/components/videos/ProcessingProgress";
+import { VideoUploader } from "@/components/videos/VideoUploader";
+import { useCreateSession } from "@/hooks/useSessions";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 export function NewSessionPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const createSession = useCreateSession();
   const [file, setFile] = useState<File | null>(null);
@@ -25,7 +27,10 @@ export function NewSessionPage() {
       metadata: {
         title: title || undefined,
         userTags: tags
-          ? tags.split(",").map((t) => t.trim()).filter(Boolean)
+          ? tags
+              .split(",")
+              .map((tag) => tag.trim())
+              .filter(Boolean)
           : undefined,
         notes: notes || undefined,
       },
@@ -36,7 +41,7 @@ export function NewSessionPage() {
 
   const handleComplete = () => {
     if (createdSessionId) {
-      navigate(`/sesiones/${createdSessionId}`);
+      navigate(`/sessions/${createdSessionId}`);
     }
   };
 
@@ -45,19 +50,14 @@ export function NewSessionPage() {
       <div className="mx-auto max-w-2xl">
         <Card>
           <CardHeader>
-            <CardTitle>Procesando sesión</CardTitle>
-            <CardDescription>
-              Tu video está siendo procesado. Esto puede tomar unos minutos.
-            </CardDescription>
+            <CardTitle>{t("processing.title")}</CardTitle>
+            <CardDescription>{t("processing.description")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <ProcessingProgress
-              sessionId={createdSessionId}
-              onComplete={handleComplete}
-            />
+            <ProcessingProgress sessionId={createdSessionId} onComplete={handleComplete} />
             <div className="mt-6 flex justify-end">
               <Button variant="secondary" onClick={handleComplete}>
-                Ver sesión
+                {t("processing.viewSession")}
               </Button>
             </div>
           </CardContent>
@@ -68,15 +68,13 @@ export function NewSessionPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Nueva Sesión</h1>
+      <h1 className="mb-6 text-2xl font-bold text-gray-900">{t("newSession.title")}</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Video de la sesión</CardTitle>
-            <CardDescription>
-              Sube el video de la consulta médica para procesarlo
-            </CardDescription>
+            <CardTitle>{t("newSession.videoSection")}</CardTitle>
+            <CardDescription>{t("newSession.videoDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <VideoUploader
@@ -90,40 +88,35 @@ export function NewSessionPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Información adicional</CardTitle>
-            <CardDescription>
-              Estos campos son opcionales pero ayudan a organizar las sesiones
-            </CardDescription>
+            <CardTitle>{t("newSession.additionalInfo")}</CardTitle>
+            <CardDescription>{t("newSession.additionalInfoDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Input
               id="title"
-              label="Título"
+              label={t("newSession.sessionTitle")}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ej: Consulta Dr. García - Paciente #123"
+              placeholder={t("newSession.sessionTitlePlaceholder")}
               disabled={createSession.isPending}
             />
             <Input
               id="tags"
-              label="Etiquetas (separadas por comas)"
+              label={t("newSession.tags")}
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              placeholder="Ej: cardiología, seguimiento, urgente"
+              placeholder={t("newSession.tagsPlaceholder")}
               disabled={createSession.isPending}
             />
             <div>
-              <label
-                htmlFor="notes"
-                className="mb-1.5 block text-sm font-medium text-gray-700"
-              >
-                Notas
+              <label htmlFor="notes" className="mb-1.5 block text-sm font-medium text-gray-700">
+                {t("newSession.notes")}
               </label>
               <textarea
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Notas adicionales sobre la sesión..."
+                placeholder={t("newSession.notesPlaceholder")}
                 rows={3}
                 disabled={createSession.isPending}
                 className="input resize-none"
@@ -139,14 +132,14 @@ export function NewSessionPage() {
             onClick={() => navigate(-1)}
             disabled={createSession.isPending}
           >
-            Cancelar
+            {t("common.cancel")}
           </Button>
           <Button
             type="submit"
             disabled={!file || createSession.isPending}
             isLoading={createSession.isPending}
           >
-            Procesar Sesión
+            {t("newSession.processSession")}
           </Button>
         </div>
       </form>

@@ -1,4 +1,6 @@
+import { getLanguageName } from "@mrp/shared";
 import OpenAI from "openai";
+import { v4 as uuidv4 } from "uuid";
 import { config } from "../../config/index.js";
 import { getDb } from "../../db/connection.js";
 import { logger } from "../../config/logger.js";
@@ -17,63 +19,108 @@ interface SessionInfo {
   user_tags: string | null;
 }
 
-function buildMetadataPrompt(needsTitle: boolean, needsTags: boolean): string {
+function buildMetadataPrompt(needsTitle: boolean, needsTags: boolean, outputLanguage: string): string {
+  let fieldNum = 1;
   const fields: string[] = [
-    '1. Un resumen breve (2-3 oraciones) del contenido de la consulta',
-    '2. Palabras clave relevantes (5-10 términos) que ayuden a buscar esta sesión',
-  ];
-
-  const jsonFields: string[] = [
-    '"summary": "Resumen de la consulta..."',
-    '"keywords": ["palabra1", "palabra2", ...]',
+    `${fieldNum++}. A brief summary (2-3 sentences) of the consultation content`,
+    `${fieldNum++}. Relevant keywords (5-10 terms) that help search this session`,
   ];
 
   if (needsTitle) {
-    fields.push('3. Un título descriptivo y conciso (máximo 10 palabras) para identificar esta sesión');
-    jsonFields.push('"title": "Título de la sesión"');
+    fields.push(`${fieldNum++}. A descriptive and concise title (maximum 10 words) to identify this session`);
   }
 
   if (needsTags) {
-    fields.push(`${needsTitle ? '4' : '3'}. Etiquetas de categorización (3-5) para organizar la sesión`);
-    jsonFields.push('"userTags": ["etiqueta1", "etiqueta2", ...]');
+    fields.push(`${fieldNum++}. Categorization tags (3-5) to organize the session`);
   }
 
-  return `Eres un experto en análisis de consultas médicas. Dada la transcripción segmentada de una sesión médica, genera:
+  fields.push(`${fieldNum++}. Structured clinical indicators according to the provided schema`);
+
+  const languageName = getLanguageName(outputLanguage);
+
+  return `You are an expert in medical consultation analysis. Given the segmented transcript of a medical session, generate:
 
 ${fields.join('\n')}
 
-Responde en JSON con el siguiente formato:
+Respond in JSON with the following format:
 {
-  ${jsonFields.join(',\n  ')}
+  "summary": "Summary of the consultation...",
+  "keywords": ["keyword1", "keyword2", ...]${needsTitle ? `,
+  "title": "Session title"` : ''}${needsTags ? `,
+  "userTags": ["tag1", "tag2", ...]` : ''},
+  "clinicalIndicators": {
+    "urgencyLevel": "low" | "medium" | "high",
+    "appointmentPriority": "preferred" | "non_preferred",
+    "reasonForVisit": "Main reason for consultation",
+    "consultedSpecialty": "Medical specialty if applicable, or null",
+    "mainClinicalProblem": "Main clinical problem addressed",
+    "problemStatus": "new" | "chronic" | "exacerbation" | "follow_up" | "resolved",
+    "diagnosticHypothesis": [
+      {"condition": "Diagnosis name", "certainty": "confirmed" | "probable" | "to_be_ruled_out"}
+    ],
+    "requestedTests": ["test1", "test2"],
+    "treatmentPlan": {
+      "medicationStarted": ["medication1"],
+      "medicationAdjusted": ["medication2"],
+      "medicationDiscontinued": [],
+      "nonPharmacologicalMeasures": ["measure1"]
+    },
+    "patientEducation": ["Health education provided"],
+    "warningSigns": ["Warning signs communicated"],
+    "followUpPlan": {
+      "followUpType": "review" | "referral" | "discharge",
+      "timeFrame": "Follow-up timeframe",
+      "responsibleCareLevel": "primary_care" | "specialist" | "emergency"
+    }
+  }
 }
 
-Las palabras clave deben incluir:
-- Síntomas mencionados
-- Diagnósticos discutidos
-- Tratamientos recomendados
-- Términos médicos relevantes${needsTitle ? `
+Keywords should include:
+- Symptoms mentioned
+- Diagnoses discussed
+- Recommended treatments
+- Relevant medical terms${needsTitle ? `
 
-El título debe ser descriptivo pero breve, por ejemplo:
-- "Consulta por dolor abdominal agudo"
-- "Seguimiento de hipertensión arterial"
-- "Primera consulta: cefalea recurrente"` : ''}${needsTags ? `
+The title should be descriptive but brief, for example:
+- "Acute abdominal pain consultation"
+- "Hypertension follow-up"
+- "Initial visit: recurrent headache"` : ''}${needsTags ? `
 
-Las etiquetas deben ser categorías generales útiles para filtrar, por ejemplo:
-- Tipo de consulta: "primera consulta", "seguimiento", "urgencia"
-- Especialidad: "cardiología", "neurología", "medicina general"
-- Grupo etario si es relevante: "pediátrico", "geriátrico"` : ''}`;
+Tags should be general categories useful for filtering, for example:
+- Consultation type: "initial visit", "follow-up", "urgent"
+- Specialty: "cardiology", "neurology", "general medicine"
+- Age group if relevant: "pediatric", "geriatric"` : ''}
+
+IMPORTANT NOTES for clinical indicators:
+- urgencyLevel: Evaluate urgency based on symptom severity, evolution, or need for immediate action
+- appointmentPriority: "preferred" if priority appointment is mentioned, "non_preferred" otherwise
+- problemStatus: "new" for new problems, "chronic" for chronic ones, "exacerbation" for acute worsening, "follow_up" for follow-up, "resolved" if resolved
+- diagnosticHypothesis: List of diagnoses mentioned with their certainty level
+- requestedTests: Diagnostic tests requested (labs, X-rays, etc.)
+- treatmentPlan: Separate medications started, adjusted, and discontinued; include non-pharmacological measures
+- patientEducation: Advice and explanations given to the patient
+- warningSigns: Warning signs for which the patient should seek emergency care
+- followUpPlan: Type of follow-up (review, referral, or discharge), timeframe, and responsible care level
+- If there is insufficient information for a field, use null or an empty array as appropriate
+
+CRITICAL: Generate ALL text content (summary, keywords, title, tags, clinical indicators text) in ${languageName}.`;
+}
+
+interface SessionInfoWithLanguage extends SessionInfo {
+  language: string | null;
 }
 
 export async function processMetadata(sessionId: string): Promise<void> {
   const db = getDb();
 
-  // Check if title and tags already exist
+  // Check if title and tags already exist, and get language
   const sessionInfo = db
-    .prepare("SELECT title, user_tags FROM medical_sessions WHERE id = ?")
-    .get(sessionId) as SessionInfo | undefined;
+    .prepare("SELECT title, user_tags, language FROM medical_sessions WHERE id = ?")
+    .get(sessionId) as SessionInfoWithLanguage | undefined;
 
   const needsTitle = !sessionInfo?.title;
   const needsTags = !sessionInfo?.user_tags;
+  const outputLanguage = sessionInfo?.language ?? "es";
 
   const sections = db
     .prepare(
@@ -89,9 +136,9 @@ export async function processMetadata(sessionId: string): Promise<void> {
     .map((s) => `[${s.section_type.toUpperCase()}]\n${s.content}`)
     .join("\n\n");
 
-  logger.info({ sessionId, needsTitle, needsTags, model: config.openai.models.metadata }, "Generating metadata");
+  logger.info({ sessionId, needsTitle, needsTags, outputLanguage, model: config.openai.models.metadata }, "Generating metadata");
 
-  const prompt = buildMetadataPrompt(needsTitle, needsTags);
+  const prompt = buildMetadataPrompt(needsTitle, needsTags, outputLanguage);
 
   const completion = await openai.chat.completions.create({
     model: config.openai.models.metadata,
@@ -114,11 +161,36 @@ export async function processMetadata(sessionId: string): Promise<void> {
     throw new Error("No response from GPT");
   }
 
+  interface ClinicalIndicatorsGPT {
+    urgencyLevel?: string | null;
+    appointmentPriority?: string | null;
+    reasonForVisit?: string | null;
+    consultedSpecialty?: string | null;
+    mainClinicalProblem?: string | null;
+    problemStatus?: string | null;
+    diagnosticHypothesis?: Array<{ condition: string; certainty: string }> | null;
+    requestedTests?: string[] | null;
+    treatmentPlan?: {
+      medicationStarted?: string[];
+      medicationAdjusted?: string[];
+      medicationDiscontinued?: string[];
+      nonPharmacologicalMeasures?: string[];
+    } | null;
+    patientEducation?: string[] | null;
+    warningSigns?: string[] | null;
+    followUpPlan?: {
+      followUpType?: string;
+      timeFrame?: string;
+      responsibleCareLevel?: string;
+    } | null;
+  }
+
   const result = JSON.parse(content) as {
     summary: string;
     keywords: string[];
     title?: string;
     userTags?: string[];
+    clinicalIndicators?: ClinicalIndicatorsGPT;
   };
 
   // Trim all text fields
@@ -158,4 +230,64 @@ export async function processMetadata(sessionId: string): Promise<void> {
     },
     "Metadata generation completed"
   );
+
+  // Save clinical indicators
+  if (result.clinicalIndicators) {
+    const ci = result.clinicalIndicators;
+    const indicatorId = uuidv4();
+
+    // Normalize treatment plan to ensure all arrays exist
+    const treatmentPlan = ci.treatmentPlan
+      ? {
+          medicationStarted: ci.treatmentPlan.medicationStarted ?? [],
+          medicationAdjusted: ci.treatmentPlan.medicationAdjusted ?? [],
+          medicationDiscontinued: ci.treatmentPlan.medicationDiscontinued ?? [],
+          nonPharmacologicalMeasures: ci.treatmentPlan.nonPharmacologicalMeasures ?? [],
+        }
+      : null;
+
+    // Normalize follow up plan
+    const followUpPlan = ci.followUpPlan
+      ? {
+          followUpType: ci.followUpPlan.followUpType ?? null,
+          timeFrame: ci.followUpPlan.timeFrame ?? null,
+          responsibleCareLevel: ci.followUpPlan.responsibleCareLevel ?? null,
+        }
+      : null;
+
+    db.prepare(`
+      INSERT OR REPLACE INTO clinical_indicators (
+        id, session_id, urgency_level, appointment_priority,
+        reason_for_visit, consulted_specialty, main_clinical_problem,
+        problem_status, diagnostic_hypothesis, requested_tests,
+        treatment_plan, patient_education, warning_signs, follow_up_plan,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    `).run(
+      indicatorId,
+      sessionId,
+      ci.urgencyLevel ?? null,
+      ci.appointmentPriority ?? null,
+      ci.reasonForVisit?.trim() ?? null,
+      ci.consultedSpecialty?.trim() ?? null,
+      ci.mainClinicalProblem?.trim() ?? null,
+      ci.problemStatus ?? null,
+      ci.diagnosticHypothesis ? JSON.stringify(ci.diagnosticHypothesis) : null,
+      ci.requestedTests ? JSON.stringify(ci.requestedTests) : null,
+      treatmentPlan ? JSON.stringify(treatmentPlan) : null,
+      ci.patientEducation ? JSON.stringify(ci.patientEducation) : null,
+      ci.warningSigns ? JSON.stringify(ci.warningSigns) : null,
+      followUpPlan ? JSON.stringify(followUpPlan) : null
+    );
+
+    logger.info(
+      {
+        sessionId,
+        indicatorId,
+        urgencyLevel: ci.urgencyLevel,
+        problemStatus: ci.problemStatus,
+      },
+      "Clinical indicators saved"
+    );
+  }
 }

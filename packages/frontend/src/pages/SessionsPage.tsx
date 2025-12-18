@@ -1,13 +1,15 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useSessions } from "@/hooks/useSessions";
 import { SessionList } from "@/components/sessions/SessionList";
 import { SessionSearch } from "@/components/sessions/SessionSearch";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { useSessions } from "@/hooks/useSessions";
 import { PlusCircle, Search, X } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 export function SessionsPage() {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<string | undefined>();
   const [showSearch, setShowSearch] = useState(false);
@@ -23,19 +25,16 @@ export function SessionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Mis Sesiones</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("sessions.title")}</h1>
         <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => setShowSearch(!showSearch)}
-          >
+          <Button variant="secondary" onClick={() => setShowSearch(!showSearch)}>
             {showSearch ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
-            {showSearch ? "Cerrar" : "Buscar"}
+            {showSearch ? t("common.close") : t("common.search")}
           </Button>
-          <Link to="/nueva-sesion">
+          <Link to="/new-session">
             <Button>
               <PlusCircle className="h-4 w-4" />
-              Nueva Sesión
+              {t("navigation.newSession")}
             </Button>
           </Link>
         </div>
@@ -48,7 +47,7 @@ export function SessionsPage() {
       )}
 
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-500">Filtrar por estado:</span>
+        <span className="text-sm text-gray-500">{t("sessions.filterByStatus")}</span>
         <div className="flex gap-1">
           <FilterButton
             active={!status}
@@ -57,7 +56,7 @@ export function SessionsPage() {
               setPage(1);
             }}
           >
-            Todas
+            {t("sessions.all")}
           </FilterButton>
           <FilterButton
             active={status === "pending"}
@@ -66,7 +65,7 @@ export function SessionsPage() {
               setPage(1);
             }}
           >
-            Pendientes
+            {t("status.pending")}
           </FilterButton>
           <FilterButton
             active={status === "processing"}
@@ -75,7 +74,7 @@ export function SessionsPage() {
               setPage(1);
             }}
           >
-            Procesando
+            {t("status.processing")}
           </FilterButton>
           <FilterButton
             active={status === "completed"}
@@ -84,7 +83,7 @@ export function SessionsPage() {
               setPage(1);
             }}
           >
-            Completadas
+            {t("status.completed")}
           </FilterButton>
           <FilterButton
             active={status === "failed"}
@@ -93,7 +92,7 @@ export function SessionsPage() {
               setPage(1);
             }}
           >
-            Error
+            {t("status.failed")}
           </FilterButton>
         </div>
       </div>
@@ -108,10 +107,10 @@ export function SessionsPage() {
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
           >
-            Anterior
+            {t("common.previous")}
           </Button>
           <span className="text-sm text-gray-600">
-            Página {page} de {totalPages}
+            {t("common.page", { current: page, total: totalPages })}
           </span>
           <Button
             variant="secondary"
@@ -119,7 +118,7 @@ export function SessionsPage() {
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
-            Siguiente
+            {t("common.next")}
           </Button>
         </div>
       )}
@@ -138,9 +137,7 @@ function FilterButton({ active, onClick, children }: FilterButtonProps) {
     <button
       onClick={onClick}
       className={`rounded-lg px-3 py-1 text-sm font-medium transition-colors ${
-        active
-          ? "bg-primary-100 text-primary-700"
-          : "text-gray-600 hover:bg-gray-100"
+        active ? "bg-primary-100 text-primary-700" : "text-gray-600 hover:bg-gray-100"
       }`}
     >
       {children}

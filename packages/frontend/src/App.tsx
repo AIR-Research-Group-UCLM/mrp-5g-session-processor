@@ -1,11 +1,11 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { Layout } from "@/components/layout/Layout";
-import { LoginPage } from "@/pages/LoginPage";
+import { useAuth } from "@/hooks/useAuth";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { LoginPage } from "@/pages/LoginPage";
 import { NewSessionPage } from "@/pages/NewSessionPage";
-import { SessionsPage } from "@/pages/SessionsPage";
 import { SessionDetailPage } from "@/pages/SessionDetailPage";
+import { SessionsPage } from "@/pages/SessionsPage";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -38,9 +38,9 @@ export default function App() {
         }
       >
         <Route index element={<DashboardPage />} />
-        <Route path="nueva-sesion" element={<NewSessionPage />} />
-        <Route path="sesiones" element={<SessionsPage />} />
-        <Route path="sesiones/:id" element={<SessionDetailPage />} />
+        <Route path="new-session" element={<NewSessionPage />} />
+        <Route path="sessions" element={<SessionsPage />} />
+        <Route path="sessions/:id" element={<SessionDetailPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

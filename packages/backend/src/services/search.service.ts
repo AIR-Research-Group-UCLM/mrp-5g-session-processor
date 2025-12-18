@@ -18,6 +18,44 @@ interface DbSessionSearchResult {
   created_at: string;
 }
 
+interface DbClinicalIndicatorsSearchResult {
+  session_id: string;
+  title: string | null;
+  reason_for_visit: string | null;
+  consulted_specialty: string | null;
+  main_clinical_problem: string | null;
+  diagnostic_hypothesis: string | null;
+  requested_tests: string | null;
+  patient_education: string | null;
+  warning_signs: string | null;
+  created_at: string;
+}
+
+// Clinical field keys to search - labels are in frontend i18n
+const CLINICAL_FIELD_KEYS: Array<keyof DbClinicalIndicatorsSearchResult> = [
+  "reason_for_visit",
+  "consulted_specialty",
+  "main_clinical_problem",
+  "diagnostic_hypothesis",
+  "requested_tests",
+  "patient_education",
+  "warning_signs",
+];
+
+function findMatchingClinicalField(
+  row: DbClinicalIndicatorsSearchResult,
+  searchTerms: string
+): { field: string; text: string } | null {
+  for (const key of CLINICAL_FIELD_KEYS) {
+    const value = row[key];
+    if (value && String(value).toLowerCase().includes(searchTerms)) {
+      // Return the key itself - frontend uses i18n to get the label
+      return { field: key, text: String(value) };
+    }
+  }
+  return null;
+}
+
 async function search(
   userId: string,
   query: string,
@@ -158,6 +196,66 @@ async function search(
         createdAt: row.created_at,
       });
       seenSessions.add(`${row.id}-tags`);
+    }
+  }
+
+  // 3. Search in clinical indicators
+  const clinicalRows = db
+    .prepare(
+      `
+      SELECT
+        ci.session_id,
+        ms.title,
+        ci.reason_for_visit,
+        ci.consulted_specialty,
+        ci.main_clinical_problem,
+        ci.diagnostic_hypothesis,
+        ci.requested_tests,
+        ci.patient_education,
+        ci.warning_signs,
+        ms.created_at
+      FROM clinical_indicators ci
+      JOIN medical_sessions ms ON ms.id = ci.session_id
+      WHERE ms.user_id = ? AND (
+        LOWER(ci.reason_for_visit) LIKE ? OR
+        LOWER(ci.consulted_specialty) LIKE ? OR
+        LOWER(ci.main_clinical_problem) LIKE ? OR
+        LOWER(ci.diagnostic_hypothesis) LIKE ? OR
+        LOWER(ci.requested_tests) LIKE ? OR
+        LOWER(ci.patient_education) LIKE ? OR
+        LOWER(ci.warning_signs) LIKE ?
+      )
+      ORDER BY ms.created_at DESC
+      LIMIT ?
+    `
+    )
+    .all(
+      userId,
+      `%${searchTerms}%`,
+      `%${searchTerms}%`,
+      `%${searchTerms}%`,
+      `%${searchTerms}%`,
+      `%${searchTerms}%`,
+      `%${searchTerms}%`,
+      `%${searchTerms}%`,
+      limit
+    ) as DbClinicalIndicatorsSearchResult[];
+
+  for (const row of clinicalRows) {
+    if (seenSessions.has(`${row.session_id}-clinical`)) continue;
+
+    // Find which field matched and create appropriate result
+    const matchedField = findMatchingClinicalField(row, searchTerms);
+    if (matchedField) {
+      results.push({
+        sessionId: row.session_id,
+        title: row.title,
+        matchedText: matchedField.text.substring(0, 200),
+        matchSource: "clinical_indicators",
+        sectionType: matchedField.field,
+        createdAt: row.created_at,
+      });
+      seenSessions.add(`${row.session_id}-clinical`);
     }
   }
 

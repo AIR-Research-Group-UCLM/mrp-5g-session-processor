@@ -1,4 +1,5 @@
 import type { SectionType } from "../constants/sections.js";
+import type { ClinicalIndicators } from "./clinical-indicators.js";
 
 export type SessionStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -12,6 +13,7 @@ export interface MedicalSession {
   videoDurationSeconds: number | null;
   videoSizeBytes: number | null;
   videoMimeType: string | null;
+  language: string | null;
   summary: string | null;
   keywords: string[] | null;
   userTags: string[] | null;
@@ -45,6 +47,7 @@ export interface SectionSummary {
 export interface SessionWithTranscript extends MedicalSession {
   transcript: TranscriptSection[];
   sectionSummaries: SectionSummary[];
+  clinicalIndicators: ClinicalIndicators | null;
 }
 
 export interface SessionListItem
@@ -57,6 +60,7 @@ export interface SessionListItem
     | "keywords"
     | "userTags"
     | "videoDurationSeconds"
+    | "language"
     | "createdAt"
     | "completedAt"
   > {}

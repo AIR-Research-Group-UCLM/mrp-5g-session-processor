@@ -1,11 +1,22 @@
 import type { SectionType } from "@mrp/shared";
-import { SECTION_DESCRIPTIONS, SECTION_TYPES } from "@mrp/shared";
+import { getLanguageName } from "@mrp/shared";
 import OpenAI from "openai";
 import { v4 as uuidv4 } from "uuid";
 import { config } from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 import { getDb } from "../../db/connection.js";
 import { s3Service } from "../s3.service.js";
+
+// Section descriptions in English for the prompt
+const SECTION_DESCRIPTIONS: Record<SectionType, string> = {
+  introduction: "Initial greeting and introduction between healthcare professional and patient",
+  symptoms: "Patient describes symptoms, discomfort or reason for consultation",
+  diagnosis: "Healthcare professional evaluates and communicates diagnosis or possible diagnoses",
+  treatment: "Treatment instructions, medication, lifestyle changes or recommendations",
+  closing: "Consultation closing, next steps and farewell",
+};
+
+const SECTION_TYPES_LIST: SectionType[] = ["introduction", "symptoms", "diagnosis", "treatment", "closing"];
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
@@ -34,70 +45,79 @@ interface SectionSummaryResult {
   summary: string;
 }
 
-const SEGMENTATION_PROMPT = `Eres un experto en análisis de consultas médicas. Tu tarea es segmentar la transcripción de una sesión médica en las siguientes secciones:
+// Build prompt with section descriptions
+function buildSegmentationPrompt(outputLanguage: string): string {
+  const sectionList = SECTION_TYPES_LIST.map((type) => `- ${type}: ${SECTION_DESCRIPTIONS[type]}`).join("\n");
+  const languageName = getLanguageName(outputLanguage);
 
-${SECTION_TYPES.map((type) => `- ${type}: ${SECTION_DESCRIPTIONS[type]}`).join("\n")}
+  return `You are an expert in medical consultation analysis. Your task is to segment the transcript of a medical session into the following sections:
 
-Analiza la transcripción y devuelve un JSON con el siguiente formato:
+${sectionList}
+
+Analyze the transcript and return a JSON with the following format:
 {
   "sections": [
     {
-      "sectionType": "presentacion" | "sintomas" | "diagnostico" | "tratamiento" | "despedida",
-      "speaker": "Doctor" | "Paciente" | "Especialista" | "Otro",
-      "content": "Texto del turno de habla",
+      "sectionType": "introduction" | "symptoms" | "diagnosis" | "treatment" | "closing",
+      "speaker": "DOCTOR" | "PATIENT" | "SPECIALIST" | "OTHER",
+      "content": "Speech turn text",
       "startTime": 0.0,
       "endTime": 10.5
     }
   ],
   "sectionSummaries": [
     {
-      "sectionType": "presentacion",
-      "summary": "Resumen breve de esta sección (1-2 oraciones)"
+      "sectionType": "introduction",
+      "summary": "Brief summary of this section (1-2 sentences)"
     }
   ]
 }
 
-Reglas:
-1. IMPORTANTE: Genera UNA sección por cada turno de habla, preservando quién dice cada frase
-2. Los speakers en la transcripción original (A, B, C, etc.) deben ser re-etiquetados semánticamente como "Doctor", "Paciente", "Especialista" u "Otro"
-3. Identifica quién es quién basándote en el contexto (ej: quien saluda como "doctor" es el paciente, quien hace preguntas médicas es el doctor)
-4. Cada sección debe tener un tipo de los especificados (presentacion, sintomas, etc.)
-5. Los tiempos deben coincidir con los timestamps de la transcripción original
-6. El contenido debe ser el texto exacto de la transcripción
-7. Mantén el orden cronológico de las secciones
-8. IMPORTANTE: El tipo de sección debe seguir el orden lógico de una consulta médica: presentacion → sintomas → diagnostico → tratamiento → despedida. Una vez que una sección avanza a un tipo posterior, NO puede retroceder a un tipo anterior. Por ejemplo, si ya clasificaste un turno como "diagnostico", los turnos siguientes solo pueden ser "diagnostico", "tratamiento" o "despedida", nunca "sintomas" o "presentacion".
-9. Para sectionSummaries, genera UN resumen por cada tipo de sección que exista (agrupando todos los turnos de habla del mismo tipo)
-10. Los resúmenes deben ser concisos y capturar los puntos clave de cada sección`;
+Rules:
+1. IMPORTANT: Generate ONE section per speech turn, preserving who says each phrase
+2. Speakers in the original transcript (A, B, C, etc.) must be re-labeled semantically as "DOCTOR", "PATIENT", "SPECIALIST" or "OTHER"
+3. Identify who is who based on context (e.g.: who greets as "doctor" is the patient, who asks medical questions is the doctor)
+4. Each section must have one of the specified types (introduction, symptoms, etc.)
+5. Times must match the timestamps from the original transcript
+6. Content must be the exact text from the transcript
+7. Maintain chronological order of sections
+8. IMPORTANT: Section type must follow the logical order of a medical consultation: introduction → symptoms → diagnosis → treatment → closing. Once a section advances to a later type, it CANNOT go back to an earlier type. For example, if you already classified a turn as "diagnosis", the following turns can only be "diagnosis", "treatment" or "closing", never "symptoms" or "introduction".
+9. For sectionSummaries, generate ONE summary per section type that exists (grouping all speech turns of the same type)
+10. Summaries should be concise and capture the key points of each section
+
+CRITICAL: Generate all summaries in ${languageName}.`;
+}
 
 export async function processSegmentation(sessionId: string): Promise<void> {
   const db = getDb();
 
   const session = db
-    .prepare("SELECT video_s3_key FROM medical_sessions WHERE id = ?")
-    .get(sessionId) as { video_s3_key: string } | undefined;
+    .prepare("SELECT video_s3_key, language FROM medical_sessions WHERE id = ?")
+    .get(sessionId) as { video_s3_key: string; language: string | null } | undefined;
 
   if (!session?.video_s3_key) {
     throw new Error("Session not found");
   }
 
+  const outputLanguage = session.language ?? "es";
   const transcriptS3Key = session.video_s3_key.replace(/\.[^.]+$/, "_transcript.json");
   const transcriptUrl = await s3Service.getPresignedUrl(transcriptS3Key);
 
   const response = await fetch(transcriptUrl);
   const transcriptData = (await response.json()) as TranscriptData;
 
-  logger.info({ sessionId, model: config.openai.models.segmentation }, "Segmenting transcript");
+  logger.info({ sessionId, model: config.openai.models.segmentation, outputLanguage }, "Segmenting transcript");
 
   const completion = await openai.chat.completions.create({
     model: config.openai.models.segmentation,
     messages: [
       {
         role: "system",
-        content: SEGMENTATION_PROMPT,
+        content: buildSegmentationPrompt(outputLanguage),
       },
       {
         role: "user",
-        content: `Transcripción a segmentar:\n\n${transcriptData.text}\n\nSegmentos con timestamps:\n${JSON.stringify(transcriptData.segments, null, 2)}`,
+        content: `Transcript to segment:\n\n${transcriptData.text}\n\nSegments with timestamps:\n${JSON.stringify(transcriptData.segments, null, 2)}`,
       },
     ],
     response_format: { type: "json_object" },

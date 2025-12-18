@@ -1,11 +1,10 @@
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
-import "dayjs/locale/es";
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
-dayjs.locale("es");
+// Locale is set by i18n/index.ts based on user language preference
 
 export function formatDate(date: string): string {
   // Parse as UTC and convert to local timezone

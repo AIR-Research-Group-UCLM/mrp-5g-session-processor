@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import toast from "react-hot-toast";
 
 export function LoginForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +22,7 @@ export function LoginForm() {
       await login({ email, password });
       navigate("/");
     } catch (error) {
-      toast.error("Credenciales inválidas");
+      toast.error(t("auth.invalidCredentials"));
     } finally {
       setIsLoading(false);
     }
@@ -30,24 +32,24 @@ export function LoginForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
         id="email"
-        label="Email"
+        label={t("auth.email")}
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="tu@email.com"
+        placeholder={t("auth.emailPlaceholder")}
         required
       />
       <Input
         id="password"
-        label="Contraseña"
+        label={t("auth.password")}
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        placeholder="********"
+        placeholder={t("auth.passwordPlaceholder")}
         required
       />
       <Button type="submit" className="w-full" isLoading={isLoading}>
-        Iniciar Sesión
+        {t("auth.loginButton")}
       </Button>
     </form>
   );

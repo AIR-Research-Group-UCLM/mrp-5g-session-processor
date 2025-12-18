@@ -1,18 +1,21 @@
-import { NavLink } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { Home, PlusCircle, FolderOpen } from "lucide-react";
+import { FolderOpen, Home, PlusCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { NavLink } from "react-router-dom";
 
 const navItems = [
-  { to: "/", icon: Home, label: "Inicio" },
-  { to: "/nueva-sesion", icon: PlusCircle, label: "Nueva Sesión" },
-  { to: "/sesiones", icon: FolderOpen, label: "Mis Sesiones" },
+  { to: "/", icon: Home, labelKey: "navigation.home" },
+  { to: "/new-session", icon: PlusCircle, labelKey: "navigation.newSession" },
+  { to: "/sessions", icon: FolderOpen, labelKey: "navigation.mySessions" },
 ];
 
 export function Sidebar() {
+  const { t } = useTranslation();
+
   return (
     <aside className="flex w-64 flex-col border-r border-gray-200 bg-white">
       <div className="flex h-16 items-center border-b border-gray-200 px-6">
-        <h1 className="text-lg font-bold text-primary-600">MRP Processor</h1>
+        <h1 className="text-lg font-bold text-primary-600">{t("common.appName")}</h1>
       </div>
       <nav className="flex-1 space-y-1 p-4">
         {navItems.map((item) => (
@@ -30,7 +33,7 @@ export function Sidebar() {
             }
           >
             <item.icon className="h-5 w-5" />
-            {item.label}
+            {t(item.labelKey)}
           </NavLink>
         ))}
       </nav>

@@ -1,27 +1,28 @@
-import { Link } from "react-router-dom";
-import type { SessionListItem } from "@mrp/shared";
+import { Badge, SessionStatusBadge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import { SessionStatusBadge, Badge } from "@/components/ui/Badge";
-import { formatRelativeDate, formatDuration } from "@/utils/format";
-import { Clock, Calendar } from "lucide-react";
+import { formatDuration, formatRelativeDate } from "@/utils/format";
+import type { SessionListItem } from "@mrp/shared";
+import { Calendar, Clock, Languages } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 interface SessionCardProps {
   session: SessionListItem;
 }
 
 export function SessionCard({ session }: SessionCardProps) {
+  const { t } = useTranslation();
+
   return (
-    <Link to={`/sesiones/${session.id}`}>
+    <Link to={`/sessions/${session.id}`}>
       <Card className="transition-shadow hover:shadow-md">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h3 className="font-medium text-gray-900">
-              {session.title ?? "Sesión sin título"}
+              {session.title ?? t("sessions.untitledSession")}
             </h3>
             {session.summary && (
-              <p className="mt-1 line-clamp-2 text-sm text-gray-500">
-                {session.summary}
-              </p>
+              <p className="mt-1 line-clamp-2 text-sm text-gray-500">{session.summary}</p>
             )}
           </div>
           <SessionStatusBadge status={session.status} />
@@ -36,6 +37,12 @@ export function SessionCard({ session }: SessionCardProps) {
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
               {formatDuration(session.videoDurationSeconds)}
+            </div>
+          )}
+          {session.language && (
+            <div className="flex items-center gap-1">
+              <Languages className="h-4 w-4" />
+              {t(`languages.${session.language}`, { defaultValue: session.language.toUpperCase() })}
             </div>
           )}
         </div>

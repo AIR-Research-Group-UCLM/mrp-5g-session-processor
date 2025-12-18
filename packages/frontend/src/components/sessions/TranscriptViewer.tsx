@@ -1,9 +1,10 @@
 import { cn } from "@/utils/cn";
 import { formatDuration } from "@/utils/format";
 import type { SectionSummary, SectionType, TranscriptSection } from "@mrp/shared";
-import { SECTION_LABELS, SECTION_TYPES } from "@mrp/shared";
+import { SECTION_TYPES } from "@mrp/shared";
 import { Clock, GraduationCap, Sparkles, Stethoscope, User } from "lucide-react";
 import { forwardRef, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface TranscriptViewerProps {
   sections: TranscriptSection[];
@@ -22,6 +23,7 @@ export function TranscriptViewer({
   autoScroll = false,
   scrollContainerRef,
 }: TranscriptViewerProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SectionType | "all">("all");
   const activeItemRef = useRef<HTMLDivElement>(null);
 
@@ -77,7 +79,7 @@ export function TranscriptViewer({
     <div className="flex h-full flex-col">
       <div className="flex gap-1 overflow-x-auto border-b border-gray-200 pb-2">
         <TabButton active={activeTab === "all"} onClick={() => setActiveTab("all")}>
-          Todas
+          {t("transcript.all")}
         </TabButton>
         {SECTION_TYPES.map((type) => (
           <TabButton
@@ -86,7 +88,7 @@ export function TranscriptViewer({
             onClick={() => setActiveTab(type)}
             count={groupedByType[type].length}
           >
-            {SECTION_LABELS[type]}
+            {t(`sections.${type}`)}
           </TabButton>
         ))}
       </div>
@@ -98,7 +100,7 @@ export function TranscriptViewer({
         )}
 
         {filteredSections.length === 0 ? (
-          <p className="text-center text-sm text-gray-500">No hay contenido en esta sección</p>
+          <p className="text-center text-sm text-gray-500">{t("transcript.noContent")}</p>
         ) : (
           filteredSections.map((section) => (
             <SectionItem
@@ -155,10 +157,10 @@ interface SectionItemProps {
 }
 
 function getSpeakerIcon(speaker: string | null) {
-  switch (speaker?.toLowerCase()) {
-    case "doctor":
+  switch (speaker?.toUpperCase()) {
+    case "DOCTOR":
       return Stethoscope;
-    case "especialista":
+    case "SPECIALIST":
       return GraduationCap;
     default:
       return User;
@@ -169,7 +171,15 @@ const SectionItem = forwardRef<HTMLDivElement, SectionItemProps>(function Sectio
   { section, isActive, onSeek, showType },
   ref
 ) {
+  const { t } = useTranslation();
   const SpeakerIcon = getSpeakerIcon(section.speaker);
+
+  const getSpeakerLabel = (speaker: string | null): string => {
+    if (!speaker) return t("speakers.unknown");
+    const key = speaker.toUpperCase();
+    const translated = t(`speakers.${key}`, { defaultValue: "" });
+    return translated || speaker;
+  };
 
   return (
     <div
@@ -185,7 +195,7 @@ const SectionItem = forwardRef<HTMLDivElement, SectionItemProps>(function Sectio
           <span
             className={cn("text-sm font-medium", isActive ? "text-primary-700" : "text-gray-700")}
           >
-            {section.speaker ?? "Desconocido"}
+            {getSpeakerLabel(section.speaker)}
           </span>
           {showType && (
             <span
@@ -194,7 +204,7 @@ const SectionItem = forwardRef<HTMLDivElement, SectionItemProps>(function Sectio
                 isActive ? "bg-primary-200 text-primary-700" : "bg-gray-100 text-gray-600"
               )}
             >
-              {SECTION_LABELS[section.sectionType as SectionType]}
+              {t(`sections.${section.sectionType}`)}
             </span>
           )}
         </div>
@@ -226,12 +236,14 @@ interface SectionSummaryCardProps {
 }
 
 function SectionSummaryCard({ sectionType, summary }: SectionSummaryCardProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="rounded-lg border-2 border-primary-200 bg-primary-50 p-4">
       <div className="mb-2 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-primary-600" />
         <span className="text-sm font-semibold text-primary-700">
-          Resumen: {SECTION_LABELS[sectionType]}
+          {t("transcript.summary")}: {t(`sections.${sectionType}`)}
         </span>
       </div>
       <p className="text-sm text-primary-900">{summary}</p>

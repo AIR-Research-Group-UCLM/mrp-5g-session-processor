@@ -1,0 +1,218 @@
+{
+  "common": {
+    "appName": "MRP 5G Session Processor",
+    "appDescription": "Procesador de sesiones medicas",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "viewAll": "Ver todas",
+    "logout": "Salir",
+    "page": "Pagina {{current}} de {{total}}"
+  },
+  "auth": {
+    "login": "Iniciar Sesion",
+    "email": "Email",
+    "emailPlaceholder": "tu@email.com",
+    "password": "Contrasena",
+    "passwordPlaceholder": "********",
+    "loginButton": "Iniciar Sesion",
+    "invalidCredentials": "Credenciales invalidas",
+    "enterCredentials": "Ingresa tus credenciales para acceder"
+  },
+  "navigation": {
+    "home": "Inicio",
+    "newSession": "Nueva Sesion",
+    "mySessions": "Mis Sesiones"
+  },
+  "dashboard": {
+    "title": "Panel de control",
+    "totalSessions": "Total de sesiones",
+    "processing": "En procesamiento",
+    "completed": "Completadas",
+    "recentSessions": "Sesiones recientes"
+  },
+  "sessions": {
+    "title": "Mis Sesiones",
+    "newSession": "Nueva Sesion",
+    "noSessions": "No hay sesiones",
+    "untitledSession": "Sesion sin titulo",
+    "filterByStatus": "Filtrar por estado:",
+    "all": "Todas",
+    "confirmDelete": "Estas seguro de eliminar esta sesion?",
+    "notFound": "Sesion no encontrada",
+    "backToSessions": "Volver a sesiones"
+  },
+  "newSession": {
+    "title": "Nueva Sesion",
+    "videoSection": "Video de la sesion",
+    "videoDescription": "Sube el video de la consulta medica para procesarlo",
+    "additionalInfo": "Informacion adicional",
+    "additionalInfoDescription": "Estos campos son opcionales pero ayudan a organizar las sesiones",
+    "sessionTitle": "Titulo",
+    "sessionTitlePlaceholder": "Ej: Consulta Dr. Garcia - Paciente #123",
+    "tags": "Etiquetas (separadas por comas)",
+    "tagsPlaceholder": "Ej: cardiologia, seguimiento, urgente",
+    "notes": "Notas",
+    "notesPlaceholder": "Notas adicionales sobre la sesion...",
+    "processSession": "Procesar Sesion"
+  },
+  "upload": {
+    "dropzone": "Arrastra un video o haz clic para seleccionar",
+    "dropzoneActive": "Suelta el archivo aqui",
+    "acceptedFormats": "MP4, WebM, MOV, AVI, MKV hasta 500MB",
+    "invalidFile": "Archivo no valido"
+  },
+  "processing": {
+    "title": "Procesando sesion",
+    "description": "Tu video esta siendo procesado. Esto puede tomar unos minutos.",
+    "statusTitle": "Estado del procesamiento",
+    "error": "Error en el procesamiento",
+    "viewSession": "Ver sesion"
+  },
+  "status": {
+    "pending": "Pendiente",
+    "processing": "Procesando",
+    "completed": "Completado",
+    "failed": "Error"
+  },
+  "jobTypes": {
+    "transcribe": "Transcribiendo audio",
+    "segment": "Segmentando secciones",
+    "generate-metadata": "Generando metadatos",
+    "complete": "Finalizando"
+  },
+  "sessionDetail": {
+    "processingSession": "Procesando sesion",
+    "information": "Informacion",
+    "summary": "Resumen",
+    "keywords": "Palabras clave",
+    "tags": "Etiquetas",
+    "notes": "Notas",
+    "transcript": "Transcripcion",
+    "noTranscript": "No hay transcripcion disponible",
+    "autoScroll": "Auto-scroll",
+    "disableTracking": "Desactivar seguimiento",
+    "enableTracking": "Activar seguimiento",
+    "transcriptionLanguage": "Idioma"
+  },
+  "languages": {
+    "es": "Español",
+    "en": "Inglés",
+    "fr": "Francés",
+    "de": "Alemán",
+    "it": "Italiano",
+    "pt": "Portugués",
+    "ca": "Catalán",
+    "eu": "Euskera",
+    "gl": "Gallego"
+  },
+  "transcript": {
+    "all": "Todas",
+    "noContent": "No hay contenido en esta seccion",
+    "summary": "Resumen"
+  },
+  "speakers": {
+    "DOCTOR": "Médico",
+    "PATIENT": "Paciente",
+    "SPECIALIST": "Especialista",
+    "OTHER": "Otro",
+    "unknown": "Desconocido"
+  },
+  "sections": {
+    "introduction": "Presentacion",
+    "symptoms": "Exposicion de sintomas",
+    "diagnosis": "Diagnostico",
+    "treatment": "Asignacion de tratamiento",
+    "closing": "Despedida"
+  },
+  "sectionDescriptions": {
+    "introduction": "Saludo inicial y presentacion entre el profesional de salud y el paciente",
+    "symptoms": "El paciente describe sus sintomas, molestias o motivo de la consulta",
+    "diagnosis": "El profesional de salud evalua y comunica el diagnostico o posibles diagnosticos",
+    "treatment": "Indicaciones de tratamiento, medicacion, cambios de habitos o recomendaciones",
+    "closing": "Cierre de la consulta, proximos pasos y despedida"
+  },
+  "search": {
+    "placeholder": "Buscar en transcripciones...",
+    "noResults": "No se encontraron resultados",
+    "matchSources": {
+      "transcript": "Transcripcion",
+      "title": "Titulo",
+      "summary": "Resumen",
+      "keywords": "Palabras clave",
+      "tags": "Etiquetas",
+      "clinical_indicators": "Indicadores clinicos"
+    }
+  },
+  "clinicalIndicators": {
+    "title": "Indicadores Clinicos",
+    "urgency": "Urgencia",
+    "appointmentPriority": "Prioridad cita",
+    "status": "Estado",
+    "specialty": "Especialidad",
+    "reasonForVisit": "Motivo de consulta",
+    "mainProblem": "Problema clinico principal",
+    "diagnosticHypothesis": "Hipotesis diagnosticas",
+    "requestedTests": "Pruebas solicitadas",
+    "treatmentPlan": "Plan de tratamiento",
+    "patientEducation": "Educacion sanitaria",
+    "warningSigns": "Signos de alarma",
+    "followUpPlan": "Plan de seguimiento",
+    "medicationStarted": "Medicamentos iniciados:",
+    "medicationAdjusted": "Medicamentos ajustados:",
+    "medicationDiscontinued": "Medicamentos suspendidos:",
+    "nonPharmacological": "Medidas no farmacologicas:"
+  },
+  "clinicalFields": {
+    "reason_for_visit": "Motivo de consulta",
+    "consulted_specialty": "Especialidad",
+    "main_clinical_problem": "Problema clinico",
+    "diagnostic_hypothesis": "Hipotesis diagnostica",
+    "requested_tests": "Pruebas solicitadas",
+    "patient_education": "Educacion sanitaria",
+    "warning_signs": "Signos de alarma"
+  },
+  "urgencyLevels": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta"
+  },
+  "appointmentPriorities": {
+    "preferred": "Preferente",
+    "non_preferred": "No preferente"
+  },
+  "problemStatuses": {
+    "new": "Nuevo",
+    "chronic": "Cronico",
+    "exacerbation": "Exacerbacion",
+    "follow_up": "Seguimiento",
+    "resolved": "Resuelto"
+  },
+  "diagnosticCertainties": {
+    "confirmed": "Confirmado",
+    "probable": "Probable",
+    "to_be_ruled_out": "A descartar"
+  },
+  "followUpTypes": {
+    "review": "Revision",
+    "referral": "Derivacion",
+    "discharge": "Alta"
+  },
+  "careLevels": {
+    "primary_care": "Atencion primaria",
+    "specialist": "Especialista",
+    "emergency": "Urgencias"
+  },
+  "language": {
+    "selector": "Idioma",
+    "es-ES": "Español",
+    "en-GB": "Inglés"
+  }
+}

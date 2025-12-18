@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS medical_sessions (
     video_duration_seconds INTEGER,
     video_size_bytes INTEGER,
     video_mime_type TEXT,
+    language TEXT DEFAULT 'es', -- ISO 639-1 code (auto-detected from audio)
     summary TEXT,
     keywords TEXT, -- JSON array
     user_tags TEXT, -- JSON array
@@ -84,6 +85,31 @@ CREATE TABLE IF NOT EXISTS processing_jobs (
 
 CREATE INDEX IF NOT EXISTS idx_processing_jobs_status ON processing_jobs(status);
 CREATE INDEX IF NOT EXISTS idx_processing_jobs_session_id ON processing_jobs(session_id);
+
+-- Clinical indicators table (one per session)
+CREATE TABLE IF NOT EXISTS clinical_indicators (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL UNIQUE,
+    urgency_level TEXT CHECK(urgency_level IN ('low', 'medium', 'high')),
+    appointment_priority TEXT CHECK(appointment_priority IN ('preferred', 'non_preferred')),
+    reason_for_visit TEXT,
+    consulted_specialty TEXT,
+    main_clinical_problem TEXT,
+    problem_status TEXT CHECK(problem_status IN ('new', 'chronic', 'exacerbation', 'follow_up', 'resolved')),
+    diagnostic_hypothesis TEXT, -- JSON array: [{condition, certainty}]
+    requested_tests TEXT,       -- JSON array: string[]
+    treatment_plan TEXT,        -- JSON object: {medication_started, medication_adjusted, medication_discontinued, non_pharmacological_measures}
+    patient_education TEXT,     -- JSON array: string[]
+    warning_signs TEXT,         -- JSON array: string[]
+    follow_up_plan TEXT,        -- JSON object: {follow_up_type, time_frame, responsible_care_level}
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_clinical_indicators_session_id ON clinical_indicators(session_id);
+CREATE INDEX IF NOT EXISTS idx_clinical_indicators_urgency ON clinical_indicators(urgency_level);
+CREATE INDEX IF NOT EXISTS idx_clinical_indicators_problem_status ON clinical_indicators(problem_status);
 
 -- FTS5 virtual table for full-text search on transcripts
 CREATE VIRTUAL TABLE IF NOT EXISTS transcript_fts USING fts5(

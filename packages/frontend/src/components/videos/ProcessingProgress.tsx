@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useSessionStatus } from "@/hooks/useSessions";
 import { cn } from "@/utils/cn";
 import { Check, Loader2, AlertCircle } from "lucide-react";
@@ -12,6 +13,7 @@ export function ProcessingProgress({
   sessionId,
   onComplete,
 }: ProcessingProgressProps) {
+  const { t } = useTranslation();
   const { data: progress, isLoading } = useSessionStatus(sessionId, true);
 
   if (isLoading || !progress) {
@@ -29,7 +31,7 @@ export function ProcessingProgress({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-gray-900">Estado del procesamiento</h3>
+        <h3 className="font-medium text-gray-900">{t("processing.statusTitle")}</h3>
         <StatusBadge status={progress.status} />
       </div>
 
@@ -49,7 +51,7 @@ export function ProcessingProgress({
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-600" />
             <div>
-              <p className="font-medium text-red-800">Error en el procesamiento</p>
+              <p className="font-medium text-red-800">{t("processing.error")}</p>
               <p className="mt-1 text-sm text-red-700">{progress.errorMessage}</p>
             </div>
           </div>
@@ -60,17 +62,19 @@ export function ProcessingProgress({
 }
 
 function StatusBadge({ status }: { status: ProgressType["status"] }) {
+  const { t } = useTranslation();
+
   const config: Record<
     ProgressType["status"],
-    { label: string; className: string }
+    { labelKey: string; className: string }
   > = {
-    pending: { label: "Pendiente", className: "bg-gray-100 text-gray-700" },
-    processing: { label: "Procesando", className: "bg-yellow-100 text-yellow-700" },
-    completed: { label: "Completado", className: "bg-green-100 text-green-700" },
-    failed: { label: "Error", className: "bg-red-100 text-red-700" },
+    pending: { labelKey: "status.pending", className: "bg-gray-100 text-gray-700" },
+    processing: { labelKey: "status.processing", className: "bg-yellow-100 text-yellow-700" },
+    completed: { labelKey: "status.completed", className: "bg-green-100 text-green-700" },
+    failed: { labelKey: "status.failed", className: "bg-red-100 text-red-700" },
   };
 
-  const { label, className } = config[status];
+  const { labelKey, className } = config[status];
 
   return (
     <span
@@ -79,7 +83,7 @@ function StatusBadge({ status }: { status: ProgressType["status"] }) {
         className
       )}
     >
-      {label}
+      {t(labelKey)}
     </span>
   );
 }
@@ -91,6 +95,8 @@ interface StepItemProps {
 }
 
 function StepItem({ step, isActive, index }: StepItemProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center gap-3">
       <div
@@ -118,7 +124,7 @@ function StepItem({ step, isActive, index }: StepItemProps) {
           isActive ? "font-medium text-gray-900" : "text-gray-600"
         )}
       >
-        {step.label}
+        {t(`jobTypes.${step.type}`)}
       </span>
     </div>
   );

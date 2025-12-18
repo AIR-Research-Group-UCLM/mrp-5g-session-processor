@@ -48,7 +48,7 @@ export interface SessionStatusResponse {
   progress: ProcessingProgress;
 }
 
-export type SearchMatchSource = "transcript" | "title" | "summary" | "keywords" | "tags";
+export type SearchMatchSource = "transcript" | "title" | "summary" | "keywords" | "tags" | "clinical_indicators";
 
 export interface SearchResult {
   sessionId: string;
