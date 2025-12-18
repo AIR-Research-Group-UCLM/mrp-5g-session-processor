@@ -19,6 +19,7 @@ export interface MedicalSession {
   userTags: string[] | null;
   notes: string | null;
   errorMessage: string | null;
+  isSimulated: boolean;
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
@@ -61,6 +62,7 @@ export interface SessionListItem
     | "userTags"
     | "videoDurationSeconds"
     | "language"
+    | "isSimulated"
     | "createdAt"
     | "completedAt"
   > {}

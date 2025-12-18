@@ -18,9 +18,16 @@ export function SessionCard({ session }: SessionCardProps) {
       <Card className="transition-shadow hover:shadow-md">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="font-medium text-gray-900">
-              {session.title ?? t("sessions.untitledSession")}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-medium text-gray-900">
+                {session.title ?? t("sessions.untitledSession")}
+              </h3>
+              {session.isSimulated && (
+                <Badge className="self-start" variant="secondary">
+                  {t("sessions.simulated")}
+                </Badge>
+              )}
+            </div>
             {session.summary && (
               <p className="mt-1 line-clamp-2 text-sm text-gray-500">{session.summary}</p>
             )}

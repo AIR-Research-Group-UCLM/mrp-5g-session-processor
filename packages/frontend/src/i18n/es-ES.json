@@ -29,6 +29,7 @@
   "navigation": {
     "home": "Inicio",
     "newSession": "Nueva Sesion",
+    "simulator": "Simulador",
     "mySessions": "Mis Sesiones"
   },
   "dashboard": {
@@ -47,7 +48,8 @@
     "all": "Todas",
     "confirmDelete": "Estas seguro de eliminar esta sesion?",
     "notFound": "Sesion no encontrada",
-    "backToSessions": "Volver a sesiones"
+    "backToSessions": "Volver a sesiones",
+    "simulated": "Simulada"
   },
   "newSession": {
     "title": "Nueva Sesion",
@@ -64,10 +66,34 @@
     "processSession": "Procesar Sesion"
   },
   "upload": {
-    "dropzone": "Arrastra un video o haz clic para seleccionar",
+    "dropzone": "Arrastra un video o audio, o haz clic para seleccionar",
     "dropzoneActive": "Suelta el archivo aqui",
-    "acceptedFormats": "MP4, WebM, MOV, AVI, MKV hasta 500MB",
+    "acceptedFormats": "Video: MP4, WebM, MOV, AVI, MKV | Audio: MP3, M4A, WAV, OGG (hasta 500MB)",
     "invalidFile": "Archivo no valido"
+  },
+  "simulator": {
+    "title": "Simulador de Sesiones",
+    "contextSection": "Contexto de la sesion",
+    "contextDescription": "Describe el escenario de la consulta medica que quieres simular",
+    "context": "Contexto",
+    "contextPlaceholder": "Ej: Paciente de 45 años acude por dolor de espalda de 3 dias de evolucion. El paciente tiene antecedentes de hernia discal. El medico debe explorar, diagnosticar y proponer tratamiento.",
+    "language": "Idioma de la simulacion",
+    "voicesSection": "Voces de los participantes",
+    "voicesDescription": "Selecciona la voz para cada participante de la simulacion",
+    "doctorVoice": "Voz del medico",
+    "patientVoice": "Voz del paciente",
+    "specialistVoice": "Voz del especialista",
+    "generate": "Generar Simulacion",
+    "progress": {
+      "title": "Generando simulacion",
+      "description": "Se esta generando la conversacion y el audio. Esto puede tomar unos minutos.",
+      "generatingConversation": "Generando conversacion",
+      "generatingAudio": "Generando audio",
+      "concatenatingAudio": "Empalmando audio",
+      "creatingSession": "Creando sesion"
+    },
+    "created": "Simulacion creada correctamente",
+    "error": "Error al crear la simulacion"
   },
   "processing": {
     "title": "Procesando sesion",

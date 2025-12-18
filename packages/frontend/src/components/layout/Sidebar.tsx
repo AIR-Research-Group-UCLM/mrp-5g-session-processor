@@ -1,11 +1,12 @@
 import { cn } from "@/utils/cn";
-import { FolderOpen, Home, PlusCircle } from "lucide-react";
+import { FolderOpen, Home, PlusCircle, Wand2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router-dom";
 
 const navItems = [
   { to: "/", icon: Home, labelKey: "navigation.home" },
   { to: "/new-session", icon: PlusCircle, labelKey: "navigation.newSession" },
+  { to: "/simulator", icon: Wand2, labelKey: "navigation.simulator" },
   { to: "/sessions", icon: FolderOpen, labelKey: "navigation.mySessions" },
 ];
 

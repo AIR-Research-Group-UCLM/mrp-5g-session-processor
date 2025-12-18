@@ -29,6 +29,7 @@
   "navigation": {
     "home": "Home",
     "newSession": "New Session",
+    "simulator": "Simulator",
     "mySessions": "My Sessions"
   },
   "dashboard": {
@@ -47,7 +48,8 @@
     "all": "All",
     "confirmDelete": "Are you sure you want to delete this session?",
     "notFound": "Session not found",
-    "backToSessions": "Back to sessions"
+    "backToSessions": "Back to sessions",
+    "simulated": "Simulated"
   },
   "newSession": {
     "title": "New Session",
@@ -64,10 +66,34 @@
     "processSession": "Process Session"
   },
   "upload": {
-    "dropzone": "Drag a video or click to select",
+    "dropzone": "Drag a video or audio file, or click to select",
     "dropzoneActive": "Drop the file here",
-    "acceptedFormats": "MP4, WebM, MOV, AVI, MKV up to 500MB",
+    "acceptedFormats": "Video: MP4, WebM, MOV, AVI, MKV | Audio: MP3, M4A, WAV, OGG (up to 500MB)",
     "invalidFile": "Invalid file"
+  },
+  "simulator": {
+    "title": "Session Simulator",
+    "contextSection": "Session context",
+    "contextDescription": "Describe the medical consultation scenario you want to simulate",
+    "context": "Context",
+    "contextPlaceholder": "E.g.: 45-year-old patient presents with back pain for 3 days. Patient has history of herniated disc. Doctor should examine, diagnose and propose treatment.",
+    "language": "Simulation language",
+    "voicesSection": "Participant voices",
+    "voicesDescription": "Select the voice for each participant in the simulation",
+    "doctorVoice": "Doctor voice",
+    "patientVoice": "Patient voice",
+    "specialistVoice": "Specialist voice",
+    "generate": "Generate Simulation",
+    "progress": {
+      "title": "Generating simulation",
+      "description": "The conversation and audio are being generated. This may take a few minutes.",
+      "generatingConversation": "Generating conversation",
+      "generatingAudio": "Generating audio",
+      "concatenatingAudio": "Concatenating audio",
+      "creatingSession": "Creating session"
+    },
+    "created": "Simulation created successfully",
+    "error": "Error creating simulation"
   },
   "processing": {
     "title": "Processing session",

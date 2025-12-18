@@ -4,6 +4,7 @@ import { config } from "./config/index.js";
 import { logger } from "./config/logger.js";
 import { initializeDatabase } from "./db/connection.js";
 import { queueService } from "./services/processing/queue.service.js";
+import { simulatorQueueService } from "./services/simulator/index.js";
 
 async function main() {
   try {
@@ -12,6 +13,9 @@ async function main() {
 
     await queueService.startWorker();
     logger.info("Processing worker started");
+
+    await simulatorQueueService.startWorker();
+    logger.info("Simulator worker started");
 
     const app = await createApp();
 

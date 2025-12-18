@@ -17,6 +17,20 @@ const openai = new OpenAI({
 
 interface DbSession {
   video_s3_key: string;
+  video_mime_type: string | null;
+}
+
+const AUDIO_MIMETYPES = [
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/ogg",
+  "audio/webm",
+];
+
+function isAudioFile(mimeType: string | null): boolean {
+  return mimeType ? AUDIO_MIMETYPES.includes(mimeType) : false;
 }
 
 interface DiarizedSegment {
@@ -44,52 +58,76 @@ export async function processTranscription(sessionId: string): Promise<void> {
 
   try {
     const session = db
-      .prepare("SELECT video_s3_key FROM medical_sessions WHERE id = ?")
+      .prepare("SELECT video_s3_key, video_mime_type FROM medical_sessions WHERE id = ?")
       .get(sessionId) as DbSession | undefined;
 
     if (!session?.video_s3_key) {
-      throw new Error("Session or video not found");
+      throw new Error("Session or media file not found");
     }
 
-    const videoUrl = await s3Service.getPresignedUrl(session.video_s3_key);
-    const videoPath = path.join(tempDir, "video.mp4");
+    const isAudio = isAudioFile(session.video_mime_type);
+    const mediaUrl = await s3Service.getPresignedUrl(session.video_s3_key);
+    const mediaExt = path.extname(session.video_s3_key) || (isAudio ? ".mp3" : ".mp4");
+    const mediaPath = path.join(tempDir, `media${mediaExt}`);
     const audioPath = path.join(tempDir, "audio.mp3");
 
-    logger.info({ sessionId, videoS3Key: session.video_s3_key }, "Downloading video from S3");
+    logger.info(
+      { sessionId, s3Key: session.video_s3_key, isAudio, mimeType: session.video_mime_type },
+      "Downloading media from S3"
+    );
 
-    const downloadResponse = await fetch(videoUrl);
+    const downloadResponse = await fetch(mediaUrl);
     if (!downloadResponse.ok) {
       throw new Error(
-        `Failed to download video: ${downloadResponse.status} ${downloadResponse.statusText}`
+        `Failed to download media: ${downloadResponse.status} ${downloadResponse.statusText}`
       );
     }
-    const videoBuffer = Buffer.from(await downloadResponse.arrayBuffer());
-    await fs.writeFile(videoPath, videoBuffer);
+    const mediaBuffer = Buffer.from(await downloadResponse.arrayBuffer());
+    await fs.writeFile(mediaPath, mediaBuffer);
 
-    const videoStats = await fs.stat(videoPath);
-    logger.info({ sessionId, videoSizeBytes: videoStats.size, videoPath }, "Video downloaded");
+    const mediaStats = await fs.stat(mediaPath);
+    logger.info({ sessionId, mediaSizeBytes: mediaStats.size, mediaPath, isAudio }, "Media downloaded");
 
-    logger.info({ sessionId }, "Extracting audio with ffmpeg");
-
-    try {
-      const { stdout: ffmpegOut, stderr: ffmpegErr } = await execAsync(
-        `ffmpeg -i "${videoPath}" -vn -acodec libmp3lame -ar 16000 -ac 1 -q:a 4 "${audioPath}" -y 2>&1`
-      );
-      logger.debug({ sessionId, ffmpegOut, ffmpegErr }, "ffmpeg output");
-    } catch (ffmpegError) {
-      const err = ffmpegError as Error & { stdout?: string; stderr?: string };
-      logger.error(
-        { sessionId, error: err.message, stdout: err.stdout, stderr: err.stderr },
-        "ffmpeg failed"
-      );
-      throw new Error(`ffmpeg extraction failed: ${err.message}`);
+    if (isAudio) {
+      // For audio files, convert to mp3 format suitable for transcription
+      logger.info({ sessionId }, "Converting audio with ffmpeg");
+      try {
+        const { stdout: ffmpegOut, stderr: ffmpegErr } = await execAsync(
+          `ffmpeg -i "${mediaPath}" -acodec libmp3lame -ar 16000 -ac 1 -q:a 4 "${audioPath}" -y 2>&1`
+        );
+        logger.debug({ sessionId, ffmpegOut, ffmpegErr }, "ffmpeg audio conversion output");
+      } catch (ffmpegError) {
+        const err = ffmpegError as Error & { stdout?: string; stderr?: string };
+        logger.error(
+          { sessionId, error: err.message, stdout: err.stdout, stderr: err.stderr },
+          "ffmpeg audio conversion failed"
+        );
+        throw new Error(`ffmpeg audio conversion failed: ${err.message}`);
+      }
+    } else {
+      // For video files, extract audio
+      logger.info({ sessionId }, "Extracting audio from video with ffmpeg");
+      try {
+        const { stdout: ffmpegOut, stderr: ffmpegErr } = await execAsync(
+          `ffmpeg -i "${mediaPath}" -vn -acodec libmp3lame -ar 16000 -ac 1 -q:a 4 "${audioPath}" -y 2>&1`
+        );
+        logger.debug({ sessionId, ffmpegOut, ffmpegErr }, "ffmpeg output");
+      } catch (ffmpegError) {
+        const err = ffmpegError as Error & { stdout?: string; stderr?: string };
+        logger.error(
+          { sessionId, error: err.message, stdout: err.stdout, stderr: err.stderr },
+          "ffmpeg failed"
+        );
+        throw new Error(`ffmpeg extraction failed: ${err.message}`);
+      }
     }
 
     const audioStats = await fs.stat(audioPath);
-    logger.info({ sessionId, audioSizeBytes: audioStats.size, audioPath }, "Audio extracted");
+    logger.info({ sessionId, audioSizeBytes: audioStats.size, audioPath }, "Audio ready for transcription");
 
+    // Get duration from the audio file (works for both audio and video sources)
     const { stdout: durationOutput } = await execAsync(
-      `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`
+      `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioPath}"`
     );
     const durationSeconds = Math.round(parseFloat(durationOutput.trim()));
 

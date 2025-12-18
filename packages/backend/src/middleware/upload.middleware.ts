@@ -6,11 +6,19 @@ import { AppError } from "./error.middleware.js";
 const UPLOAD_DIR = "./uploads";
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 const ALLOWED_MIMETYPES = [
+  // Video formats
   "video/mp4",
   "video/webm",
   "video/quicktime",
   "video/x-msvideo",
   "video/x-matroska",
+  // Audio formats
+  "audio/mpeg", // mp3
+  "audio/mp4", // m4a
+  "audio/wav",
+  "audio/x-wav",
+  "audio/ogg",
+  "audio/webm",
 ];
 
 if (!fs.existsSync(UPLOAD_DIR)) {

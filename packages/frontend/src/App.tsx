@@ -5,6 +5,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { NewSessionPage } from "@/pages/NewSessionPage";
 import { SessionDetailPage } from "@/pages/SessionDetailPage";
 import { SessionsPage } from "@/pages/SessionsPage";
+import { SimulatorPage } from "@/pages/SimulatorPage";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -39,6 +40,7 @@ export default function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="new-session" element={<NewSessionPage />} />
+        <Route path="simulator" element={<SimulatorPage />} />
         <Route path="sessions" element={<SessionsPage />} />
         <Route path="sessions/:id" element={<SessionDetailPage />} />
       </Route>

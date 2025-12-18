@@ -24,6 +24,15 @@ const envSchema = z.object({
   OPENAI_MODEL_TRANSCRIPTION: z.string().default("gpt-4o-transcribe-diarize"),
   OPENAI_MODEL_SEGMENTATION: z.string().default("gpt-5.1"),
   OPENAI_MODEL_METADATA: z.string().default("gpt-5.1"),
+
+  // ElevenLabs
+  ELEVENLABS_API_KEY: z.string(),
+
+  // Simulator
+  // Format: ID#Name;ID#Name;... (e.g., "abc123#Dr. Smith;def456#Patient Voice;ghi789#Specialist")
+  SIMULATOR_VOICES: z.string(),
+  SIMULATOR_PAUSE_BETWEEN_SEGMENTS_MS: z.coerce.number().default(1000),
+  SIMULATOR_AUDIO_CONCURRENCY: z.coerce.number().default(3),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -63,5 +72,21 @@ export const config = {
       segmentation: env.OPENAI_MODEL_SEGMENTATION,
       metadata: env.OPENAI_MODEL_METADATA,
     },
+  },
+
+  elevenlabs: {
+    apiKey: env.ELEVENLABS_API_KEY,
+  },
+
+  simulator: {
+    voices: env.SIMULATOR_VOICES.split(";")
+      .filter(Boolean)
+      .map((entry) => {
+        const [id, name] = entry.split(":");
+        return { id: id?.trim() ?? "", name: name?.trim() ?? "" };
+      })
+      .filter((v) => v.id && v.name),
+    pauseBetweenSegmentsMs: env.SIMULATOR_PAUSE_BETWEEN_SEGMENTS_MS,
+    audioConcurrency: env.SIMULATOR_AUDIO_CONCURRENCY,
   },
 };

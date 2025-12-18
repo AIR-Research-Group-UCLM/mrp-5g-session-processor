@@ -32,6 +32,7 @@ interface DbSession {
   user_tags: string | null;
   notes: string | null;
   error_message: string | null;
+  is_simulated: number;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
@@ -107,6 +108,7 @@ function mapDbSession(row: DbSession): MedicalSession {
     userTags: row.user_tags ? JSON.parse(row.user_tags) : null,
     notes: row.notes,
     errorMessage: row.error_message,
+    isSimulated: row.is_simulated === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     completedAt: row.completed_at,
@@ -174,7 +176,7 @@ async function listByUser(
   const offset = (page - 1) * pageSize;
 
   let query = `
-    SELECT id, title, status, summary, keywords, user_tags, video_duration_seconds, language, created_at, completed_at
+    SELECT id, title, status, summary, keywords, user_tags, video_duration_seconds, language, is_simulated, created_at, completed_at
     FROM medical_sessions
     WHERE user_id = ?
   `;
@@ -205,6 +207,7 @@ async function listByUser(
     userTags: row.user_tags ? JSON.parse(row.user_tags) : null,
     videoDurationSeconds: row.video_duration_seconds,
     language: row.language,
+    isSimulated: row.is_simulated === 1,
     createdAt: row.created_at,
     completedAt: row.completed_at,
   }));
