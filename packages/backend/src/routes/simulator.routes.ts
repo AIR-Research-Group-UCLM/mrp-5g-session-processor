@@ -7,5 +7,6 @@ export const simulatorRoutes = Router();
 simulatorRoutes.use(requireAuth);
 
 simulatorRoutes.get("/voices", simulatorController.getVoices);
+simulatorRoutes.post("/context-suggestion", simulatorController.generateContextSuggestion);
 simulatorRoutes.post("/", simulatorController.create);
 simulatorRoutes.get("/:id/status", simulatorController.getStatus);

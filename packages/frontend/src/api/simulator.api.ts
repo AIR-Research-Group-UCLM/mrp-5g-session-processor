@@ -43,3 +43,16 @@ export async function getSimulationStatus(
   }
   return response.data.data;
 }
+
+export async function generateContextSuggestion(
+  language: string
+): Promise<string> {
+  const response = await apiClient.post<
+    ApiResponse<{ suggestion: string }>
+  >("/simulator/context-suggestion", { language });
+
+  if (!response.data.data) {
+    throw new Error(response.data.error ?? "Failed to generate context suggestion");
+  }
+  return response.data.data.suggestion;
+}

@@ -47,3 +47,15 @@ export function useSimulationStatus(
     },
   });
 }
+
+export function useGenerateContextSuggestion() {
+  const { t } = useTranslation();
+
+  return useMutation({
+    mutationFn: (language: string) =>
+      simulatorApi.generateContextSuggestion(language),
+    onError: (error: Error) => {
+      toast.error(error.message || t("simulator.autoCompleteError"));
+    },
+  });
+}

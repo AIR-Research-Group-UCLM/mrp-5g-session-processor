@@ -1,8 +1,13 @@
 import type { RequestHandler } from "express";
 import { z } from "zod";
+import OpenAI from "openai";
 import { config } from "../config/index.js";
 import { simulatorService } from "../services/simulator/index.js";
-import { LANGUAGE_NAMES } from "@mrp/shared";
+import { LANGUAGE_NAMES, getLanguageName } from "@mrp/shared";
+
+const openai = new OpenAI({
+  apiKey: config.openai.apiKey,
+});
 
 const voiceSelectionSchema = z.object({
   DOCTOR: z.string().min(1, "Doctor voice is required"),
@@ -75,8 +80,47 @@ const getVoices: RequestHandler = (_req, res) => {
   });
 };
 
+const generateContextSuggestionSchema = z.object({
+  language: z.string().refine((val) => val in LANGUAGE_NAMES, {
+    message: `Invalid language. Allowed: ${Object.keys(LANGUAGE_NAMES).join(", ")}`,
+  }),
+});
+
+const generateContextSuggestion: RequestHandler = async (req, res, next) => {
+  try {
+    const { language } = generateContextSuggestionSchema.parse(req.body);
+    const languageName = getLanguageName(language);
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: `You are a medical scenario generator. Generate a single, concise sentence describing a realistic medical consultation scenario. The sentence should include: patient age, main symptom or reason for visit, and optionally relevant medical history. Keep it under 50 words. Generate the text in ${languageName}.`,
+        },
+        {
+          role: "user",
+          content: `Generate a medical consultation context in ${languageName}.`,
+        },
+      ],
+      max_tokens: 150,
+      temperature: 0.9,
+    });
+
+    const suggestion = completion.choices[0]?.message?.content?.trim() ?? "";
+
+    res.json({
+      success: true,
+      data: { suggestion },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const simulatorController = {
   create,
   getStatus,
   getVoices,
+  generateContextSuggestion,
 };

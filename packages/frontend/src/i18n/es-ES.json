@@ -93,7 +93,9 @@
       "creatingSession": "Creando sesion"
     },
     "created": "Simulacion creada correctamente",
-    "error": "Error al crear la simulacion"
+    "error": "Error al crear la simulacion",
+    "autoComplete": "Autocompletar",
+    "autoCompleteError": "Error al generar sugerencia"
   },
   "processing": {
     "title": "Procesando sesion",

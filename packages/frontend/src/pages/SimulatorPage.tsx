@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { SimulationProgress } from "@/components/simulator/SimulationProgress";
-import { useStartSimulation, useSimulatorVoices } from "@/hooks/useSimulator";
+import { useStartSimulation, useSimulatorVoices, useGenerateContextSuggestion } from "@/hooks/useSimulator";
 import { LANGUAGE_NAMES } from "@mrp/shared";
 
 export function SimulatorPage() {
@@ -13,6 +13,7 @@ export function SimulatorPage() {
   const navigate = useNavigate();
   const startSimulation = useStartSimulation();
   const { data: voices, isLoading: voicesLoading } = useSimulatorVoices();
+  const generateContextSuggestion = useGenerateContextSuggestion();
 
   const [context, setContext] = useState("");
   const [language, setLanguage] = useState("es");
@@ -64,6 +65,11 @@ export function SimulatorPage() {
     navigate(`/sessions/${sessionId}`);
   };
 
+  const handleAutoComplete = async () => {
+    const suggestion = await generateContextSuggestion.mutateAsync(language);
+    setContext(suggestion);
+  };
+
   if (simulationId) {
     return (
       <div className="mx-auto max-w-2xl">
@@ -95,12 +101,37 @@ export function SimulatorPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label
-                htmlFor="context"
-                className="mb-1.5 block text-sm font-medium text-gray-700"
-              >
-                {t("simulator.context")} *
-              </label>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label
+                  htmlFor="context"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  {t("simulator.context")} *
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAutoComplete}
+                  disabled={startSimulation.isPending || generateContextSuggestion.isPending}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {generateContextSuggestion.isPending ? (
+                    <>
+                      <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      {t("common.loading")}
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                      </svg>
+                      {t("simulator.autoComplete")}
+                    </>
+                  )}
+                </button>
+              </div>
               <textarea
                 id="context"
                 value={context}
