@@ -7,6 +7,7 @@ import type {
   Simulation,
   SimulationProgress,
   SimulationStatus,
+  SimulatorTimeline,
   SimulatorVoiceSelection,
 } from "@mrp/shared";
 
@@ -27,6 +28,20 @@ interface DbSimulation {
   error_message: string | null;
   created_at: string;
   updated_at: string;
+  completed_at: string | null;
+  conversation_started_at: string | null;
+  conversation_completed_at: string | null;
+  audio_started_at: string | null;
+  audio_completed_at: string | null;
+  concatenation_started_at: string | null;
+  concatenation_completed_at: string | null;
+  // Cost fields
+  conversation_input_tokens: number | null;
+  conversation_output_tokens: number | null;
+  conversation_cost_usd: number | null;
+  elevenlabs_characters: number | null;
+  elevenlabs_cost_usd: number | null;
+  total_cost_usd: number | null;
 }
 
 function mapDbSimulation(row: DbSimulation): Simulation {
@@ -47,6 +62,53 @@ function mapDbSimulation(row: DbSimulation): Simulation {
     errorMessage: row.error_message,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    completedAt: row.completed_at,
+    conversationStartedAt: row.conversation_started_at,
+    conversationCompletedAt: row.conversation_completed_at,
+    audioStartedAt: row.audio_started_at,
+    audioCompletedAt: row.audio_completed_at,
+    concatenationStartedAt: row.concatenation_started_at,
+    concatenationCompletedAt: row.concatenation_completed_at,
+    // Cost fields
+    conversationInputTokens: row.conversation_input_tokens,
+    conversationOutputTokens: row.conversation_output_tokens,
+    conversationCostUsd: row.conversation_cost_usd,
+    elevenlabsCharacters: row.elevenlabs_characters,
+    elevenlabsCostUsd: row.elevenlabs_cost_usd,
+    totalCostUsd: row.total_cost_usd,
+  };
+}
+
+function calculateDurationMs(startedAt: string | null, completedAt: string | null): number | null {
+  if (!startedAt || !completedAt) return null;
+  return new Date(completedAt).getTime() - new Date(startedAt).getTime();
+}
+
+function buildSimulatorTimeline(simulation: Simulation): SimulatorTimeline | null {
+  return {
+    conversationDurationMs: calculateDurationMs(
+      simulation.conversationStartedAt,
+      simulation.conversationCompletedAt
+    ),
+    audioDurationMs: calculateDurationMs(
+      simulation.audioStartedAt,
+      simulation.audioCompletedAt
+    ),
+    concatenationDurationMs: calculateDurationMs(
+      simulation.concatenationStartedAt,
+      simulation.concatenationCompletedAt
+    ),
+    totalDurationMs: calculateDurationMs(
+      simulation.createdAt,
+      simulation.completedAt
+    ),
+    // Cost fields
+    conversationInputTokens: simulation.conversationInputTokens,
+    conversationOutputTokens: simulation.conversationOutputTokens,
+    conversationCostUsd: simulation.conversationCostUsd,
+    elevenlabsCharacters: simulation.elevenlabsCharacters,
+    elevenlabsCostUsd: simulation.elevenlabsCostUsd,
+    totalCostUsd: simulation.totalCostUsd,
   };
 }
 
@@ -110,6 +172,7 @@ export function getSimulationProgress(simulationId: string): SimulationProgress 
     completedSegments: simulation.completedSegments,
     sessionId: simulation.sessionId,
     errorMessage: simulation.errorMessage,
+    timeline: buildSimulatorTimeline(simulation),
   };
 }
 
@@ -122,6 +185,19 @@ export function updateSimulationStatus(
     completedSegments?: number;
     sessionId?: string;
     errorMessage?: string;
+    conversationStartedAt?: string;
+    conversationCompletedAt?: string;
+    audioStartedAt?: string;
+    audioCompletedAt?: string;
+    concatenationStartedAt?: string;
+    concatenationCompletedAt?: string;
+    completedAt?: string;
+    // Cost fields
+    conversationInputTokens?: number;
+    conversationOutputTokens?: number;
+    conversationCostUsd?: number;
+    elevenlabsCostUsd?: number;
+    totalCostUsd?: number;
   }
 ): void {
   const db = getDb();
@@ -154,6 +230,67 @@ export function updateSimulationStatus(
     params.push(updates.errorMessage);
   }
 
+  if (updates?.conversationStartedAt !== undefined) {
+    setClause.push("conversation_started_at = ?");
+    params.push(updates.conversationStartedAt);
+  }
+
+  if (updates?.conversationCompletedAt !== undefined) {
+    setClause.push("conversation_completed_at = ?");
+    params.push(updates.conversationCompletedAt);
+  }
+
+  if (updates?.audioStartedAt !== undefined) {
+    setClause.push("audio_started_at = ?");
+    params.push(updates.audioStartedAt);
+  }
+
+  if (updates?.audioCompletedAt !== undefined) {
+    setClause.push("audio_completed_at = ?");
+    params.push(updates.audioCompletedAt);
+  }
+
+  if (updates?.concatenationStartedAt !== undefined) {
+    setClause.push("concatenation_started_at = ?");
+    params.push(updates.concatenationStartedAt);
+  }
+
+  if (updates?.concatenationCompletedAt !== undefined) {
+    setClause.push("concatenation_completed_at = ?");
+    params.push(updates.concatenationCompletedAt);
+  }
+
+  if (updates?.completedAt !== undefined) {
+    setClause.push("completed_at = ?");
+    params.push(updates.completedAt);
+  }
+
+  // Cost fields
+  if (updates?.conversationInputTokens !== undefined) {
+    setClause.push("conversation_input_tokens = ?");
+    params.push(updates.conversationInputTokens);
+  }
+
+  if (updates?.conversationOutputTokens !== undefined) {
+    setClause.push("conversation_output_tokens = ?");
+    params.push(updates.conversationOutputTokens);
+  }
+
+  if (updates?.conversationCostUsd !== undefined) {
+    setClause.push("conversation_cost_usd = ?");
+    params.push(updates.conversationCostUsd);
+  }
+
+  if (updates?.elevenlabsCostUsd !== undefined) {
+    setClause.push("elevenlabs_cost_usd = ?");
+    params.push(updates.elevenlabsCostUsd);
+  }
+
+  if (updates?.totalCostUsd !== undefined) {
+    setClause.push("total_cost_usd = ?");
+    params.push(updates.totalCostUsd);
+  }
+
   params.push(simulationId);
 
   db.prepare(`UPDATE simulations SET ${setClause.join(", ")} WHERE id = ?`).run(...params);
@@ -177,10 +314,29 @@ export function incrementCompletedSegments(simulationId: string): number {
   return row?.completed_segments ?? 0;
 }
 
+export function incrementElevenlabsCharacters(simulationId: string, characterCount: number): number {
+  const db = getDb();
+
+  db.prepare(
+    `
+    UPDATE simulations
+    SET elevenlabs_characters = COALESCE(elevenlabs_characters, 0) + ?, updated_at = datetime('now')
+    WHERE id = ?
+  `
+  ).run(characterCount, simulationId);
+
+  const row = db
+    .prepare("SELECT elevenlabs_characters FROM simulations WHERE id = ?")
+    .get(simulationId) as { elevenlabs_characters: number | null } | undefined;
+
+  return row?.elevenlabs_characters ?? 0;
+}
+
 export const simulatorService = {
   startSimulation,
   getSimulation,
   getSimulationProgress,
   updateSimulationStatus,
   incrementCompletedSegments,
+  incrementElevenlabsCharacters,
 };

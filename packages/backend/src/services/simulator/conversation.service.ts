@@ -34,12 +34,13 @@ Rules:
 4. Include a clear moment where the DOCTOR announces they will connect with a specialist via the VR glasses
 5. The SPECIALIST should acknowledge joining remotely and being able to see/hear the consultation
 6. Use appropriate medical terminology for the language
-7. Keep segments relatively short (1-3 sentences each)
-8. Generate between 30-50 segments for a realistic consultation length
+7. Keep segments SHORT (1-2 sentences each, around 15-30 words per segment)
+8. TARGET DURATION: Generate 35-45 segments to create an 8-10 minute conversation (aim for ~1000-1200 total words)
 9. Only use speakers: DOCTOR, PATIENT, SPECIALIST
 10. Make the conversation flow naturally with appropriate responses
 11. Include realistic medical details based on the context provided
 12. The SPECIALIST should appear at least 8-12 times throughout the conversation after joining
+13. Avoid overly long monologues - keep the dialogue dynamic and interactive
 
 Return ONLY a valid JSON object with this exact format:
 {
@@ -51,10 +52,17 @@ Return ONLY a valid JSON object with this exact format:
   ]
 }`;
 
+export interface ConversationCostResult {
+  transcript: SimulatedTranscript;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+}
+
 export async function generateConversation(
   context: string,
   language: string
-): Promise<SimulatedTranscript> {
+): Promise<ConversationCostResult> {
   const languageName = getLanguageName(language);
 
   logger.info({ language, languageName, contextLength: context.length }, "Generating conversation");
@@ -73,7 +81,8 @@ Remember to:
 - Include a clear moment where the doctor puts on the VR glasses and the specialist acknowledges joining
 - The three participants collaborate until the consultation is resolved
 - Include proper medical terminology
-- MANDATORY: Include ALL THREE speakers (DOCTOR, PATIENT, SPECIALIST) - the specialist must NOT appear until the connection moment`;
+- MANDATORY: Include ALL THREE speakers (DOCTOR, PATIENT, SPECIALIST) - the specialist must NOT appear until the connection moment
+- TARGET: Generate 35-45 segments with 15-30 words each, for a total of 8-10 minutes of audio`;
 
   const completion = await openai.chat.completions.create({
     model: config.openai.models.segmentation,
@@ -127,5 +136,14 @@ Remember to:
     "Conversation generated successfully"
   );
 
-  return parsed;
+  // Get token usage and calculate cost
+  const inputTokens = completion.usage?.prompt_tokens ?? 0;
+  const outputTokens = completion.usage?.completion_tokens ?? 0;
+  const costUsd =
+    (inputTokens / 1_000_000) * config.pricing.openai.inputPer1M +
+    (outputTokens / 1_000_000) * config.pricing.openai.outputPer1M;
+
+  logger.info({ language, inputTokens, outputTokens, costUsd }, "Conversation cost calculated");
+
+  return { transcript: parsed, inputTokens, outputTokens, costUsd };
 }

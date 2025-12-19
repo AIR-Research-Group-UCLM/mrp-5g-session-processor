@@ -1,4 +1,5 @@
 import { ClinicalIndicatorsPanel } from "@/components/sessions/ClinicalIndicatorsPanel";
+import { ProcessingTimeline } from "@/components/sessions/ProcessingTimeline";
 import { TranscriptViewer } from "@/components/sessions/TranscriptViewer";
 import { Badge, SessionStatusBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -285,6 +286,14 @@ export function SessionDetailPage() {
 
             {session.clinicalIndicators && (
               <ClinicalIndicatorsPanel indicators={session.clinicalIndicators} />
+            )}
+
+            {session.status === "completed" && (
+              <ProcessingTimeline
+                processingTimeline={session.processingTimeline}
+                simulationTimeline={session.simulationTimeline}
+                isSimulated={session.isSimulated}
+              />
             )}
           </div>
 

@@ -1,9 +1,7 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   PORT: z.string().default("3001"),
   SESSION_SECRET: z.string().min(32),
   DATABASE_PATH: z.string().default("./data/mrp.db"),
@@ -33,6 +31,12 @@ const envSchema = z.object({
   SIMULATOR_VOICES: z.string(),
   SIMULATOR_PAUSE_BETWEEN_SEGMENTS_MS: z.coerce.number().default(1000),
   SIMULATOR_AUDIO_CONCURRENCY: z.coerce.number().default(3),
+
+  // Pricing (USD)
+  OPENAI_PRICE_TRANSCRIPTION_PER_MINUTE: z.coerce.number().default(0.006),
+  OPENAI_PRICE_INPUT_PER_1M: z.coerce.number().default(1.25),
+  OPENAI_PRICE_OUTPUT_PER_1M: z.coerce.number().default(10.0),
+  ELEVENLABS_PRICE_PER_1K_CHARS: z.coerce.number().default(0.3),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -88,5 +92,16 @@ export const config = {
       .filter((v) => v.id && v.name),
     pauseBetweenSegmentsMs: env.SIMULATOR_PAUSE_BETWEEN_SEGMENTS_MS,
     audioConcurrency: env.SIMULATOR_AUDIO_CONCURRENCY,
+  },
+
+  pricing: {
+    openai: {
+      transcriptionPerMinute: env.OPENAI_PRICE_TRANSCRIPTION_PER_MINUTE,
+      inputPer1M: env.OPENAI_PRICE_INPUT_PER_1M,
+      outputPer1M: env.OPENAI_PRICE_OUTPUT_PER_1M,
+    },
+    elevenlabs: {
+      per1kChars: env.ELEVENLABS_PRICE_PER_1K_CHARS,
+    },
   },
 };

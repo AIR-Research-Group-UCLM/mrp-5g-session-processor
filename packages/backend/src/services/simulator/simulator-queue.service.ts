@@ -49,10 +49,14 @@ async function processGenerateConversation(simulationId: string): Promise<void> 
 
   simulatorService.updateSimulationStatus(simulationId, "generating-conversation", {
     currentStep: "generate-conversation",
+    conversationStartedAt: new Date().toISOString(),
   });
 
   // Generate the conversation
-  const transcript = await generateConversation(simulation.context, simulation.language);
+  const { transcript, inputTokens, outputTokens, costUsd } = await generateConversation(
+    simulation.context,
+    simulation.language
+  );
 
   // Save transcript to S3
   const transcriptS3Key = `simulations/${simulationId}/transcript.json`;
@@ -66,11 +70,17 @@ async function processGenerateConversation(simulationId: string): Promise<void> 
     await fs.rm(tempDir, { recursive: true, force: true });
   }
 
-  // Update simulation with total segments
+  // Update simulation with total segments and conversation cost
+  const now = new Date().toISOString();
   simulatorService.updateSimulationStatus(simulationId, "generating-audio", {
     currentStep: "generate-audio",
     totalSegments: transcript.segments.length,
     completedSegments: 0,
+    conversationCompletedAt: now,
+    audioStartedAt: now,
+    conversationInputTokens: inputTokens,
+    conversationOutputTokens: outputTokens,
+    conversationCostUsd: costUsd,
   });
 
   // Enqueue audio generation jobs for each segment
@@ -97,7 +107,7 @@ async function processGenerateConversation(simulationId: string): Promise<void> 
   }
 
   logger.info(
-    { simulationId, segmentCount: transcript.segments.length },
+    { simulationId, segmentCount: transcript.segments.length, inputTokens, outputTokens, costUsd },
     "Conversation generated, audio jobs enqueued"
   );
 }
@@ -115,18 +125,19 @@ async function processGenerateAudio(
     const segmentFileName = `segment_${segmentIndex.toString().padStart(4, "0")}.mp3`;
     const localPath = path.join(tempDir, segmentFileName);
 
-    await generateSegmentAudio(text, voiceId, localPath);
+    const { characterCount } = await generateSegmentAudio(text, voiceId, localPath);
 
     // Upload to S3
     const s3Key = `simulations/${simulationId}/segments/${segmentFileName}`;
     await s3Service.uploadFile(s3Key, localPath, "audio/mpeg");
 
-    // Increment completed count and check if all done
+    // Increment completed count and accumulate character count
     const completedCount = simulatorService.incrementCompletedSegments(simulationId);
+    simulatorService.incrementElevenlabsCharacters(simulationId, characterCount);
     const simulation = simulatorService.getSimulation(simulationId);
 
     logger.info(
-      { simulationId, segmentIndex, completedCount, total: simulation?.totalSegments },
+      { simulationId, segmentIndex, completedCount, characterCount, total: simulation?.totalSegments },
       "Audio segment generated"
     );
 
@@ -150,9 +161,28 @@ async function processConcatenateAudio(simulationId: string): Promise<void> {
     throw new Error(`Simulation not found: ${simulationId}`);
   }
 
+  const concatStartTime = new Date().toISOString();
+
+  // Calculate ElevenLabs cost from accumulated characters
+  const elevenlabsCharacters = simulation.elevenlabsCharacters ?? 0;
+  const elevenlabsCostUsd = (elevenlabsCharacters / 1000) * config.pricing.elevenlabs.per1kChars;
+
+  // Calculate total simulation cost (conversation + audio)
+  const conversationCostUsd = simulation.conversationCostUsd ?? 0;
+  const totalCostUsd = conversationCostUsd + elevenlabsCostUsd;
+
   simulatorService.updateSimulationStatus(simulationId, "concatenating-audio", {
     currentStep: "concatenate-audio",
+    audioCompletedAt: concatStartTime,
+    concatenationStartedAt: concatStartTime,
+    elevenlabsCostUsd,
+    totalCostUsd,
   });
+
+  logger.info(
+    { simulationId, elevenlabsCharacters, elevenlabsCostUsd, conversationCostUsd, totalCostUsd },
+    "Simulation costs calculated"
+  );
 
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "mrp-concat-"));
 
@@ -246,8 +276,11 @@ async function processConcatenateAudio(simulationId: string): Promise<void> {
     await queueService.enqueueProcessing(sessionId);
 
     // Mark simulation as completed
+    const completedAt = new Date().toISOString();
     simulatorService.updateSimulationStatus(simulationId, "completed", {
       currentStep: null,
+      concatenationCompletedAt: completedAt,
+      completedAt,
     });
 
     logger.info(

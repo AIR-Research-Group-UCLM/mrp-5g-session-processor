@@ -10,9 +10,13 @@ import type {
   TranscriptSection,
   SectionSummary,
   ProcessingProgress,
+  ProcessingTimeline,
+  ProcessingStepTiming,
+  SimulationTimeline,
   CreateSessionInput,
   UpdateSessionInput,
   ClinicalIndicators,
+  JobType,
 } from "@mrp/shared";
 import fs from "node:fs/promises";
 
@@ -35,7 +39,9 @@ interface DbSession {
   is_simulated: number;
   created_at: string;
   updated_at: string;
+  started_at: string | null;
   completed_at: string | null;
+  processing_cost_usd: number | null;
 }
 
 interface DbTranscriptSection {
@@ -62,6 +68,10 @@ interface DbProcessingJob {
   started_at: string | null;
   completed_at: string | null;
   created_at: string;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  audio_duration_seconds: number | null;
+  cost_usd: number | null;
 }
 
 interface DbSectionSummary {
@@ -91,6 +101,24 @@ interface DbClinicalIndicators {
   updated_at: string;
 }
 
+interface DbSimulationTiming {
+  created_at: string;
+  completed_at: string | null;
+  conversation_started_at: string | null;
+  conversation_completed_at: string | null;
+  audio_started_at: string | null;
+  audio_completed_at: string | null;
+  concatenation_started_at: string | null;
+  concatenation_completed_at: string | null;
+  // Cost fields
+  conversation_input_tokens: number | null;
+  conversation_output_tokens: number | null;
+  conversation_cost_usd: number | null;
+  elevenlabs_characters: number | null;
+  elevenlabs_cost_usd: number | null;
+  total_cost_usd: number | null;
+}
+
 function mapDbSession(row: DbSession): MedicalSession {
   return {
     id: row.id,
@@ -111,7 +139,9 @@ function mapDbSession(row: DbSession): MedicalSession {
     isSimulated: row.is_simulated === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    startedAt: row.started_at,
     completedAt: row.completed_at,
+    processingCostUsd: row.processing_cost_usd,
   };
 }
 
@@ -160,6 +190,78 @@ function mapDbClinicalIndicators(row: DbClinicalIndicators): ClinicalIndicators 
   };
 }
 
+function calculateDurationMs(startedAt: string | null, completedAt: string | null): number | null {
+  if (!startedAt || !completedAt) return null;
+  return new Date(completedAt).getTime() - new Date(startedAt).getTime();
+}
+
+function buildProcessingTimeline(jobs: DbProcessingJob[]): ProcessingTimeline | null {
+  if (jobs.length === 0) return null;
+
+  const jobTypes: JobType[] = ["transcribe", "segment", "generate-metadata", "complete"];
+  const steps: ProcessingStepTiming[] = jobTypes.map((type) => {
+    const job = jobs.find((j) => j.job_type === type);
+    const startedAt = job?.started_at ?? null;
+    const completedAt = job?.completed_at ?? null;
+    return {
+      type,
+      status: (job?.status ?? "pending") as ProcessingStepTiming["status"],
+      startedAt,
+      completedAt,
+      durationMs: calculateDurationMs(startedAt, completedAt),
+      inputTokens: job?.input_tokens ?? null,
+      outputTokens: job?.output_tokens ?? null,
+      audioDurationSeconds: job?.audio_duration_seconds ?? null,
+      costUsd: job?.cost_usd ?? null,
+    };
+  });
+
+  // Calculate total duration as sum of individual steps (not wall-clock time)
+  const totalDurationMs = steps.reduce((sum, step) => sum + (step.durationMs ?? 0), 0) || null;
+
+  // Calculate total cost from all jobs
+  const totalCostUsd = jobs.reduce((sum, job) => sum + (job.cost_usd ?? 0), 0) || null;
+
+  return {
+    steps,
+    totalDurationMs,
+    totalCostUsd,
+  };
+}
+
+function buildSimulationTimeline(simulation: DbSimulationTiming): SimulationTimeline | null {
+  const conversationDurationMs = calculateDurationMs(
+    simulation.conversation_started_at,
+    simulation.conversation_completed_at
+  );
+  const audioDurationMs = calculateDurationMs(
+    simulation.audio_started_at,
+    simulation.audio_completed_at
+  );
+  const concatenationDurationMs = calculateDurationMs(
+    simulation.concatenation_started_at,
+    simulation.concatenation_completed_at
+  );
+
+  // Calculate total as sum of individual steps (not wall-clock time)
+  const totalDurationMs =
+    (conversationDurationMs ?? 0) + (audioDurationMs ?? 0) + (concatenationDurationMs ?? 0) || null;
+
+  return {
+    conversationDurationMs,
+    audioDurationMs,
+    concatenationDurationMs,
+    totalDurationMs,
+    // Cost fields
+    conversationInputTokens: simulation.conversation_input_tokens,
+    conversationOutputTokens: simulation.conversation_output_tokens,
+    conversationCostUsd: simulation.conversation_cost_usd,
+    elevenlabsCharacters: simulation.elevenlabs_characters,
+    elevenlabsCostUsd: simulation.elevenlabs_cost_usd,
+    totalCostUsd: simulation.total_cost_usd,
+  };
+}
+
 interface ListOptions {
   page: number;
   pageSize: number;
@@ -176,7 +278,7 @@ async function listByUser(
   const offset = (page - 1) * pageSize;
 
   let query = `
-    SELECT id, title, status, summary, keywords, user_tags, video_duration_seconds, language, is_simulated, created_at, completed_at
+    SELECT id, title, status, summary, keywords, user_tags, video_duration_seconds, language, is_simulated, created_at, started_at, completed_at, processing_cost_usd
     FROM medical_sessions
     WHERE user_id = ?
   `;
@@ -198,19 +300,31 @@ async function listByUser(
   const countParams = status ? [userId, status] : [userId];
   const { count } = db.prepare(countQuery).get(...countParams) as { count: number };
 
-  const sessions: SessionListItem[] = rows.map((row) => ({
-    id: row.id,
-    title: row.title,
-    status: row.status as SessionListItem["status"],
-    summary: row.summary,
-    keywords: row.keywords ? JSON.parse(row.keywords) : null,
-    userTags: row.user_tags ? JSON.parse(row.user_tags) : null,
-    videoDurationSeconds: row.video_duration_seconds,
-    language: row.language,
-    isSimulated: row.is_simulated === 1,
-    createdAt: row.created_at,
-    completedAt: row.completed_at,
-  }));
+  const sessions: SessionListItem[] = rows.map((row) => {
+    const startedAt = row.started_at;
+    const completedAt = row.completed_at;
+    const processingDurationMs =
+      startedAt && completedAt
+        ? new Date(completedAt).getTime() - new Date(startedAt).getTime()
+        : null;
+
+    return {
+      id: row.id,
+      title: row.title,
+      status: row.status as SessionListItem["status"],
+      summary: row.summary,
+      keywords: row.keywords ? JSON.parse(row.keywords) : null,
+      userTags: row.user_tags ? JSON.parse(row.user_tags) : null,
+      videoDurationSeconds: row.video_duration_seconds,
+      language: row.language,
+      isSimulated: row.is_simulated === 1,
+      createdAt: row.created_at,
+      startedAt,
+      completedAt,
+      processingDurationMs,
+      processingCostUsd: row.processing_cost_usd,
+    };
+  });
 
   return {
     sessions,
@@ -291,10 +405,34 @@ async function getByIdWithTranscript(
     .prepare("SELECT * FROM clinical_indicators WHERE session_id = ?")
     .get(sessionId) as DbClinicalIndicators | undefined;
 
+  // Get processing jobs for timeline
+  const processingJobs = db
+    .prepare("SELECT * FROM processing_jobs WHERE session_id = ? ORDER BY created_at")
+    .all(sessionId) as DbProcessingJob[];
+
+  // Get simulation timing if this is a simulated session
+  let simulationTimeline: SimulationTimeline | null = null;
+  if (sessionRow.is_simulated === 1) {
+    const simulationRow = db
+      .prepare(`
+        SELECT created_at, completed_at, conversation_started_at, conversation_completed_at,
+               audio_started_at, audio_completed_at, concatenation_started_at, concatenation_completed_at,
+               conversation_input_tokens, conversation_output_tokens, conversation_cost_usd,
+               elevenlabs_characters, elevenlabs_cost_usd, total_cost_usd
+        FROM simulations WHERE session_id = ?
+      `)
+      .get(sessionId) as DbSimulationTiming | undefined;
+
+    if (simulationRow) {
+      simulationTimeline = buildSimulationTimeline(simulationRow);
+    }
+  }
+
   const session = mapDbSession(sessionRow);
   const transcript = transcriptRows.map(mapDbTranscriptSection);
   const sectionSummaries = summaryRows.map(mapDbSectionSummary);
   const clinicalIndicators = indicatorsRow ? mapDbClinicalIndicators(indicatorsRow) : null;
+  const processingTimeline = buildProcessingTimeline(processingJobs);
 
   let videoUrl: string | null = null;
   if (session.videoS3Key) {
@@ -307,6 +445,8 @@ async function getByIdWithTranscript(
       transcript,
       sectionSummaries,
       clinicalIndicators,
+      processingTimeline,
+      simulationTimeline,
     },
     videoUrl,
   };
@@ -319,8 +459,8 @@ async function getProcessingStatus(
   const db = getDb();
 
   const sessionRow = db
-    .prepare("SELECT status, error_message FROM medical_sessions WHERE id = ? AND user_id = ?")
-    .get(sessionId, userId) as { status: string; error_message: string | null } | undefined;
+    .prepare("SELECT status, error_message, started_at, completed_at FROM medical_sessions WHERE id = ? AND user_id = ?")
+    .get(sessionId, userId) as { status: string; error_message: string | null; started_at: string | null; completed_at: string | null } | undefined;
 
   if (!sessionRow) {
     return null;
@@ -332,23 +472,39 @@ async function getProcessingStatus(
     )
     .all(sessionId) as DbProcessingJob[];
 
-  const jobTypes = ["transcribe", "segment", "generate-metadata", "complete"] as const;
-  const steps = jobTypes.map((type) => {
+  const jobTypes: JobType[] = ["transcribe", "segment", "generate-metadata", "complete"];
+  const steps: ProcessingStepTiming[] = jobTypes.map((type) => {
     const job = jobs.find((j) => j.job_type === type);
+    const startedAt = job?.started_at ?? null;
+    const completedAt = job?.completed_at ?? null;
     return {
       type,
-      status: (job?.status ?? "pending") as ProcessingProgress["status"],
+      status: (job?.status ?? "pending") as ProcessingStepTiming["status"],
+      startedAt,
+      completedAt,
+      durationMs: calculateDurationMs(startedAt, completedAt),
+      inputTokens: job?.input_tokens ?? null,
+      outputTokens: job?.output_tokens ?? null,
+      audioDurationSeconds: job?.audio_duration_seconds ?? null,
+      costUsd: job?.cost_usd ?? null,
     };
   });
 
   const currentJob = jobs.find((j) => j.status === "processing");
 
+  // Calculate total cost from all jobs
+  const totalCostUsd = jobs.reduce((sum, job) => sum + (job.cost_usd ?? 0), 0) || null;
+
   return {
     sessionId,
     status: sessionRow.status as ProcessingProgress["status"],
-    currentStep: currentJob?.job_type as ProcessingProgress["currentStep"] ?? null,
+    currentStep: (currentJob?.job_type as ProcessingProgress["currentStep"]) ?? null,
     steps,
     errorMessage: sessionRow.error_message,
+    totalDurationMs: calculateDurationMs(sessionRow.started_at, sessionRow.completed_at),
+    totalCostUsd,
+    startedAt: sessionRow.started_at,
+    completedAt: sessionRow.completed_at,
   };
 }
 

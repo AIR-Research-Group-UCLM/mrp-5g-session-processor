@@ -45,6 +45,12 @@ interface SectionSummaryResult {
   summary: string;
 }
 
+export interface SegmentationCostResult {
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+}
+
 // Build prompt with section descriptions
 function buildSegmentationPrompt(outputLanguage: string): string {
   const sectionList = SECTION_TYPES_LIST.map((type) => `- ${type}: ${SECTION_DESCRIPTIONS[type]}`).join("\n");
@@ -88,7 +94,7 @@ Rules:
 CRITICAL: Generate all summaries in ${languageName}.`;
 }
 
-export async function processSegmentation(sessionId: string): Promise<void> {
+export async function processSegmentation(sessionId: string): Promise<SegmentationCostResult> {
   const db = getDb();
 
   const session = db
@@ -171,12 +177,24 @@ export async function processSegmentation(sessionId: string): Promise<void> {
 
   insertAll();
 
+  // Get token usage and calculate cost
+  const inputTokens = completion.usage?.prompt_tokens ?? 0;
+  const outputTokens = completion.usage?.completion_tokens ?? 0;
+  const costUsd =
+    (inputTokens / 1_000_000) * config.pricing.openai.inputPer1M +
+    (outputTokens / 1_000_000) * config.pricing.openai.outputPer1M;
+
   logger.info(
     {
       sessionId,
       sectionCount: result.sections.length,
       summaryCount: result.sectionSummaries?.length ?? 0,
+      inputTokens,
+      outputTokens,
+      costUsd,
     },
     "Segmentation completed"
   );
+
+  return { inputTokens, outputTokens, costUsd };
 }

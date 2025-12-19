@@ -110,7 +110,13 @@ interface SessionInfoWithLanguage extends SessionInfo {
   language: string | null;
 }
 
-export async function processMetadata(sessionId: string): Promise<void> {
+export interface MetadataCostResult {
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+}
+
+export async function processMetadata(sessionId: string): Promise<MetadataCostResult> {
   const db = getDb();
 
   // Check if title and tags already exist, and get language
@@ -290,4 +296,15 @@ export async function processMetadata(sessionId: string): Promise<void> {
       "Clinical indicators saved"
     );
   }
+
+  // Get token usage and calculate cost
+  const inputTokens = completion.usage?.prompt_tokens ?? 0;
+  const outputTokens = completion.usage?.completion_tokens ?? 0;
+  const costUsd =
+    (inputTokens / 1_000_000) * config.pricing.openai.inputPer1M +
+    (outputTokens / 1_000_000) * config.pricing.openai.outputPer1M;
+
+  logger.info({ sessionId, inputTokens, outputTokens, costUsd }, "Metadata cost calculated");
+
+  return { inputTokens, outputTokens, costUsd };
 }

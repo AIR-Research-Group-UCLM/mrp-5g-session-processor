@@ -29,3 +29,31 @@ export function formatFileSize(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
+
+/**
+ * Format milliseconds as human-readable processing duration
+ * Examples: "2s", "1m 30s", "5m 45s"
+ */
+export function formatProcessingDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return `${seconds}s`;
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (remainingSeconds === 0) return `${minutes}m`;
+  return `${minutes}m ${remainingSeconds}s`;
+}
+
+/**
+ * Format USD cost amount
+ * Examples: "$0.03", "$1.25", "< $0.01"
+ */
+export function formatCost(usdAmount: number): string {
+  if (usdAmount < 0.01) {
+    return "< $0.01";
+  }
+  return `$${usdAmount.toFixed(2)}`;
+}

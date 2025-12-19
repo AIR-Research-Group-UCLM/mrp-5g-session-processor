@@ -52,17 +52,35 @@ async function startWorker(): Promise<void> {
       `
       ).run(sessionId, step);
 
-      db.prepare(
+      // For the first step (transcribe), also record started_at on the session
+      if (step === "transcribe") {
+        db.prepare(
+          `
+          UPDATE medical_sessions SET status = 'processing', started_at = datetime('now'), updated_at = datetime('now')
+          WHERE id = ?
         `
-        UPDATE medical_sessions SET status = 'processing', updated_at = datetime('now')
-        WHERE id = ?
-      `
-      ).run(sessionId);
+        ).run(sessionId);
+      } else {
+        db.prepare(
+          `
+          UPDATE medical_sessions SET status = 'processing', updated_at = datetime('now')
+          WHERE id = ?
+        `
+        ).run(sessionId);
+      }
 
       try {
+        // Variables to store cost data for this step
+        let inputTokens: number | null = null;
+        let outputTokens: number | null = null;
+        let audioDurationSeconds: number | null = null;
+        let costUsd: number | null = null;
+
         switch (step) {
-          case "transcribe":
-            await processTranscription(sessionId);
+          case "transcribe": {
+            const result = await processTranscription(sessionId);
+            audioDurationSeconds = result.audioDurationSeconds;
+            costUsd = result.costUsd;
             await videoQueue.add(
               "segment",
               { sessionId, step: "segment" },
@@ -75,9 +93,13 @@ async function startWorker(): Promise<void> {
             `
             ).run(`${sessionId}-segment`, sessionId);
             break;
+          }
 
-          case "segment":
-            await processSegmentation(sessionId);
+          case "segment": {
+            const result = await processSegmentation(sessionId);
+            inputTokens = result.inputTokens;
+            outputTokens = result.outputTokens;
+            costUsd = result.costUsd;
             await videoQueue.add(
               "generate-metadata",
               { sessionId, step: "generate-metadata" },
@@ -90,9 +112,13 @@ async function startWorker(): Promise<void> {
             `
             ).run(`${sessionId}-metadata`, sessionId);
             break;
+          }
 
-          case "generate-metadata":
-            await processMetadata(sessionId);
+          case "generate-metadata": {
+            const result = await processMetadata(sessionId);
+            inputTokens = result.inputTokens;
+            outputTokens = result.outputTokens;
+            costUsd = result.costUsd;
             await videoQueue.add(
               "complete",
               { sessionId, step: "complete" },
@@ -105,24 +131,39 @@ async function startWorker(): Promise<void> {
             `
             ).run(`${sessionId}-complete`, sessionId);
             break;
+          }
 
-          case "complete":
+          case "complete": {
+            // Calculate total processing cost from all jobs
+            const totalCost = db
+              .prepare(
+                `
+                SELECT COALESCE(SUM(cost_usd), 0) as total
+                FROM processing_jobs
+                WHERE session_id = ? AND cost_usd IS NOT NULL
+              `
+              )
+              .get(sessionId) as { total: number };
+
             db.prepare(
               `
               UPDATE medical_sessions
-              SET status = 'completed', completed_at = datetime('now'), updated_at = datetime('now')
+              SET status = 'completed', completed_at = datetime('now'), updated_at = datetime('now'), processing_cost_usd = ?
               WHERE id = ?
             `
-            ).run(sessionId);
+            ).run(totalCost.total, sessionId);
             break;
+          }
         }
 
         db.prepare(
           `
-          UPDATE processing_jobs SET status = 'completed', completed_at = datetime('now')
+          UPDATE processing_jobs
+          SET status = 'completed', completed_at = datetime('now'),
+              input_tokens = ?, output_tokens = ?, audio_duration_seconds = ?, cost_usd = ?
           WHERE session_id = ? AND job_type = ?
         `
-        ).run(sessionId, step);
+        ).run(inputTokens, outputTokens, audioDurationSeconds, costUsd, sessionId, step);
 
         logger.info({ sessionId, step }, "Processing step completed");
       } catch (error) {

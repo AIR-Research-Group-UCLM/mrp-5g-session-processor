@@ -240,5 +240,34 @@
     "selector": "Idioma",
     "es-ES": "Español",
     "en-GB": "Inglés"
+  },
+  "timing": {
+    "title": "Tiempos de procesamiento",
+    "processingTime": "Tiempo de procesamiento",
+    "totalTime": "Tiempo total",
+    "subtotal": "Subtotal",
+    "simulationSteps": "Generacion de simulacion",
+    "processingSteps": "Procesamiento de sesion",
+    "conversationGeneration": "Generacion de conversacion",
+    "audioGeneration": "Generacion de audio",
+    "audioConcatenation": "Concatenacion de audio",
+    "transcribe": "Transcripcion",
+    "segment": "Segmentacion",
+    "generate-metadata": "Generacion de metadatos"
+  },
+  "costs": {
+    "title": "Costes de procesamiento",
+    "totalCost": "Coste total",
+    "processingCost": "Coste de procesamiento",
+    "simulationCosts": "Costes de simulacion",
+    "conversationCost": "Generacion de conversacion",
+    "audioCost": "Generacion de audio",
+    "transcriptionCost": "Transcripcion",
+    "segmentationCost": "Segmentacion",
+    "metadataCost": "Metadatos",
+    "inputTokens": "Tokens entrada",
+    "outputTokens": "Tokens salida",
+    "characters": "Caracteres",
+    "audioMinutes": "Minutos de audio"
   }
 }

@@ -60,6 +60,32 @@ export interface Simulation {
   errorMessage: string | null;
   createdAt: string;
   updatedAt: string;
+  completedAt: string | null;
+  conversationStartedAt: string | null;
+  conversationCompletedAt: string | null;
+  audioStartedAt: string | null;
+  audioCompletedAt: string | null;
+  concatenationStartedAt: string | null;
+  concatenationCompletedAt: string | null;
+  conversationInputTokens: number | null;
+  conversationOutputTokens: number | null;
+  conversationCostUsd: number | null;
+  elevenlabsCharacters: number | null;
+  elevenlabsCostUsd: number | null;
+  totalCostUsd: number | null;
+}
+
+export interface SimulatorTimeline {
+  conversationDurationMs: number | null;
+  audioDurationMs: number | null;
+  concatenationDurationMs: number | null;
+  totalDurationMs: number | null;
+  conversationInputTokens: number | null;
+  conversationOutputTokens: number | null;
+  conversationCostUsd: number | null;
+  elevenlabsCharacters: number | null;
+  elevenlabsCostUsd: number | null;
+  totalCostUsd: number | null;
 }
 
 export interface SimulationProgress {
@@ -70,4 +96,5 @@ export interface SimulationProgress {
   completedSegments: number;
   sessionId: string | null;
   errorMessage: string | null;
+  timeline: SimulatorTimeline | null;
 }

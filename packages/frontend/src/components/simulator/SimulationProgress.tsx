@@ -80,7 +80,7 @@ export function SimulationProgress({ simulationId, onComplete }: SimulationProgr
       status: getStepStatus("generating-audio", progress.status),
       progress:
         progress.status === "generating-audio" && progress.totalSegments
-          ? `(${progress.completedSegments}/${progress.totalSegments})`
+          ? `(${Math.round(((progress.completedSegments ?? 0) / progress.totalSegments) * 100)}%)`
           : undefined,
     },
     {

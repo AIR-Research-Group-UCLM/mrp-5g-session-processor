@@ -240,5 +240,34 @@
     "selector": "Language",
     "es-ES": "Spanish",
     "en-GB": "English"
+  },
+  "timing": {
+    "title": "Processing times",
+    "processingTime": "Processing time",
+    "totalTime": "Total time",
+    "subtotal": "Subtotal",
+    "simulationSteps": "Simulation generation",
+    "processingSteps": "Session processing",
+    "conversationGeneration": "Conversation generation",
+    "audioGeneration": "Audio generation",
+    "audioConcatenation": "Audio concatenation",
+    "transcribe": "Transcription",
+    "segment": "Segmentation",
+    "generate-metadata": "Metadata generation"
+  },
+  "costs": {
+    "title": "Processing costs",
+    "totalCost": "Total cost",
+    "processingCost": "Processing cost",
+    "simulationCosts": "Simulation costs",
+    "conversationCost": "Conversation generation",
+    "audioCost": "Audio generation",
+    "transcriptionCost": "Transcription",
+    "segmentationCost": "Segmentation",
+    "metadataCost": "Metadata",
+    "inputTokens": "Input tokens",
+    "outputTokens": "Output tokens",
+    "characters": "Characters",
+    "audioMinutes": "Audio minutes"
   }
 }

@@ -1,8 +1,8 @@
 import { Badge, SessionStatusBadge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
-import { formatDuration, formatRelativeDate } from "@/utils/format";
+import { formatDuration, formatProcessingDuration, formatRelativeDate, formatCost } from "@/utils/format";
 import type { SessionListItem } from "@mrp/shared";
-import { Calendar, Clock, Languages } from "lucide-react";
+import { Calendar, Clock, Languages, Timer, Coins } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -50,6 +50,18 @@ export function SessionCard({ session }: SessionCardProps) {
             <div className="flex items-center gap-1">
               <Languages className="h-4 w-4" />
               {t(`languages.${session.language}`, { defaultValue: session.language.toUpperCase() })}
+            </div>
+          )}
+          {session.status === "completed" && session.processingDurationMs && (
+            <div className="flex items-center gap-1" title={t("timing.processingTime")}>
+              <Timer className="h-4 w-4" />
+              {formatProcessingDuration(session.processingDurationMs)}
+            </div>
+          )}
+          {session.status === "completed" && session.processingCostUsd != null && session.processingCostUsd > 0 && (
+            <div className="flex items-center gap-1" title={t("costs.processingCost")}>
+              <Coins className="h-4 w-4" />
+              {formatCost(session.processingCostUsd)}
             </div>
           )}
         </div>

@@ -1,5 +1,6 @@
 import type { SectionType } from "../constants/sections.js";
 import type { ClinicalIndicators } from "./clinical-indicators.js";
+import type { ProcessingTimeline } from "./processing.js";
 
 export type SessionStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -22,7 +23,9 @@ export interface MedicalSession {
   isSimulated: boolean;
   createdAt: string;
   updatedAt: string;
+  startedAt: string | null;
   completedAt: string | null;
+  processingCostUsd: number | null;
 }
 
 export interface TranscriptSection {
@@ -49,6 +52,21 @@ export interface SessionWithTranscript extends MedicalSession {
   transcript: TranscriptSection[];
   sectionSummaries: SectionSummary[];
   clinicalIndicators: ClinicalIndicators | null;
+  processingTimeline: ProcessingTimeline | null;
+  simulationTimeline: SimulationTimeline | null;
+}
+
+export interface SimulationTimeline {
+  conversationDurationMs: number | null;
+  audioDurationMs: number | null;
+  concatenationDurationMs: number | null;
+  totalDurationMs: number | null;
+  conversationInputTokens: number | null;
+  conversationOutputTokens: number | null;
+  conversationCostUsd: number | null;
+  elevenlabsCharacters: number | null;
+  elevenlabsCostUsd: number | null;
+  totalCostUsd: number | null;
 }
 
 export interface SessionListItem
@@ -64,8 +82,12 @@ export interface SessionListItem
     | "language"
     | "isSimulated"
     | "createdAt"
+    | "startedAt"
     | "completedAt"
-  > {}
+    | "processingCostUsd"
+  > {
+  processingDurationMs: number | null;
+}
 
 export interface CreateSessionInput {
   title?: string;

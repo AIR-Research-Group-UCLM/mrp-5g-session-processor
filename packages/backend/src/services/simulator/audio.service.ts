@@ -12,12 +12,17 @@ const elevenlabs = new ElevenLabsClient({
   apiKey: config.elevenlabs.apiKey,
 });
 
+export interface SegmentAudioResult {
+  characterCount: number;
+}
+
 export async function generateSegmentAudio(
   text: string,
   voiceId: string,
   outputPath: string
-): Promise<void> {
-  logger.debug({ voiceId, textLength: text.length }, "Generating audio for segment");
+): Promise<SegmentAudioResult> {
+  const characterCount = text.length;
+  logger.debug({ voiceId, textLength: characterCount }, "Generating audio for segment");
 
   const audioStream = await elevenlabs.textToSpeech.convert(voiceId, {
     text,
@@ -34,7 +39,9 @@ export async function generateSegmentAudio(
 
   await fs.writeFile(outputPath, audioBuffer);
 
-  logger.debug({ outputPath, sizeBytes: audioBuffer.length }, "Segment audio generated");
+  logger.debug({ outputPath, sizeBytes: audioBuffer.length, characterCount }, "Segment audio generated");
+
+  return { characterCount };
 }
 
 export async function generateSilence(

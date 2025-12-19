@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:platform.openai.com)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "WebFetch(domain:elevenlabs.io)",
+      "WebFetch(domain:community.openai.com)"
     ],
     "deny": [],
     "ask": []
