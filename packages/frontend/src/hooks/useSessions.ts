@@ -97,3 +97,12 @@ export function useSearchSessions(query: string, enabled: boolean = true) {
     enabled: enabled && query.length >= 2,
   });
 }
+
+export function useSessionAccuracy(id: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["session-accuracy", id],
+    queryFn: () => sessionsApi.getSessionAccuracy(id),
+    enabled: enabled && !!id,
+    staleTime: Infinity, // Accuracy doesn't change once calculated
+  });
+}

@@ -6,6 +6,7 @@ import type {
   ProcessingProgress,
   UpdateSessionInput,
   SearchResult,
+  TranscriptionAccuracy,
 } from "@mrp/shared";
 
 interface ApiResponse<T> {
@@ -118,4 +119,16 @@ export async function searchSessions(
     throw new Error(response.data.error ?? "Search failed");
   }
   return response.data.data.results;
+}
+
+export async function getSessionAccuracy(
+  id: string
+): Promise<TranscriptionAccuracy> {
+  const response = await apiClient.get<
+    ApiResponse<{ accuracy: TranscriptionAccuracy }>
+  >(`/sessions/${id}/accuracy`);
+  if (!response.data.data) {
+    throw new Error(response.data.error ?? "Failed to fetch accuracy");
+  }
+  return response.data.data.accuracy;
 }

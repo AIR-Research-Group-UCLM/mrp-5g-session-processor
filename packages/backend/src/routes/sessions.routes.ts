@@ -11,6 +11,7 @@ sessionsRoutes.get("/", sessionsController.list);
 sessionsRoutes.post("/", uploadMiddleware.single("video"), sessionsController.create);
 sessionsRoutes.get("/:id", sessionsController.getById);
 sessionsRoutes.get("/:id/status", sessionsController.getStatus);
+sessionsRoutes.get("/:id/accuracy", sessionsController.getAccuracy);
 sessionsRoutes.patch("/:id", sessionsController.update);
 sessionsRoutes.delete("/:id", sessionsController.delete);
 sessionsRoutes.get("/:id/video", sessionsController.getVideoUrl);

@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import { z } from "zod";
 import { sessionService } from "../services/session.service.js";
 import { s3Service } from "../services/s3.service.js";
+import { accuracyService } from "../services/accuracy.service.js";
 import { AppError } from "../middleware/error.middleware.js";
 import { logger } from "../config/logger.js";
 
@@ -218,6 +219,43 @@ const streamVideo: RequestHandler = async (req, res, next) => {
   }
 };
 
+const getAccuracy: RequestHandler = async (req, res, next) => {
+  try {
+    const userId = req.session.userId!;
+    const sessionId = req.params.id!;
+
+    const accuracy = await accuracyService.calculateTranscriptionAccuracy(
+      sessionId,
+      userId
+    );
+
+    if (!accuracy) {
+      throw new AppError(404, "Session not found");
+    }
+
+    res.json({
+      success: true,
+      data: { accuracy },
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "Session is not simulated") {
+        return next(new AppError(400, error.message));
+      }
+      if (error.message === "Session processing not completed") {
+        return next(new AppError(400, error.message));
+      }
+      if (
+        error.message === "Simulated transcript not found in S3" ||
+        error.message === "No transcript sections found"
+      ) {
+        return next(new AppError(500, error.message));
+      }
+    }
+    next(error);
+  }
+};
+
 export const sessionsController = {
   list,
   create,
@@ -227,4 +265,5 @@ export const sessionsController = {
   delete: deleteSession,
   getVideoUrl,
   streamVideo,
+  getAccuracy,
 };

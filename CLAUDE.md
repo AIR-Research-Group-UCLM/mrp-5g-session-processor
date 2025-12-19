@@ -139,6 +139,7 @@ SIMULATOR_AUDIO_CONCURRENCY=3
 - `GET /api/sessions/:id/video/stream` - Streaming de vídeo (proxy S3 con soporte Range)
 - `PATCH /api/sessions/:id` - Actualizar metadatos manuales
 - `DELETE /api/sessions/:id` - Eliminar sesión
+- `GET /api/sessions/:id/accuracy` - Métricas de precisión de transcripción (solo simuladas)
 
 ### Búsqueda
 - `GET /api/search?q=` - Búsqueda en transcripciones, título, resumen, keywords y etiquetas
@@ -207,6 +208,24 @@ El simulador genera sesiones médicas sintéticas a partir de un contexto textua
    - Se crea `medical_session` con `is_simulated = 1`
    - Se encola el procesamiento normal (transcripción → segmentación → metadatos)
 6. Frontend redirige a la vista de sesión
+
+## Análisis de Precisión (Sesiones Simuladas)
+
+Para sesiones simuladas completadas, se puede calcular la precisión de la transcripción comparando el diálogo original generado con el resultado del procesamiento:
+
+### Métricas disponibles:
+- **Word Error Rate (WER)**: Tasa de error a nivel de palabra usando distancia Levenshtein
+- **Text Similarity**: Precisión general del texto (calculada como 1 - WER)
+- **Speaker Accuracy**: Precisión de identificación de hablantes basada en distribución de palabras
+- **Desglose por hablante**: Palabras originales vs transcritas por cada speaker
+
+### Fuentes de datos:
+- **Original**: `{userId}/{sessionId}/simulated_transcript.json` en S3
+- **Transcrito**: Tabla `transcript_sections` en SQLite
+
+### UI:
+- Panel visible solo en sesiones simuladas completadas
+- Código de colores: verde (≥90%), amarillo (70-90%), rojo (<70%)
 
 ## Convenciones de Código
 

@@ -1,5 +1,6 @@
 import { ClinicalIndicatorsPanel } from "@/components/sessions/ClinicalIndicatorsPanel";
 import { ProcessingTimeline } from "@/components/sessions/ProcessingTimeline";
+import { TranscriptionAccuracyPanel } from "@/components/sessions/TranscriptionAccuracyPanel";
 import { TranscriptViewer } from "@/components/sessions/TranscriptViewer";
 import { Badge, SessionStatusBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -286,6 +287,10 @@ export function SessionDetailPage() {
 
             {session.clinicalIndicators && (
               <ClinicalIndicatorsPanel indicators={session.clinicalIndicators} />
+            )}
+
+            {session.isSimulated && session.status === "completed" && (
+              <TranscriptionAccuracyPanel sessionId={session.id} />
             )}
 
             {session.status === "completed" && (

@@ -269,5 +269,20 @@
     "outputTokens": "Tokens salida",
     "characters": "Caracteres",
     "audioMinutes": "Minutos de audio"
+  },
+  "accuracy": {
+    "title": "Precision de Transcripcion",
+    "textSimilarity": "Similitud de Texto",
+    "speakerAccuracy": "Identificacion de Hablantes",
+    "wordErrorRate": "Tasa de Error de Palabras (WER)",
+    "stats": "Estadisticas",
+    "originalSegments": "Segmentos originales",
+    "transcribedSegments": "Segmentos transcritos",
+    "originalWords": "Palabras originales",
+    "transcribedWords": "Palabras transcritas",
+    "bySpeaker": "Distribucion por Hablante",
+    "wordsOriginal": "Original",
+    "wordsTranscribed": "Transcrito",
+    "errorLoading": "Error al cargar los datos de precision"
   }
 }

@@ -269,5 +269,20 @@
     "outputTokens": "Output tokens",
     "characters": "Characters",
     "audioMinutes": "Audio minutes"
+  },
+  "accuracy": {
+    "title": "Transcription Accuracy",
+    "textSimilarity": "Text Similarity",
+    "speakerAccuracy": "Speaker Identification",
+    "wordErrorRate": "Word Error Rate (WER)",
+    "stats": "Statistics",
+    "originalSegments": "Original segments",
+    "transcribedSegments": "Transcribed segments",
+    "originalWords": "Original words",
+    "transcribedWords": "Transcribed words",
+    "bySpeaker": "Distribution by Speaker",
+    "wordsOriginal": "Original",
+    "wordsTranscribed": "Transcribed",
+    "errorLoading": "Error loading accuracy data"
   }
 }
