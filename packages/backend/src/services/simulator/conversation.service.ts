@@ -10,19 +10,36 @@ const openai = new OpenAI({
 
 const SYSTEM_PROMPT = `You are an expert in medical consultations. Your task is to generate realistic medical conversation transcripts based on a given context.
 
-Generate a natural, flowing conversation that MUST include ALL THREE speakers: DOCTOR, PATIENT, and SPECIALIST. The consultation should involve a specialist referral, second opinion, or multidisciplinary discussion.
+SCENARIO: Primary care teleconsultation with remote specialist via VR glasses
+- The PATIENT arrives at a primary care clinic and explains their symptoms to the DOCTOR (general practitioner)
+- After initial assessment, the DOCTOR decides to consult a SPECIALIST for a second opinion
+- The DOCTOR puts on VR glasses (smart glasses) that allow the SPECIALIST to see and hear everything happening in the consultation room in real-time
+- The SPECIALIST joins the consultation remotely and can interact with both the DOCTOR and PATIENT
+- The three participants discuss the case together until the consultation is resolved
+- The SPECIALIST can request the DOCTOR to perform specific examinations, ask the PATIENT questions directly, and provide expert guidance
+
+Conversation flow:
+1. INTRODUCTION: Patient arrives, greets the doctor, initial pleasantries
+2. SYMPTOMS: Patient explains their symptoms and concerns to the doctor
+3. INITIAL ASSESSMENT: Doctor asks follow-up questions and performs initial examination
+4. SPECIALIST CONNECTION: Doctor decides to consult specialist, puts on VR glasses, specialist joins
+5. COLLABORATIVE DIAGNOSIS: Three-way conversation where specialist can see/hear everything, asks questions, requests examinations
+6. TREATMENT PLAN: Specialist and doctor discuss and agree on treatment, explain to patient
+7. CLOSING: Summary, follow-up instructions, farewell
 
 Rules:
-1. Generate a natural, realistic medical consultation
-2. MANDATORY: Include all three speakers (DOCTOR, PATIENT, SPECIALIST) - the SPECIALIST must participate meaningfully in the conversation
-3. Include all typical sections: introduction/greeting, symptoms description, examination/diagnosis discussion, specialist consultation, treatment plan, and closing
-4. Use appropriate medical terminology for the language
-5. Keep segments relatively short (1-3 sentences each)
-6. Generate between 25-45 segments for a realistic consultation length
-7. Only use speakers: DOCTOR, PATIENT, SPECIALIST
-8. Make the conversation flow naturally with appropriate responses
-9. Include realistic medical details based on the context provided
-10. The SPECIALIST should appear at least 5-10 times throughout the conversation
+1. Generate a natural, realistic medical consultation following the above flow
+2. MANDATORY: Include all three speakers (DOCTOR, PATIENT, SPECIALIST) - the SPECIALIST must participate meaningfully after being connected
+3. The SPECIALIST should NOT appear until the connection moment (after initial patient-doctor interaction)
+4. Include a clear moment where the DOCTOR announces they will connect with a specialist via the VR glasses
+5. The SPECIALIST should acknowledge joining remotely and being able to see/hear the consultation
+6. Use appropriate medical terminology for the language
+7. Keep segments relatively short (1-3 sentences each)
+8. Generate between 30-50 segments for a realistic consultation length
+9. Only use speakers: DOCTOR, PATIENT, SPECIALIST
+10. Make the conversation flow naturally with appropriate responses
+11. Include realistic medical details based on the context provided
+12. The SPECIALIST should appear at least 8-12 times throughout the conversation after joining
 
 Return ONLY a valid JSON object with this exact format:
 {
@@ -49,10 +66,14 @@ ${context}
 
 Remember to:
 - Generate ALL text in ${languageName}
-- Create a realistic, natural conversation
+- Create a realistic, natural conversation following the primary care teleconsultation scenario
+- The patient arrives at primary care, explains symptoms to the doctor
+- The doctor performs initial assessment, then decides to connect with a specialist via VR glasses
+- The specialist joins remotely (can see and hear everything through the doctor's VR glasses) and participates in the diagnosis
+- Include a clear moment where the doctor puts on the VR glasses and the specialist acknowledges joining
+- The three participants collaborate until the consultation is resolved
 - Include proper medical terminology
-- Cover introduction, symptoms, diagnosis, specialist consultation, treatment, and closing sections
-- MANDATORY: Include ALL THREE speakers (DOCTOR, PATIENT, SPECIALIST) - the specialist must participate meaningfully`;
+- MANDATORY: Include ALL THREE speakers (DOCTOR, PATIENT, SPECIALIST) - the specialist must NOT appear until the connection moment`;
 
   const completion = await openai.chat.completions.create({
     model: config.openai.models.segmentation,
