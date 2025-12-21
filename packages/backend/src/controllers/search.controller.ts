@@ -3,7 +3,8 @@ import { z } from "zod";
 import { searchService } from "../services/search.service.js";
 
 const searchQuerySchema = z.object({
-  q: z.string().min(1),
+  // Security: Limit query length to prevent ReDoS and memory exhaustion
+  q: z.string().min(1).max(500),
   limit: z.coerce.number().min(1).max(100).default(20),
 });
 

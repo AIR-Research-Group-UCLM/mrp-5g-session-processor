@@ -149,6 +149,7 @@ export async function startSimulation(
   return { simulationId };
 }
 
+// Internal function - used by workers where we don't have user context
 export function getSimulation(simulationId: string): Simulation | null {
   const db = getDb();
   const row = db
@@ -158,8 +159,19 @@ export function getSimulation(simulationId: string): Simulation | null {
   return row ? mapDbSimulation(row) : null;
 }
 
-export function getSimulationProgress(simulationId: string): SimulationProgress | null {
-  const simulation = getSimulation(simulationId);
+// Secure function - requires userId to prevent IDOR
+export function getSimulationForUser(simulationId: string, userId: string): Simulation | null {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT * FROM simulations WHERE id = ? AND user_id = ?")
+    .get(simulationId, userId) as DbSimulation | undefined;
+
+  return row ? mapDbSimulation(row) : null;
+}
+
+// Secure function - requires userId to prevent IDOR
+export function getSimulationProgress(simulationId: string, userId: string): SimulationProgress | null {
+  const simulation = getSimulationForUser(simulationId, userId);
   if (!simulation) {
     return null;
   }
@@ -335,6 +347,7 @@ export function incrementElevenlabsCharacters(simulationId: string, characterCou
 export const simulatorService = {
   startSimulation,
   getSimulation,
+  getSimulationForUser,
   getSimulationProgress,
   updateSimulationStatus,
   incrementCompletedSegments,

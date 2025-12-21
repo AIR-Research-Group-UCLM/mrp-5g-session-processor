@@ -52,6 +52,24 @@ if (!parsed.success) {
 
 const env = parsed.data;
 
+// Security: Validate CORS origin in production to prevent overly permissive settings
+if (env.NODE_ENV === "production") {
+  if (env.CORS_ORIGIN === "*" || env.CORS_ORIGIN.includes("*")) {
+    console.error(
+      "Security Error: CORS_ORIGIN cannot contain wildcards in production. " +
+      "Please specify explicit allowed origins."
+    );
+    process.exit(1);
+  }
+  // Warn if CORS allows localhost in production
+  if (env.CORS_ORIGIN.includes("localhost") || env.CORS_ORIGIN.includes("127.0.0.1")) {
+    console.warn(
+      "Security Warning: CORS_ORIGIN includes localhost addresses in production. " +
+      "This may be a security risk."
+    );
+  }
+}
+
 export const config = {
   nodeEnv: env.NODE_ENV,
   isProduction: env.NODE_ENV === "production",

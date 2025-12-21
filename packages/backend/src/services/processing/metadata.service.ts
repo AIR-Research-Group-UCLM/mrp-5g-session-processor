@@ -1,9 +1,46 @@
 import { getLanguageName } from "@mrp/shared";
 import OpenAI from "openai";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 import { config } from "../../config/index.js";
 import { getDb } from "../../db/connection.js";
 import { logger } from "../../config/logger.js";
+
+// Security: Zod schemas for validating OpenAI metadata response
+const clinicalIndicatorsSchema = z.object({
+  urgencyLevel: z.string().nullable().optional(),
+  appointmentPriority: z.string().nullable().optional(),
+  reasonForVisit: z.string().nullable().optional(),
+  consultedSpecialty: z.string().nullable().optional(),
+  mainClinicalProblem: z.string().nullable().optional(),
+  problemStatus: z.string().nullable().optional(),
+  diagnosticHypothesis: z.array(z.object({
+    condition: z.string(),
+    certainty: z.string(),
+  })).nullable().optional(),
+  requestedTests: z.array(z.string()).nullable().optional(),
+  treatmentPlan: z.object({
+    medicationStarted: z.array(z.string()).optional(),
+    medicationAdjusted: z.array(z.string()).optional(),
+    medicationDiscontinued: z.array(z.string()).optional(),
+    nonPharmacologicalMeasures: z.array(z.string()).optional(),
+  }).nullable().optional(),
+  patientEducation: z.array(z.string()).nullable().optional(),
+  warningSigns: z.array(z.string()).nullable().optional(),
+  followUpPlan: z.object({
+    followUpType: z.string().optional(),
+    timeFrame: z.string().optional(),
+    responsibleCareLevel: z.string().optional(),
+  }).nullable().optional(),
+}).optional();
+
+const metadataResponseSchema = z.object({
+  summary: z.string(),
+  keywords: z.array(z.string()),
+  title: z.string().optional(),
+  userTags: z.array(z.string()).optional(),
+  clinicalIndicators: clinicalIndicatorsSchema,
+});
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
@@ -167,37 +204,25 @@ export async function processMetadata(sessionId: string): Promise<MetadataCostRe
     throw new Error("No response from GPT");
   }
 
-  interface ClinicalIndicatorsGPT {
-    urgencyLevel?: string | null;
-    appointmentPriority?: string | null;
-    reasonForVisit?: string | null;
-    consultedSpecialty?: string | null;
-    mainClinicalProblem?: string | null;
-    problemStatus?: string | null;
-    diagnosticHypothesis?: Array<{ condition: string; certainty: string }> | null;
-    requestedTests?: string[] | null;
-    treatmentPlan?: {
-      medicationStarted?: string[];
-      medicationAdjusted?: string[];
-      medicationDiscontinued?: string[];
-      nonPharmacologicalMeasures?: string[];
-    } | null;
-    patientEducation?: string[] | null;
-    warningSigns?: string[] | null;
-    followUpPlan?: {
-      followUpType?: string;
-      timeFrame?: string;
-      responsibleCareLevel?: string;
-    } | null;
+  // Security: Parse and validate with Zod
+  let parsedContent: unknown;
+  try {
+    parsedContent = JSON.parse(content);
+  } catch {
+    logger.error({ content }, "Failed to parse metadata JSON");
+    throw new Error("Failed to parse metadata response as JSON");
   }
 
-  const result = JSON.parse(content) as {
-    summary: string;
-    keywords: string[];
-    title?: string;
-    userTags?: string[];
-    clinicalIndicators?: ClinicalIndicatorsGPT;
-  };
+  const validationResult = metadataResponseSchema.safeParse(parsedContent);
+  if (!validationResult.success) {
+    logger.error(
+      { errors: validationResult.error.issues, content },
+      "Invalid metadata response structure"
+    );
+    throw new Error("Invalid metadata response structure from OpenAI");
+  }
+
+  const result = validationResult.data;
 
   // Trim all text fields
   const summary = result.summary?.trim() ?? "";

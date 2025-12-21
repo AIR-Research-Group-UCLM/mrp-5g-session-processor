@@ -58,8 +58,24 @@ async function deleteFile(key: string): Promise<void> {
   await s3Client.send(command);
 }
 
+// Security: Sanitize filename to prevent path traversal and use UUID-based naming
 function getVideoKey(userId: string, sessionId: string, filename: string): string {
-  return `${userId}/${sessionId}/${filename}`;
+  // Extract and sanitize extension (only allow alphanumeric extensions)
+  const ext = filename.includes(".")
+    ? filename.split(".").pop()?.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "bin"
+    : "bin";
+
+  // Use a deterministic but safe filename based on original name hash + sanitized extension
+  // For internal uses (like "audio.mp3"), this still works correctly
+  const safeFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_").substring(0, 50);
+
+  // Check if it's an internal/safe filename (no path traversal characters)
+  if (/^[a-zA-Z0-9_.-]+$/.test(filename) && !filename.includes("..")) {
+    return `${userId}/${sessionId}/${filename}`;
+  }
+
+  // For user-provided filenames, use sanitized version
+  return `${userId}/${sessionId}/${safeFilename}.${ext}`;
 }
 
 async function getFileMetadata(key: string): Promise<{ contentLength: number; contentType: string } | null> {

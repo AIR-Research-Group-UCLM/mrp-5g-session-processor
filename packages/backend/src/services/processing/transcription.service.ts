@@ -1,4 +1,4 @@
-import { exec } from "node:child_process";
+import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -9,7 +9,26 @@ import { logger } from "../../config/logger.js";
 import { getDb } from "../../db/connection.js";
 import { s3Service } from "../s3.service.js";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+// Security: Use execFile with argument arrays to prevent command injection
+async function runFfmpeg(args: string[]): Promise<{ stdout: string; stderr: string }> {
+  try {
+    const { stdout, stderr } = await execFileAsync("ffmpeg", args);
+    return { stdout: stdout ?? "", stderr: stderr ?? "" };
+  } catch (error) {
+    const err = error as Error & { stdout?: string; stderr?: string };
+    throw Object.assign(new Error(err.message), {
+      stdout: err.stdout ?? "",
+      stderr: err.stderr ?? "",
+    });
+  }
+}
+
+async function runFfprobe(args: string[]): Promise<string> {
+  const { stdout } = await execFileAsync("ffprobe", args);
+  return stdout;
+}
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
@@ -145,9 +164,15 @@ export async function processTranscription(sessionId: string): Promise<Transcrip
       // For audio files, convert to mp3 format suitable for transcription
       logger.info({ sessionId }, "Converting audio with ffmpeg");
       try {
-        const { stdout: ffmpegOut, stderr: ffmpegErr } = await execAsync(
-          `ffmpeg -i "${mediaPath}" -acodec libmp3lame -ar 16000 -ac 1 -q:a 4 "${audioPath}" -y 2>&1`
-        );
+        const { stdout: ffmpegOut, stderr: ffmpegErr } = await runFfmpeg([
+          "-i", mediaPath,
+          "-acodec", "libmp3lame",
+          "-ar", "16000",
+          "-ac", "1",
+          "-q:a", "4",
+          audioPath,
+          "-y",
+        ]);
         logger.debug({ sessionId, ffmpegOut, ffmpegErr }, "ffmpeg audio conversion output");
       } catch (ffmpegError) {
         const err = ffmpegError as Error & { stdout?: string; stderr?: string };
@@ -161,9 +186,16 @@ export async function processTranscription(sessionId: string): Promise<Transcrip
       // For video files, extract audio
       logger.info({ sessionId }, "Extracting audio from video with ffmpeg");
       try {
-        const { stdout: ffmpegOut, stderr: ffmpegErr } = await execAsync(
-          `ffmpeg -i "${mediaPath}" -vn -acodec libmp3lame -ar 16000 -ac 1 -q:a 4 "${audioPath}" -y 2>&1`
-        );
+        const { stdout: ffmpegOut, stderr: ffmpegErr } = await runFfmpeg([
+          "-i", mediaPath,
+          "-vn",
+          "-acodec", "libmp3lame",
+          "-ar", "16000",
+          "-ac", "1",
+          "-q:a", "4",
+          audioPath,
+          "-y",
+        ]);
         logger.debug({ sessionId, ffmpegOut, ffmpegErr }, "ffmpeg output");
       } catch (ffmpegError) {
         const err = ffmpegError as Error & { stdout?: string; stderr?: string };
@@ -179,9 +211,12 @@ export async function processTranscription(sessionId: string): Promise<Transcrip
     logger.info({ sessionId, audioSizeBytes: audioStats.size, audioPath }, "Audio ready for transcription");
 
     // Get duration from the audio file (works for both audio and video sources)
-    const { stdout: durationOutput } = await execAsync(
-      `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioPath}"`
-    );
+    const durationOutput = await runFfprobe([
+      "-v", "error",
+      "-show_entries", "format=duration",
+      "-of", "default=noprint_wrappers=1:nokey=1",
+      audioPath,
+    ]);
     const durationSeconds = Math.round(parseFloat(durationOutput.trim()));
 
     logger.info(

@@ -49,12 +49,20 @@ const create: RequestHandler = async (req, res, next) => {
 const getStatus: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id;
+    const userId = req.session.userId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, error: "Unauthorized" });
+      return;
+    }
+
     if (!id) {
       res.status(400).json({ success: false, error: "Missing simulation ID" });
       return;
     }
 
-    const progress = simulatorService.getSimulationProgress(id);
+    // Security: Pass userId to prevent IDOR - only returns simulations owned by user
+    const progress = simulatorService.getSimulationProgress(id, userId);
 
     if (!progress) {
       res.status(404).json({

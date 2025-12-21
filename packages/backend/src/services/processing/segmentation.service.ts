@@ -2,6 +2,7 @@ import type { SectionType } from "@mrp/shared";
 import { getLanguageName } from "@mrp/shared";
 import OpenAI from "openai";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 import { config } from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 import { getDb } from "../../db/connection.js";
@@ -32,18 +33,24 @@ interface TranscriptData {
   }>;
 }
 
-interface SegmentedSection {
-  sectionType: SectionType;
-  speaker: string;
-  content: string;
-  startTime: number;
-  endTime: number;
-}
+// Security: Zod schemas for validating OpenAI JSON responses
+const segmentedSectionSchema = z.object({
+  sectionType: z.enum(["introduction", "symptoms", "diagnosis", "treatment", "closing"]),
+  speaker: z.string(),
+  content: z.string(),
+  startTime: z.number(),
+  endTime: z.number(),
+});
 
-interface SectionSummaryResult {
-  sectionType: SectionType;
-  summary: string;
-}
+const sectionSummarySchema = z.object({
+  sectionType: z.enum(["introduction", "symptoms", "diagnosis", "treatment", "closing"]),
+  summary: z.string(),
+});
+
+const segmentationResponseSchema = z.object({
+  sections: z.array(segmentedSectionSchema),
+  sectionSummaries: z.array(sectionSummarySchema).optional(),
+});
 
 export interface SegmentationCostResult {
   inputTokens: number;
@@ -135,10 +142,25 @@ export async function processSegmentation(sessionId: string): Promise<Segmentati
     throw new Error("No response from GPT");
   }
 
-  const result = JSON.parse(content) as {
-    sections: SegmentedSection[];
-    sectionSummaries: SectionSummaryResult[];
-  };
+  // Security: Validate OpenAI response structure with Zod
+  let parsedContent: unknown;
+  try {
+    parsedContent = JSON.parse(content);
+  } catch {
+    logger.error({ content }, "Failed to parse segmentation JSON");
+    throw new Error("Failed to parse segmentation response as JSON");
+  }
+
+  const validationResult = segmentationResponseSchema.safeParse(parsedContent);
+  if (!validationResult.success) {
+    logger.error(
+      { errors: validationResult.error.issues, content },
+      "Invalid segmentation response structure"
+    );
+    throw new Error("Invalid segmentation response structure from OpenAI");
+  }
+
+  const result = validationResult.data;
 
   const insertSectionStmt = db.prepare(`
     INSERT INTO transcript_sections (

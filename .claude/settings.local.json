@@ -7,7 +7,8 @@
       "WebFetch(domain:community.openai.com)",
       "Bash(docker build:*)",
       "Bash(docker run:*)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(git -C /Users/santiago/Projects/mrp-5g-session-processor log --oneline -n 10 packages/backend/.env)"
     ],
     "deny": [],
     "ask": []

@@ -1,8 +1,19 @@
 import OpenAI from "openai";
+import { z } from "zod";
 import { config } from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 import { getLanguageName } from "@mrp/shared";
 import type { SimulatedTranscript } from "@mrp/shared";
+
+// Security: Zod schema for validating OpenAI conversation response
+const conversationSegmentSchema = z.object({
+  text: z.string().min(1),
+  speaker: z.enum(["DOCTOR", "PATIENT", "SPECIALIST"]),
+});
+
+const simulatedTranscriptSchema = z.object({
+  segments: z.array(conversationSegmentSchema).min(1),
+});
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
@@ -99,31 +110,28 @@ Remember to:
     throw new Error("No content received from OpenAI");
   }
 
-  let parsed: SimulatedTranscript;
+  // Security: Parse and validate with Zod
+  let parsedContent: unknown;
   try {
-    parsed = JSON.parse(content) as SimulatedTranscript;
+    parsedContent = JSON.parse(content);
   } catch {
     logger.error({ content }, "Failed to parse conversation JSON");
     throw new Error("Failed to parse conversation response as JSON");
   }
 
-  if (!parsed.segments || !Array.isArray(parsed.segments)) {
-    throw new Error("Invalid conversation format: missing segments array");
+  const validationResult = simulatedTranscriptSchema.safeParse(parsedContent);
+  if (!validationResult.success) {
+    logger.error(
+      { errors: validationResult.error.issues, content },
+      "Invalid conversation response structure"
+    );
+    throw new Error("Invalid conversation response structure from OpenAI");
   }
 
-  // Validate segments
-  const speakersFound = new Set<string>();
-  for (const segment of parsed.segments) {
-    if (!segment.text || !segment.speaker) {
-      throw new Error("Invalid segment: missing text or speaker");
-    }
-    if (!["DOCTOR", "PATIENT", "SPECIALIST"].includes(segment.speaker)) {
-      throw new Error(`Invalid speaker: ${segment.speaker}`);
-    }
-    speakersFound.add(segment.speaker);
-  }
+  const parsed = validationResult.data as SimulatedTranscript;
 
-  // Ensure all three speakers are present
+  // Validate that all three speakers are present
+  const speakersFound = new Set<string>(parsed.segments.map((s) => s.speaker));
   const requiredSpeakers = ["DOCTOR", "PATIENT", "SPECIALIST"];
   for (const speaker of requiredSpeakers) {
     if (!speakersFound.has(speaker)) {

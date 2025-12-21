@@ -1,23 +1,26 @@
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
 import compression from "compression";
-import session from "express-session";
 import { RedisStore } from "connect-redis";
-import { createClient } from "redis";
-import path from "path";
-import { fileURLToPath } from "url";
+import cors from "cors";
+import express from "express";
+import session from "express-session";
 import fs from "fs";
+import helmet from "helmet";
+import path from "path";
+import { createClient } from "redis";
+import { fileURLToPath } from "url";
 import { config } from "./config/index.js";
-import { errorMiddleware } from "./middleware/error.middleware.js";
-import { routes } from "./routes/index.js";
 import { logger } from "./config/logger.js";
+import { errorMiddleware } from "./middleware/error.middleware.js";
+import { generalLimiter } from "./middleware/rate-limit.middleware.js";
+import { routes } from "./routes/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export async function createApp() {
   const app = express();
+
+  app.set("trust proxy", 1); // Trust first proxy (if behind a proxy)
 
   // Create Redis client for sessions (using official redis client)
   const redisClient = createClient({ url: config.redis.url });
@@ -31,9 +34,7 @@ export async function createApp() {
   });
 
   // Normalize base path (remove trailing slash if present)
-  const basePath = config.basePath.endsWith("/")
-    ? config.basePath.slice(0, -1)
-    : config.basePath;
+  const basePath = config.basePath.endsWith("/") ? config.basePath.slice(0, -1) : config.basePath;
 
   // Configure helmet with relaxed CSP for serving static files
   app.use(
@@ -80,9 +81,9 @@ export async function createApp() {
     })
   );
 
-  // Mount API routes under base path
+  // Mount API routes under base path with general rate limiting
   const apiPath = basePath ? `${basePath}/api` : "/api";
-  app.use(apiPath, routes);
+  app.use(apiPath, generalLimiter, routes);
 
   // Health check at both root and base path
   const healthHandler = (_req: express.Request, res: express.Response) => {
@@ -106,7 +107,11 @@ export async function createApp() {
     app.use(staticPath, express.static(staticDir, { maxAge: "1y", immutable: true }));
 
     // SPA fallback - serve index.html for all non-API routes
-    const serveIndex = (_req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const serveIndex = (
+      _req: express.Request,
+      res: express.Response,
+      next: express.NextFunction
+    ) => {
       const indexPath = path.join(staticDir, "index.html");
       if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);

@@ -179,8 +179,28 @@ const streamVideo: RequestHandler = async (req, res, next) => {
 
     if (rangeHeader) {
       const parts = rangeHeader.replace(/bytes=/, "").split("-");
-      const start = parseInt(parts[0]!, 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : contentLength - 1;
+      const parsedStart = parseInt(parts[0] || "0", 10);
+      const parsedEnd = parts[1] ? parseInt(parts[1], 10) : contentLength - 1;
+
+      // Security: Validate Range header values to prevent overflow/underflow
+      if (
+        isNaN(parsedStart) ||
+        isNaN(parsedEnd) ||
+        parsedStart < 0 ||
+        parsedEnd < 0 ||
+        parsedStart > parsedEnd ||
+        parsedStart >= contentLength
+      ) {
+        res.status(416).json({
+          success: false,
+          error: "Range Not Satisfiable",
+        });
+        return;
+      }
+
+      // Clamp end to valid range
+      const start = parsedStart;
+      const end = Math.min(parsedEnd, contentLength - 1);
       const chunkSize = end - start + 1;
 
       logger.debug({ sessionId, start, end, chunkSize }, "Streaming video range");
@@ -239,17 +259,19 @@ const getAccuracy: RequestHandler = async (req, res, next) => {
     });
   } catch (error) {
     if (error instanceof Error) {
+      // Security: Log internal details but return generic messages to prevent info leakage
       if (error.message === "Session is not simulated") {
-        return next(new AppError(400, error.message));
+        return next(new AppError(400, "Accuracy is only available for simulated sessions"));
       }
       if (error.message === "Session processing not completed") {
-        return next(new AppError(400, error.message));
+        return next(new AppError(400, "Session processing must complete before accuracy calculation"));
       }
       if (
         error.message === "Simulated transcript not found in S3" ||
         error.message === "No transcript sections found"
       ) {
-        return next(new AppError(500, error.message));
+        logger.error({ error: error.message, sessionId: req.params.id }, "Accuracy calculation failed");
+        return next(new AppError(500, "Failed to calculate accuracy"));
       }
     }
     next(error);

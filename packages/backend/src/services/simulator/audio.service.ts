@@ -1,4 +1,4 @@
-import { exec } from "node:child_process";
+import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -6,7 +6,26 @@ import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { config } from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+
+// Security: Use execFile with argument arrays to prevent command injection
+async function runFfmpeg(args: string[]): Promise<{ stdout: string; stderr: string }> {
+  try {
+    const { stdout, stderr } = await execFileAsync("ffmpeg", args);
+    return { stdout: stdout ?? "", stderr: stderr ?? "" };
+  } catch (error) {
+    const err = error as Error & { stdout?: string; stderr?: string };
+    throw Object.assign(new Error(err.message), {
+      stdout: err.stdout ?? "",
+      stderr: err.stderr ?? "",
+    });
+  }
+}
+
+async function runFfprobe(args: string[]): Promise<string> {
+  const { stdout } = await execFileAsync("ffprobe", args);
+  return stdout;
+}
 
 const elevenlabs = new ElevenLabsClient({
   apiKey: config.elevenlabs.apiKey,
@@ -48,11 +67,16 @@ export async function generateSilence(
   durationMs: number,
   outputPath: string
 ): Promise<void> {
-  const durationSec = durationMs / 1000;
+  const durationSec = (durationMs / 1000).toString();
 
-  await execAsync(
-    `ffmpeg -f lavfi -i anullsrc=r=44100:cl=stereo -t ${durationSec} -acodec libmp3lame "${outputPath}" -y`
-  );
+  await runFfmpeg([
+    "-f", "lavfi",
+    "-i", "anullsrc=r=44100:cl=stereo",
+    "-t", durationSec,
+    "-acodec", "libmp3lame",
+    outputPath,
+    "-y",
+  ]);
 
   logger.debug({ durationMs, outputPath }, "Silence generated");
 }
@@ -92,9 +116,17 @@ export async function concatenateAudioFiles(
 
   // Concatenate using ffmpeg
   try {
-    const { stdout, stderr } = await execAsync(
-      `ffmpeg -f concat -safe 0 -i "${concatListPath}" -acodec libmp3lame -ar 44100 -ac 2 -q:a 2 "${outputPath}" -y 2>&1`
-    );
+    const { stdout, stderr } = await runFfmpeg([
+      "-f", "concat",
+      "-safe", "0",
+      "-i", concatListPath,
+      "-acodec", "libmp3lame",
+      "-ar", "44100",
+      "-ac", "2",
+      "-q:a", "2",
+      outputPath,
+      "-y",
+    ]);
     logger.debug({ stdout, stderr }, "ffmpeg concat output");
   } catch (error) {
     const err = error as Error & { stdout?: string; stderr?: string };
@@ -113,8 +145,11 @@ export async function concatenateAudioFiles(
 }
 
 export async function getAudioDuration(audioPath: string): Promise<number> {
-  const { stdout } = await execAsync(
-    `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioPath}"`
-  );
+  const stdout = await runFfprobe([
+    "-v", "error",
+    "-show_entries", "format=duration",
+    "-of", "default=noprint_wrappers=1:nokey=1",
+    audioPath,
+  ]);
   return Math.round(parseFloat(stdout.trim()));
 }

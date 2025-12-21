@@ -193,7 +193,7 @@ Editar `docker/.env` con los valores reales:
 | `ELEVENLABS_API_KEY` | API key de ElevenLabs |
 | `SIMULATOR_VOICES` | IDs de voces de ElevenLabs (formato: `id1:Nombre1;id2:Nombre2`) |
 | `BASE_PATH` | Subruta de despliegue (ej: `/mrp-5g-session-processor`) |
-| `CORS_ORIGIN` | Dominio permitido (ej: `https://airproy.esi.uclm.es`) |
+| `CORS_ORIGIN` | Dominio permitido (ej: `https://app.example.com`) |
 
 ### 3. Construir la imagen
 
