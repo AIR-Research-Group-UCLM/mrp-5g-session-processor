@@ -6,6 +6,10 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(32),
   DATABASE_PATH: z.string().default("./data/mrp.db"),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
+  BASE_PATH: z.string().default(""),
+  SERVE_STATIC: z.string().default("false"),
+  STATIC_PATH: z.string().default("./public"),
+  COOKIE_SECURE: z.string().default("auto"),
 
   // S3 (Garage)
   S3_ENDPOINT: z.string(),
@@ -56,6 +60,10 @@ export const config = {
   sessionSecret: env.SESSION_SECRET,
   databasePath: env.DATABASE_PATH,
   corsOrigin: env.CORS_ORIGIN,
+  basePath: env.BASE_PATH,
+  serveStatic: env.SERVE_STATIC === "true",
+  staticPath: env.STATIC_PATH,
+  cookieSecure: env.COOKIE_SECURE === "auto" ? env.NODE_ENV === "production" : env.COOKIE_SECURE === "true",
 
   s3: {
     endpoint: env.S3_ENDPOINT,

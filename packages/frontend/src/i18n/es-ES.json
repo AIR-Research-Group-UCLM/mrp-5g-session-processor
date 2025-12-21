@@ -14,13 +14,15 @@
     "previous": "Anterior",
     "viewAll": "Ver todas",
     "logout": "Salir",
-    "page": "Pagina {{current}} de {{total}}"
+    "openMenu": "Abrir menú",
+    "page": "Pagina {{current}} de {{total}}",
+    "confirm": "Confirmar"
   },
   "auth": {
     "login": "Iniciar Sesion",
     "email": "Email",
     "emailPlaceholder": "tu@email.com",
-    "password": "Contrasena",
+    "password": "Contraseña",
     "passwordPlaceholder": "********",
     "loginButton": "Iniciar Sesion",
     "invalidCredentials": "Credenciales invalidas",
@@ -28,6 +30,7 @@
   },
   "navigation": {
     "home": "Inicio",
+    "users": "Usuarios",
     "newSession": "Nueva Sesion",
     "simulator": "Simulador",
     "mySessions": "Mis Sesiones"
@@ -275,8 +278,11 @@
   "accuracy": {
     "title": "Precision de Transcripcion",
     "textSimilarity": "Similitud de Texto",
+    "textSimilarityTooltip": "Porcentaje de palabras transcritas correctamente. Se calcula como 1 menos la Tasa de Error de Palabras (WER), que mide inserciones, eliminaciones y sustituciones. Ej: si el texto original tiene 100 palabras y hubo 5 errores (palabras mal transcritas, omitidas o añadidas), la similitud es 95%.",
     "speakerAccuracy": "Identificacion de Hablantes",
+    "speakerAccuracyTooltip": "Precision en identificar quién habla. Compara la distribucion de palabras por hablante entre el texto original y el transcrito. Ej: si el médico dijo 100 palabras y se le atribuyeron 95 correctamente, la precision para ese hablante es 95%.",
     "wordErrorRate": "Tasa de Error de Palabras (WER)",
+    "wordErrorRateTooltip": "WER = (Sustituciones + Eliminaciones + Inserciones) / Total de palabras originales. Un WER de 0% significa transcripcion perfecta. Ej: si de 100 palabras hay 2 sustituidas, 1 eliminada y 2 insertadas, el WER es 5%.",
     "stats": "Estadisticas",
     "originalSegments": "Segmentos originales",
     "transcribedSegments": "Segmentos transcritos",
@@ -286,5 +292,30 @@
     "wordsOriginal": "Original",
     "wordsTranscribed": "Transcrito",
     "errorLoading": "Error al cargar los datos de precision"
+  },
+  "users": {
+    "title": "Gestion de Usuarios",
+    "createUser": "Crear Usuario",
+    "editUser": "Editar Usuario",
+    "name": "Nombre",
+    "email": "Email",
+    "password": "Contraseña",
+    "newPassword": "Nueva Contraseña",
+    "createdAt": "Fecha de creacion",
+    "actions": "Acciones",
+    "noUsers": "No hay usuarios",
+    "create": "Crear",
+    "nameRequired": "El nombre es obligatorio",
+    "emailRequired": "El email es obligatorio",
+    "emailInvalid": "Email invalido",
+    "passwordMinLength": "La contraseña debe tener al menos 8 caracteres",
+    "leaveBlankToKeep": "Dejar en blanco para mantener la actual",
+    "createSuccess": "Usuario creado correctamente",
+    "createError": "Error al crear el usuario",
+    "updateSuccess": "Usuario actualizado correctamente",
+    "updateError": "Error al actualizar el usuario",
+    "deleteSuccess": "Usuario eliminado correctamente",
+    "deleteError": "Error al eliminar el usuario",
+    "loadError": "Error al cargar los usuarios"
   }
 }

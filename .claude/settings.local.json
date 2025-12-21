@@ -4,7 +4,10 @@
       "WebFetch(domain:platform.openai.com)",
       "Bash(grep:*)",
       "WebFetch(domain:elevenlabs.io)",
-      "WebFetch(domain:community.openai.com)"
+      "WebFetch(domain:community.openai.com)",
+      "Bash(docker build:*)",
+      "Bash(docker run:*)",
+      "Bash(docker compose:*)"
     ],
     "deny": [],
     "ask": []

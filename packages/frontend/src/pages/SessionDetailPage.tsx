@@ -1,3 +1,4 @@
+import { basePathNormalized } from "@/api/client";
 import { ClinicalIndicatorsPanel } from "@/components/sessions/ClinicalIndicatorsPanel";
 import { ProcessingTimeline } from "@/components/sessions/ProcessingTimeline";
 import { TranscriptionAccuracyPanel } from "@/components/sessions/TranscriptionAccuracyPanel";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Spinner } from "@/components/ui/Spinner";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { ProcessingProgress } from "@/components/videos/ProcessingProgress";
 import { useDeleteSession, useSession, useUpdateSession } from "@/hooks/useSessions";
 import { cn } from "@/utils/cn";
@@ -39,7 +41,7 @@ export function SessionDetailPage() {
   const [editTags, setEditTags] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [currentTime, setCurrentTime] = useState(0);
-  const [autoScrollTranscript, setAutoScrollTranscript] = useState(false);
+  const [autoScrollTranscript, setAutoScrollTranscript] = useState(true);
 
   const handleTimeUpdate = useCallback(() => {
     if (videoRef.current) {
@@ -68,7 +70,7 @@ export function SessionDetailPage() {
 
   const { session } = data;
   // Use streaming endpoint instead of presigned URL to avoid CORS issues
-  const videoUrl = `/api/sessions/${session.id}/video/stream`;
+  const videoUrl = `${basePathNormalized}/api/sessions/${session.id}/video/stream`;
 
   const handleStartEdit = () => {
     setEditTitle(session.title ?? "");
@@ -111,32 +113,32 @@ export function SessionDetailPage() {
   const isProcessing = session.status === "processing" || session.status === "pending";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link to="/sessions">
+    <div className="min-w-0 space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+          <Link to="/sessions" className="shrink-0">
             <Button variant="secondary" size="sm">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-bold text-gray-900 sm:text-2xl">
               {session.title ?? t("sessions.untitledSession")}
             </h1>
-            <div className="mt-1 flex items-center gap-4 text-sm text-gray-500">
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500 sm:gap-4">
               <span className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
+                <Calendar className="h-4 w-4 shrink-0" />
                 {formatDate(session.createdAt)}
               </span>
               {session.videoDurationSeconds && (
                 <span className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-4 w-4 shrink-0" />
                   {formatDuration(session.videoDurationSeconds)}
                 </span>
               )}
               {session.language && (
                 <span className="flex items-center gap-1">
-                  <Languages className="h-4 w-4" />
+                  <Languages className="h-4 w-4 shrink-0" />
                   {t(`languages.${session.language}`, {
                     defaultValue: session.language.toUpperCase(),
                   })}
@@ -149,7 +151,7 @@ export function SessionDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 gap-2">
           {!isEditing ? (
             <>
               <Button variant="secondary" onClick={handleStartEdit}>
@@ -183,12 +185,12 @@ export function SessionDetailPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-6">
+        <div className="grid min-w-0 gap-6 lg:grid-cols-2">
+          <div className="min-w-0 space-y-6">
             {session.videoS3Key && (
-              <Card>
+              <Card className="overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="aspect-video overflow-hidden rounded-lg bg-black">
+                  <div className="aspect-video bg-black">
                     <video
                       ref={videoRef}
                       src={videoUrl}
@@ -302,27 +304,31 @@ export function SessionDetailPage() {
             )}
           </div>
 
-          <Card className="h-fit lg:sticky lg:top-6">
+          <Card className="h-fit min-w-0 lg:sticky lg:top-6">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>{t("sessionDetail.transcript")}</CardTitle>
               {session.transcript.length > 0 && (
-                <button
-                  onClick={() => setAutoScrollTranscript(!autoScrollTranscript)}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
-                    autoScrollTranscript
-                      ? "bg-primary-100 text-primary-700"
-                      : "text-gray-500 hover:bg-gray-100"
-                  )}
-                  title={
+                <Tooltip
+                  content={
                     autoScrollTranscript
                       ? t("sessionDetail.disableTracking")
                       : t("sessionDetail.enableTracking")
                   }
+                  position="bottom"
                 >
-                  <Navigation className={cn("h-4 w-4", autoScrollTranscript && "fill-current")} />
-                  {t("sessionDetail.autoScroll")}
-                </button>
+                  <button
+                    onClick={() => setAutoScrollTranscript(!autoScrollTranscript)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+                      autoScrollTranscript
+                        ? "bg-primary-100 text-primary-700"
+                        : "text-gray-500 hover:bg-gray-100"
+                    )}
+                  >
+                    <Navigation className={cn("h-4 w-4", autoScrollTranscript && "fill-current")} />
+                    {t("sessionDetail.autoScroll")}
+                  </button>
+                </Tooltip>
               )}
             </CardHeader>
             <CardContent>

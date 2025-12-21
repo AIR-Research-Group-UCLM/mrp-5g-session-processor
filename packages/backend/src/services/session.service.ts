@@ -269,6 +269,16 @@ interface ListOptions {
   search?: string;
 }
 
+interface DbSessionWithSimulation extends DbSession {
+  sim_conversation_started_at: string | null;
+  sim_conversation_completed_at: string | null;
+  sim_audio_started_at: string | null;
+  sim_audio_completed_at: string | null;
+  sim_concatenation_started_at: string | null;
+  sim_concatenation_completed_at: string | null;
+  sim_total_cost_usd: number | null;
+}
+
 async function listByUser(
   userId: string,
   options: ListOptions
@@ -278,21 +288,32 @@ async function listByUser(
   const offset = (page - 1) * pageSize;
 
   let query = `
-    SELECT id, title, status, summary, keywords, user_tags, video_duration_seconds, language, is_simulated, created_at, started_at, completed_at, processing_cost_usd
-    FROM medical_sessions
-    WHERE user_id = ?
+    SELECT
+      ms.id, ms.title, ms.status, ms.summary, ms.keywords, ms.user_tags,
+      ms.video_duration_seconds, ms.language, ms.is_simulated, ms.created_at,
+      ms.started_at, ms.completed_at, ms.processing_cost_usd,
+      s.conversation_started_at as sim_conversation_started_at,
+      s.conversation_completed_at as sim_conversation_completed_at,
+      s.audio_started_at as sim_audio_started_at,
+      s.audio_completed_at as sim_audio_completed_at,
+      s.concatenation_started_at as sim_concatenation_started_at,
+      s.concatenation_completed_at as sim_concatenation_completed_at,
+      s.total_cost_usd as sim_total_cost_usd
+    FROM medical_sessions ms
+    LEFT JOIN simulations s ON s.session_id = ms.id
+    WHERE ms.user_id = ?
   `;
   const params: (string | number)[] = [userId];
 
   if (status) {
-    query += " AND status = ?";
+    query += " AND ms.status = ?";
     params.push(status);
   }
 
-  query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+  query += " ORDER BY ms.created_at DESC LIMIT ? OFFSET ?";
   params.push(pageSize, offset);
 
-  const rows = db.prepare(query).all(...params) as DbSession[];
+  const rows = db.prepare(query).all(...params) as DbSessionWithSimulation[];
 
   const countQuery = status
     ? "SELECT COUNT(*) as count FROM medical_sessions WHERE user_id = ? AND status = ?"
@@ -306,6 +327,28 @@ async function listByUser(
     const processingDurationMs =
       startedAt && completedAt
         ? new Date(completedAt).getTime() - new Date(startedAt).getTime()
+        : null;
+
+    // Calculate simulation duration from its timestamps
+    let simulationDurationMs: number | null = null;
+    if (row.sim_conversation_started_at && row.sim_concatenation_completed_at) {
+      simulationDurationMs =
+        new Date(row.sim_concatenation_completed_at).getTime() -
+        new Date(row.sim_conversation_started_at).getTime();
+    }
+
+    const simulationCostUsd = row.sim_total_cost_usd;
+    const processingCostUsd = row.processing_cost_usd;
+
+    // Calculate totals
+    const totalDurationMs =
+      processingDurationMs !== null || simulationDurationMs !== null
+        ? (processingDurationMs ?? 0) + (simulationDurationMs ?? 0)
+        : null;
+
+    const totalCostUsd =
+      processingCostUsd !== null || simulationCostUsd !== null
+        ? (processingCostUsd ?? 0) + (simulationCostUsd ?? 0)
         : null;
 
     return {
@@ -322,7 +365,11 @@ async function listByUser(
       startedAt,
       completedAt,
       processingDurationMs,
-      processingCostUsd: row.processing_cost_usd,
+      processingCostUsd,
+      simulationDurationMs,
+      simulationCostUsd,
+      totalDurationMs,
+      totalCostUsd,
     };
   });
 

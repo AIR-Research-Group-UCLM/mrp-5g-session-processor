@@ -87,6 +87,12 @@ export interface SessionListItem
     | "processingCostUsd"
   > {
   processingDurationMs: number | null;
+  // Simulation data (only for simulated sessions)
+  simulationDurationMs: number | null;
+  simulationCostUsd: number | null;
+  // Totals (processing + simulation if applicable)
+  totalDurationMs: number | null;
+  totalCostUsd: number | null;
 }
 
 export interface CreateSessionInput {

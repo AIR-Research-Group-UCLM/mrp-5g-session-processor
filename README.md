@@ -167,3 +167,120 @@ mrp-5g-session-processor/
 5. Segmentación en secciones médicas y re-etiquetado de speakers (gpt-5.1)
 6. Generación de resúmenes y metadatos (gpt-5.1)
 7. Estado actualizado a "completed"
+
+## Despliegue en Producción
+
+La aplicación se despliega con Docker Compose. Express sirve tanto la API como el frontend estático.
+
+### 1. Clonar y configurar
+
+```bash
+git clone <repo-url> mrp-5g-session-processor
+cd mrp-5g-session-processor/docker
+cp .env.prod.example .env
+```
+
+### 2. Editar variables de entorno
+
+Editar `docker/.env` con los valores reales:
+
+| Variable | Descripción |
+|----------|-------------|
+| `SESSION_SECRET` | Clave secreta de 32+ caracteres |
+| `S3_ACCESS_KEY` | Credencial de Garage (ver paso 4) |
+| `S3_SECRET_KEY` | Credencial de Garage (ver paso 4) |
+| `OPENAI_API_KEY` | API key de OpenAI |
+| `ELEVENLABS_API_KEY` | API key de ElevenLabs |
+| `SIMULATOR_VOICES` | IDs de voces de ElevenLabs (formato: `id1:Nombre1;id2:Nombre2`) |
+| `BASE_PATH` | Subruta de despliegue (ej: `/mrp-5g-session-processor`) |
+| `CORS_ORIGIN` | Dominio permitido (ej: `https://airproy.esi.uclm.es`) |
+
+### 3. Construir la imagen
+
+```bash
+docker compose -f docker/docker-compose.prod.yml build
+```
+
+### 4. Inicializar Garage S3 (primera vez)
+
+```bash
+# Iniciar solo Garage
+docker compose -f docker/docker-compose.prod.yml up -d garage
+
+# Esperar unos segundos y ejecutar el script de inicialización
+bash docker/init-garage.sh
+```
+
+El script mostrará las credenciales S3. Copiarlas a `docker/.env`:
+
+```
+S3_ACCESS_KEY=GK...
+S3_SECRET_KEY=...
+```
+
+### 5. Iniciar todos los servicios
+
+```bash
+docker compose -f docker/docker-compose.prod.yml up -d
+```
+
+### 6. Crear usuarios
+
+```bash
+docker exec mrp-app node scripts/seed-users.js
+```
+
+### 7. Configurar reverse proxy
+
+Ejemplo de configuración nginx para servir bajo una subruta:
+
+```nginx
+location /mrp-5g-session-processor {
+    proxy_pass http://localhost:3001;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 500M;
+}
+```
+
+Recargar nginx:
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### Comandos de gestión
+
+```bash
+# Desde la raíz del proyecto
+docker compose -f docker/docker-compose.prod.yml up -d      # Iniciar
+docker compose -f docker/docker-compose.prod.yml down       # Detener
+docker compose -f docker/docker-compose.prod.yml logs -f    # Ver logs
+docker compose -f docker/docker-compose.prod.yml build      # Reconstruir
+```
+
+### Verificar funcionamiento
+
+```bash
+# Health check
+curl http://localhost:3001/mrp-5g-session-processor/health
+
+# Acceder a la aplicación
+# https://<dominio>/mrp-5g-session-processor/
+```
+
+### Estructura de datos
+
+Los datos se persisten en bind mounts locales:
+
+```
+docker/data/
+├── app/        # Base de datos SQLite
+├── redis/      # Persistencia de Redis
+└── garage/     # Almacenamiento S3
+    ├── data/
+    └── meta/
+```

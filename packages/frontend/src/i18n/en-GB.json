@@ -14,7 +14,9 @@
     "previous": "Previous",
     "viewAll": "View all",
     "logout": "Logout",
-    "page": "Page {{current}} of {{total}}"
+    "openMenu": "Open menu",
+    "page": "Page {{current}} of {{total}}",
+    "confirm": "Confirm"
   },
   "auth": {
     "login": "Sign In",
@@ -28,6 +30,7 @@
   },
   "navigation": {
     "home": "Home",
+    "users": "Users",
     "newSession": "New Session",
     "simulator": "Simulator",
     "mySessions": "My Sessions"
@@ -275,8 +278,11 @@
   "accuracy": {
     "title": "Transcription Accuracy",
     "textSimilarity": "Text Similarity",
+    "textSimilarityTooltip": "Percentage of words correctly transcribed. Calculated as 1 minus the Word Error Rate (WER), which measures insertions, deletions and substitutions. E.g.: if the original text has 100 words and there were 5 errors (misspelled, omitted or added words), the similarity is 95%.",
     "speakerAccuracy": "Speaker Identification",
+    "speakerAccuracyTooltip": "Accuracy in identifying who is speaking. Compares the word distribution per speaker between the original and transcribed text. E.g.: if the doctor said 100 words and 95 were correctly attributed to them, the accuracy for that speaker is 95%.",
     "wordErrorRate": "Word Error Rate (WER)",
+    "wordErrorRateTooltip": "WER = (Substitutions + Deletions + Insertions) / Total original words. A WER of 0% means perfect transcription. E.g.: if out of 100 words there are 2 substituted, 1 deleted and 2 inserted, the WER is 5%.",
     "stats": "Statistics",
     "originalSegments": "Original segments",
     "transcribedSegments": "Transcribed segments",
@@ -286,5 +292,30 @@
     "wordsOriginal": "Original",
     "wordsTranscribed": "Transcribed",
     "errorLoading": "Error loading accuracy data"
+  },
+  "users": {
+    "title": "User Management",
+    "createUser": "Create User",
+    "editUser": "Edit User",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "newPassword": "New Password",
+    "createdAt": "Created at",
+    "actions": "Actions",
+    "noUsers": "No users",
+    "create": "Create",
+    "nameRequired": "Name is required",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Invalid email",
+    "passwordMinLength": "Password must be at least 8 characters",
+    "leaveBlankToKeep": "Leave blank to keep current",
+    "createSuccess": "User created successfully",
+    "createError": "Error creating user",
+    "updateSuccess": "User updated successfully",
+    "updateError": "Error updating user",
+    "deleteSuccess": "User deleted successfully",
+    "deleteError": "Error deleting user",
+    "loadError": "Error loading users"
   }
 }

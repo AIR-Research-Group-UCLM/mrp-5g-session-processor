@@ -1,0 +1,69 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        VITE_BASE_PATH: ${BASE_PATH:-/mrp-5g-session-processor}
+    container_name: mrp-app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3001}:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      BASE_PATH: ${BASE_PATH:-/mrp-5g-session-processor}
+      SERVE_STATIC: "true"
+      STATIC_PATH: /app/public
+      COOKIE_SECURE: ${COOKIE_SECURE:-auto}
+      SESSION_SECRET: ${SESSION_SECRET}
+      DATABASE_PATH: /app/data/mrp.db
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://airproy.esi.uclm.es}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://garage:3900}
+      S3_BUCKET: ${S3_BUCKET:-mrp-videos}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_REGION: ${S3_REGION:-garage}
+      REDIS_URL: redis://redis:6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL_TRANSCRIPTION: ${OPENAI_MODEL_TRANSCRIPTION:-gpt-4o-transcribe-diarize}
+      OPENAI_MODEL_SEGMENTATION: ${OPENAI_MODEL_SEGMENTATION:-gpt-5.1}
+      OPENAI_MODEL_METADATA: ${OPENAI_MODEL_METADATA:-gpt-5.1}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      SIMULATOR_VOICES: ${SIMULATOR_VOICES}
+      SIMULATOR_PAUSE_BETWEEN_SEGMENTS_MS: ${SIMULATOR_PAUSE_BETWEEN_SEGMENTS_MS:-1000}
+      SIMULATOR_AUDIO_CONCURRENCY: ${SIMULATOR_AUDIO_CONCURRENCY:-3}
+    volumes:
+      - ./data/app:/app/data
+    depends_on:
+      - redis
+      - garage
+    networks:
+      - mrp-network
+
+  redis:
+    image: redis:8.4.0-alpine
+    container_name: mrp-redis
+    restart: unless-stopped
+    volumes:
+      - ./data/redis:/data
+    command: redis-server --appendonly yes
+    networks:
+      - mrp-network
+
+  garage:
+    image: dxflrs/garage:v2.1.0
+    container_name: mrp-garage-s3
+    restart: unless-stopped
+    volumes:
+      - ./garage/garage.toml:/etc/garage.toml:ro
+      - ./data/garage/data:/var/lib/garage/data
+      - ./data/garage/meta:/var/lib/garage/meta
+    environment:
+      - GARAGE_ALLOW_WORLD_READABLE_SECRETS=true
+    networks:
+      - mrp-network
+
+networks:
+  mrp-network:
+    driver: bridge

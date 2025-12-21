@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+**/dist
+packages/frontend/dist
+packages/backend/dist
+packages/shared/dist
+
+# Development files
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+*.md
+*.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+coverage
+**/*.test.ts
+**/*.spec.ts
+
+# Docker
+docker/data
+docker/garage
+docker/*.toml
+
+# Data
+data
+*.db
+*.sqlite

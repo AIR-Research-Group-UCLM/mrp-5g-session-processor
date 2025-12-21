@@ -42,10 +42,10 @@ export function ProcessingTimeline({
       <CardContent className="space-y-4">
         {/* Grand Total - Time and Cost */}
         {(grandTotal > 0 || grandTotalCost > 0) && (
-          <div className="flex items-center justify-between gap-4 rounded-lg bg-blue-50 px-4 py-3">
+          <div className="flex flex-col gap-2 rounded-lg bg-blue-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             {grandTotal > 0 && (
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-blue-600" />
+                <Clock className="h-4 w-4 shrink-0 text-blue-600" />
                 <span className="text-sm font-medium text-blue-800">{t("timing.totalTime")}</span>
                 <span className="text-lg font-semibold text-blue-900">
                   {formatProcessingDuration(grandTotal)}
@@ -54,7 +54,7 @@ export function ProcessingTimeline({
             )}
             {grandTotalCost > 0 && (
               <div className="flex items-center gap-2">
-                <Coins className="h-4 w-4 text-green-600" />
+                <Coins className="h-4 w-4 shrink-0 text-green-600" />
                 <span className="text-sm font-medium text-green-800">{t("costs.totalCost")}</span>
                 <span className="text-lg font-semibold text-green-900">
                   {formatCost(grandTotalCost)}
@@ -87,9 +87,9 @@ export function ProcessingTimeline({
                 durationMs={simulationTimeline.concatenationDurationMs}
               />
               {(simulationTimeline.totalDurationMs || simulationTimeline.totalCostUsd) && (
-                <div className="mt-2 flex items-center justify-between border-t border-gray-200 pt-2">
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-1 border-t border-gray-200 pt-2">
                   <span className="text-sm font-medium text-gray-600">{t("timing.subtotal")}</span>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 sm:gap-4">
                     {simulationTimeline.totalDurationMs && (
                       <span className="font-medium text-gray-800">
                         {formatProcessingDuration(simulationTimeline.totalDurationMs)}
@@ -126,9 +126,9 @@ export function ProcessingTimeline({
                   />
                 ))}
               {(processingTimeline.totalDurationMs || processingTimeline.totalCostUsd) && (
-                <div className="mt-2 flex items-center justify-between border-t border-gray-200 pt-2">
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-1 border-t border-gray-200 pt-2">
                   <span className="text-sm font-medium text-gray-600">{t("timing.subtotal")}</span>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 sm:gap-4">
                     {processingTimeline.totalDurationMs && (
                       <span className="font-medium text-gray-800">
                         {formatProcessingDuration(processingTimeline.totalDurationMs)}
@@ -158,12 +158,12 @@ interface TimelineStepProps {
 
 function TimelineStep({ label, durationMs, costUsd }: TimelineStepProps) {
   return (
-    <div className="flex items-center justify-between text-sm">
+    <div className="flex flex-wrap items-center justify-between gap-1 text-sm">
       <div className="flex items-center gap-2">
-        <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
         <span className="text-gray-600">{label}</span>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         <span className="text-gray-500">
           {durationMs ? formatProcessingDuration(durationMs) : "-"}
         </span>

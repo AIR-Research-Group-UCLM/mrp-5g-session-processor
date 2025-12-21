@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { AuthUser, LoginCredentials } from "@mrp/shared";
 import * as authApi from "@/api/auth.api";
+import { basePathNormalized } from "@/api/client";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await authApi.logout();
     setUser(null);
-    window.location.href = "/login";
+    window.location.href = `${basePathNormalized}/login`;
   }, []);
 
   return (

@@ -17,10 +17,13 @@ const queryClient = new QueryClient({
   },
 });
 
+const basePath = import.meta.env.VITE_BASE_PATH || "";
+const basename = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath;
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <BrowserRouter basename={basename}>
         <AuthProvider>
           <App />
           <Toaster position="top-right" />

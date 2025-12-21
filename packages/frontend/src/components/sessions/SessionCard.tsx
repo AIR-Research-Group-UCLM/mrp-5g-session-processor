@@ -1,5 +1,6 @@
 import { Badge, SessionStatusBadge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { formatDuration, formatProcessingDuration, formatRelativeDate, formatCost } from "@/utils/format";
 import type { SessionListItem } from "@mrp/shared";
 import { Calendar, Clock, Languages, Timer, Coins } from "lucide-react";
@@ -13,26 +14,53 @@ interface SessionCardProps {
 export function SessionCard({ session }: SessionCardProps) {
   const { t } = useTranslation();
 
+  // Build time breakdown tooltip
+  const buildTimeTooltip = () => {
+    const parts: string[] = [];
+    if (session.isSimulated && session.simulationDurationMs) {
+      parts.push(`${t("timing.simulationSteps")}: ${formatProcessingDuration(session.simulationDurationMs)}`);
+    }
+    if (session.processingDurationMs) {
+      parts.push(`${t("timing.processingSteps")}: ${formatProcessingDuration(session.processingDurationMs)}`);
+    }
+    return parts.join(" | ");
+  };
+
+  // Build cost breakdown tooltip
+  const buildCostTooltip = () => {
+    const parts: string[] = [];
+    if (session.isSimulated && session.simulationCostUsd) {
+      parts.push(`${t("costs.simulationCosts")}: ${formatCost(session.simulationCostUsd)}`);
+    }
+    if (session.processingCostUsd) {
+      parts.push(`${t("costs.processingCost")}: ${formatCost(session.processingCostUsd)}`);
+    }
+    return parts.join(" | ");
+  };
+
+  const displayDuration = session.totalDurationMs ?? session.processingDurationMs;
+  const displayCost = session.totalCostUsd ?? session.processingCostUsd;
+
   return (
     <Link to={`/sessions/${session.id}`}>
       <Card className="transition-shadow hover:shadow-md">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium text-gray-900">
-                {session.title ?? t("sessions.untitledSession")}
-              </h3>
-              {session.isSimulated && (
-                <Badge className="self-start" variant="secondary">
-                  {t("sessions.simulated")}
-                </Badge>
-              )}
-            </div>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-medium text-gray-900">
+              {session.title ?? t("sessions.untitledSession")}
+            </h3>
             {session.summary && (
               <p className="mt-1 line-clamp-2 text-sm text-gray-500">{session.summary}</p>
             )}
           </div>
-          <SessionStatusBadge status={session.status} />
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <SessionStatusBadge status={session.status} />
+            {session.isSimulated && (
+              <Badge variant="secondary">
+                {t("sessions.simulated")}
+              </Badge>
+            )}
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-500">
@@ -52,17 +80,21 @@ export function SessionCard({ session }: SessionCardProps) {
               {t(`languages.${session.language}`, { defaultValue: session.language.toUpperCase() })}
             </div>
           )}
-          {session.status === "completed" && session.processingDurationMs && (
-            <div className="flex items-center gap-1" title={t("timing.processingTime")}>
-              <Timer className="h-4 w-4" />
-              {formatProcessingDuration(session.processingDurationMs)}
-            </div>
+          {session.status === "completed" && displayDuration && (
+            <Tooltip content={buildTimeTooltip()} position="bottom">
+              <div className="flex items-center gap-1">
+                <Timer className="h-4 w-4" />
+                {formatProcessingDuration(displayDuration)}
+              </div>
+            </Tooltip>
           )}
-          {session.status === "completed" && session.processingCostUsd != null && session.processingCostUsd > 0 && (
-            <div className="flex items-center gap-1" title={t("costs.processingCost")}>
-              <Coins className="h-4 w-4" />
-              {formatCost(session.processingCostUsd)}
-            </div>
+          {session.status === "completed" && displayCost != null && displayCost > 0 && (
+            <Tooltip content={buildCostTooltip()} position="bottom">
+              <div className="flex items-center gap-1">
+                <Coins className="h-4 w-4" />
+                {formatCost(displayCost)}
+              </div>
+            </Tooltip>
           )}
         </div>
 

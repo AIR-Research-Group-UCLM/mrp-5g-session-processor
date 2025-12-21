@@ -18,6 +18,7 @@ out/
 *.sqlite
 *.sqlite3
 data/
+docker/data/
 
 # Uploads
 uploads/
