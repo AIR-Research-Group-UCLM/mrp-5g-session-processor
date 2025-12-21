@@ -1,71 +1,75 @@
 # MRP 5G Session Processor
 
-Aplicación para procesar vídeos de sesiones médicas. Permite subir grabaciones de consultas médicas, transcribirlas automáticamente, identificar los hablantes (doctor/paciente/especialista) y segmentar el contenido en secciones clínicas estructuradas con resúmenes automáticos.
+<p align="center">
+  <img src="screenshots/mrp-5g-session-processor-logo-hd.png" alt="MRP 5G Session Processor Logo" width="200">
+</p>
 
-## Capturas de Pantalla
+Application for processing medical session videos. It allows uploading medical consultation recordings, automatically transcribing them, identifying speakers (doctor/patient/specialist), and segmenting the content into structured clinical sections with automatic summaries.
 
-### Panel de Control
-![Panel de Control](screenshots/20251214T002128-Screenshot.png)
-*Dashboard con estadísticas de sesiones, listado de consultas recientes con estado, duración, etiquetas y keywords.*
+## Screenshots
 
-### Detalle de Sesión
-![Detalle de Sesión](screenshots/20251214T002026-Screenshot.png)
-*Vista de sesión con reproductor de vídeo, transcripción segmentada por secciones médicas, resúmenes automáticos e información general.*
+### Dashboard
+![Dashboard](screenshots/20251214T002128-Screenshot.png)
+*Dashboard with session statistics, list of recent consultations with status, duration, tags, and keywords.*
 
-## Características
+### Session Detail
+![Session Detail](screenshots/20251214T002026-Screenshot.png)
+*Session view with video player, transcription segmented by medical sections, automatic summaries, and general information.*
 
-- **Transcripción automática** con identificación de hablantes usando GPT-4o Transcribe Diarize
-- **Segmentación inteligente** en secciones médicas (presentación, síntomas, diagnóstico, tratamiento, despedida)
-- **Resúmenes automáticos** por sección y general usando GPT-5.1
-- **Generación de metadatos**: título, keywords y etiquetas automáticas
-- **Búsqueda full-text** en transcripciones y metadatos
-- **Streaming de vídeo** con sincronización de transcripción
-- **Procesamiento asíncrono** con cola de trabajos
+## Features
 
-## Stack Técnico
+- **Automatic transcription** with speaker identification using GPT-4o Transcribe Diarize
+- **Intelligent segmentation** into medical sections (introduction, symptoms, diagnosis, treatment, closing)
+- **Automatic summaries** per section and overall using GPT-5.1
+- **Metadata generation**: automatic title, keywords, and tags
+- **Full-text search** in transcriptions and metadata
+- **Video streaming** with transcription synchronization
+- **Asynchronous processing** with job queue
 
-| Componente | Tecnología |
-|------------|------------|
+## Tech Stack
+
+| Component | Technology |
+|-----------|------------|
 | Frontend | React 19 + Vite + Tailwind CSS + TypeScript |
 | Backend | Express.js + TypeScript |
-| Base de datos | SQLite (better-sqlite3) |
-| Almacenamiento | S3 (Garage para desarrollo local) |
-| Cola | BullMQ + Redis |
-| IA | OpenAI SDK (gpt-4o-transcribe-diarize, gpt-5.1) |
+| Database | SQLite (better-sqlite3) |
+| Storage | S3 (Garage for local development) |
+| Queue | BullMQ + Redis |
+| AI | OpenAI SDK (gpt-4o-transcribe-diarize, gpt-5.1) |
 
-## Requisitos Previos
+## Prerequisites
 
 - Node.js 20+
 - pnpm 9+
-- Docker y Docker Compose
-- ffmpeg (instalado y accesible en el PATH)
+- Docker and Docker Compose
+- ffmpeg (installed and accessible in PATH)
 
-## Instalación
+## Installation
 
 ```bash
-# Clonar el repositorio
+# Clone the repository
 git clone <repo-url>
 cd mrp-5g-session-processor
 
-# Instalar dependencias
+# Install dependencies
 pnpm install
 
-# Levantar servicios Docker (Garage S3 + Redis)
+# Start Docker services (Garage S3 + Redis)
 pnpm docker:up
 
-# Inicializar Garage S3
+# Initialize Garage S3
 pnpm docker:init
 
-# Ejecutar migraciones
+# Run migrations
 pnpm db:migrate
 
-# Seedear usuarios
+# Seed users
 pnpm db:seed
 ```
 
-## Configuración
+## Configuration
 
-Crear un archivo `.env` en la raíz del proyecto:
+Create a `.env` file in the project root:
 
 ```env
 # Backend
@@ -90,19 +94,19 @@ REDIS_URL=redis://localhost:6379
 OPENAI_API_KEY=sk-...
 ```
 
-## Uso
+## Usage
 
 ```bash
-# Desarrollo (frontend + backend en paralelo)
+# Development (frontend + backend in parallel)
 pnpm dev
 
-# Solo backend
+# Backend only
 pnpm dev:backend
 
-# Solo frontend
+# Frontend only
 pnpm dev:frontend
 
-# Build de producción
+# Production build
 pnpm build
 
 # Tests
@@ -112,67 +116,67 @@ pnpm test
 pnpm lint
 ```
 
-## Estructura del Proyecto
+## Project Structure
 
 ```
 mrp-5g-session-processor/
 ├── docker/                   # Docker Compose (Garage S3 + Redis)
 ├── packages/
-│   ├── shared/               # Tipos TypeScript compartidos
-│   ├── backend/              # API Express.js
+│   ├── shared/               # Shared TypeScript types
+│   ├── backend/              # Express.js API
 │   │   ├── src/
-│   │   │   ├── controllers/  # Controladores REST
-│   │   │   ├── db/           # Schema, migraciones, repositorios
+│   │   │   ├── controllers/  # REST controllers
+│   │   │   ├── db/           # Schema, migrations, repositories
 │   │   │   ├── middleware/   # Auth, upload, errors
-│   │   │   ├── routes/       # Definición de rutas
-│   │   │   ├── services/     # Lógica de negocio
-│   │   │   └── services/processing/  # Workers de procesamiento
+│   │   │   ├── routes/       # Route definitions
+│   │   │   ├── services/     # Business logic
+│   │   │   └── services/processing/  # Processing workers
 │   │   └── scripts/          # seed-users.ts
 │   └── frontend/             # React SPA
 │       └── src/
-│           ├── api/          # Cliente HTTP
+│           ├── api/          # HTTP client
 │           ├── components/   # UI components
 │           ├── context/      # AuthContext
 │           ├── hooks/        # Custom hooks
-│           └── pages/        # Páginas de la app
+│           └── pages/        # App pages
 ├── pnpm-workspace.yaml
-└── .env                      # Configuración (no commitear)
+└── .env                      # Configuration (do not commit)
 ```
 
 ## API Endpoints
 
-### Autenticación
-- `POST /api/auth/login` - Login con email/password
-- `POST /api/auth/logout` - Cerrar sesión
-- `GET /api/auth/me` - Usuario autenticado actual
+### Authentication
+- `POST /api/auth/login` - Login with email/password
+- `POST /api/auth/logout` - Logout
+- `GET /api/auth/me` - Current authenticated user
 
-### Sesiones médicas
-- `GET /api/sessions` - Listar sesiones del usuario
-- `POST /api/sessions` - Crear sesión + subir vídeo
-- `GET /api/sessions/:id` - Detalle con transcripción y resúmenes
-- `GET /api/sessions/:id/status` - Estado de procesamiento
-- `GET /api/sessions/:id/video/stream` - Streaming de vídeo
-- `PATCH /api/sessions/:id` - Actualizar metadatos
-- `DELETE /api/sessions/:id` - Eliminar sesión
+### Medical Sessions
+- `GET /api/sessions` - List user sessions
+- `POST /api/sessions` - Create session + upload video
+- `GET /api/sessions/:id` - Detail with transcription and summaries
+- `GET /api/sessions/:id/status` - Processing status
+- `GET /api/sessions/:id/video/stream` - Video streaming
+- `PATCH /api/sessions/:id` - Update metadata
+- `DELETE /api/sessions/:id` - Delete session
 
-### Búsqueda
-- `GET /api/search?q=` - Búsqueda difusa en transcripciones y metadatos
+### Search
+- `GET /api/search?q=` - Fuzzy search in transcriptions and metadata
 
-## Flujo de Procesamiento
+## Processing Flow
 
-1. Usuario sube vídeo → se guarda en S3
-2. Se crea job en cola BullMQ
-3. Worker descarga vídeo y extrae audio con ffmpeg
-4. Transcripción con identificación de hablantes (gpt-4o-transcribe-diarize)
-5. Segmentación en secciones médicas y re-etiquetado de speakers (gpt-5.1)
-6. Generación de resúmenes y metadatos (gpt-5.1)
-7. Estado actualizado a "completed"
+1. User uploads video → saved to S3
+2. Job created in BullMQ queue
+3. Worker downloads video and extracts audio with ffmpeg
+4. Transcription with speaker identification (gpt-4o-transcribe-diarize)
+5. Segmentation into medical sections and speaker re-labeling (gpt-5.1)
+6. Summary and metadata generation (gpt-5.1)
+7. Status updated to "completed"
 
-## Despliegue en Producción
+## Production Deployment
 
-La aplicación se despliega con Docker Compose. Express sirve tanto la API como el frontend estático.
+The application is deployed with Docker Compose. Express serves both the API and the static frontend.
 
-### 1. Clonar y configurar
+### 1. Clone and configure
 
 ```bash
 git clone <repo-url> mrp-5g-session-processor
@@ -180,59 +184,59 @@ cd mrp-5g-session-processor/docker
 cp .env.prod.example .env
 ```
 
-### 2. Editar variables de entorno
+### 2. Edit environment variables
 
-Editar `docker/.env` con los valores reales:
+Edit `docker/.env` with actual values:
 
-| Variable | Descripción |
+| Variable | Description |
 |----------|-------------|
-| `SESSION_SECRET` | Clave secreta de 32+ caracteres |
-| `S3_ACCESS_KEY` | Credencial de Garage (ver paso 4) |
-| `S3_SECRET_KEY` | Credencial de Garage (ver paso 4) |
-| `OPENAI_API_KEY` | API key de OpenAI |
-| `ELEVENLABS_API_KEY` | API key de ElevenLabs |
-| `SIMULATOR_VOICES` | IDs de voces de ElevenLabs (formato: `id1:Nombre1;id2:Nombre2`) |
-| `BASE_PATH` | Subruta de despliegue (ej: `/mrp-5g-session-processor`) |
-| `CORS_ORIGIN` | Dominio permitido (ej: `https://app.example.com`) |
+| `SESSION_SECRET` | Secret key of 32+ characters |
+| `S3_ACCESS_KEY` | Garage credential (see step 4) |
+| `S3_SECRET_KEY` | Garage credential (see step 4) |
+| `OPENAI_API_KEY` | OpenAI API key |
+| `ELEVENLABS_API_KEY` | ElevenLabs API key |
+| `SIMULATOR_VOICES` | ElevenLabs voice IDs (format: `id1:Name1;id2:Name2`) |
+| `BASE_PATH` | Deployment subpath (e.g., `/mrp-5g-session-processor`) |
+| `CORS_ORIGIN` | Allowed domain (e.g., `https://app.example.com`) |
 
-### 3. Construir la imagen
+### 3. Build the image
 
 ```bash
 docker compose -f docker/docker-compose.prod.yml build
 ```
 
-### 4. Inicializar Garage S3 (primera vez)
+### 4. Initialize Garage S3 (first time)
 
 ```bash
-# Iniciar solo Garage
+# Start only Garage
 docker compose -f docker/docker-compose.prod.yml up -d garage
 
-# Esperar unos segundos y ejecutar el script de inicialización
+# Wait a few seconds and run the initialization script
 bash docker/init-garage.sh
 ```
 
-El script mostrará las credenciales S3. Copiarlas a `docker/.env`:
+The script will display the S3 credentials. Copy them to `docker/.env`:
 
 ```
 S3_ACCESS_KEY=GK...
 S3_SECRET_KEY=...
 ```
 
-### 5. Iniciar todos los servicios
+### 5. Start all services
 
 ```bash
 docker compose -f docker/docker-compose.prod.yml up -d
 ```
 
-### 6. Crear usuarios
+### 6. Create users
 
 ```bash
 docker exec mrp-app node scripts/seed-users.js
 ```
 
-### 7. Configurar reverse proxy
+### 7. Configure reverse proxy
 
-Ejemplo de configuración nginx para servir bajo una subruta:
+Example nginx configuration to serve under a subpath:
 
 ```nginx
 location /mrp-5g-session-processor {
@@ -246,41 +250,41 @@ location /mrp-5g-session-processor {
 }
 ```
 
-Recargar nginx:
+Reload nginx:
 
 ```bash
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-### Comandos de gestión
+### Management Commands
 
 ```bash
-# Desde la raíz del proyecto
-docker compose -f docker/docker-compose.prod.yml up -d      # Iniciar
-docker compose -f docker/docker-compose.prod.yml down       # Detener
-docker compose -f docker/docker-compose.prod.yml logs -f    # Ver logs
-docker compose -f docker/docker-compose.prod.yml build      # Reconstruir
+# From the project root
+docker compose -f docker/docker-compose.prod.yml up -d      # Start
+docker compose -f docker/docker-compose.prod.yml down       # Stop
+docker compose -f docker/docker-compose.prod.yml logs -f    # View logs
+docker compose -f docker/docker-compose.prod.yml build      # Rebuild
 ```
 
-### Verificar funcionamiento
+### Verify Operation
 
 ```bash
 # Health check
 curl http://localhost:3001/mrp-5g-session-processor/health
 
-# Acceder a la aplicación
-# https://<dominio>/mrp-5g-session-processor/
+# Access the application
+# https://<domain>/mrp-5g-session-processor/
 ```
 
-### Estructura de datos
+### Data Structure
 
-Los datos se persisten en bind mounts locales:
+Data is persisted in local bind mounts:
 
 ```
 docker/data/
-├── app/        # Base de datos SQLite
-├── redis/      # Persistencia de Redis
-└── garage/     # Almacenamiento S3
+├── app/        # SQLite database
+├── redis/      # Redis persistence
+└── garage/     # S3 storage
     ├── data/
     └── meta/
 ```
