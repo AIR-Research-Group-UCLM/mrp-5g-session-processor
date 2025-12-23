@@ -99,7 +99,7 @@ export function SessionDetailPage() {
   const handleDelete = async () => {
     if (confirm(t("sessions.confirmDelete"))) {
       await deleteSession.mutateAsync(session.id);
-      window.location.href = "/sessions";
+      window.location.href = `${basePathNormalized}/sessions`;
     }
   };
 
