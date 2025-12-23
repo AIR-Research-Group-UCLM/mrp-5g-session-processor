@@ -9,128 +9,128 @@ importers:
   .:
     devDependencies:
       '@typescript-eslint/eslint-plugin':
-        specifier: ^8.49.0
+        specifier: 8.49.0
         version: 8.49.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       '@typescript-eslint/parser':
-        specifier: ^8.49.0
+        specifier: 8.49.0
         version: 8.49.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       eslint:
-        specifier: ^9.39.2
+        specifier: 9.39.2
         version: 9.39.2(jiti@2.6.1)
       prettier:
-        specifier: ^3.7.4
+        specifier: 3.7.4
         version: 3.7.4
       typescript:
-        specifier: ^5.9.3
+        specifier: 5.9.3
         version: 5.9.3
 
   packages/backend:
     dependencies:
       '@aws-sdk/client-s3':
-        specifier: ^3.948.0
+        specifier: 3.948.0
         version: 3.948.0
       '@aws-sdk/s3-request-presigner':
-        specifier: ^3.948.0
+        specifier: 3.948.0
         version: 3.948.0
       '@elevenlabs/elevenlabs-js':
-        specifier: ^2.28.0
+        specifier: 2.28.0
         version: 2.28.0
       '@mrp/shared':
         specifier: workspace:*
         version: link:../shared
       argon2:
-        specifier: ^0.44.0
+        specifier: 0.44.0
         version: 0.44.0
       better-sqlite3:
-        specifier: ^12.5.0
+        specifier: 12.5.0
         version: 12.5.0
       bullmq:
-        specifier: ^5.66.0
+        specifier: 5.66.0
         version: 5.66.0
       compression:
-        specifier: ^1.8.1
+        specifier: 1.8.1
         version: 1.8.1
       connect-redis:
-        specifier: ^9.0.0
+        specifier: 9.0.0
         version: 9.0.0(express-session@1.18.2)(redis@5.10.0)
       cors:
-        specifier: ^2.8.5
+        specifier: 2.8.5
         version: 2.8.5
       dayjs:
-        specifier: ^1.11.19
+        specifier: 1.11.19
         version: 1.11.19
       dotenv:
-        specifier: ^17.2.3
+        specifier: 17.2.3
         version: 17.2.3
       express:
-        specifier: ^5.2.1
+        specifier: 5.2.1
         version: 5.2.1
       express-rate-limit:
-        specifier: ^8.2.1
+        specifier: 8.2.1
         version: 8.2.1(express@5.2.1)
       express-session:
-        specifier: ^1.18.2
+        specifier: 1.18.2
         version: 1.18.2
       file-type:
-        specifier: ^21.1.1
+        specifier: 21.1.1
         version: 21.1.1
       helmet:
-        specifier: ^8.1.0
+        specifier: 8.1.0
         version: 8.1.0
       ioredis:
-        specifier: ^5.8.2
+        specifier: 5.8.2
         version: 5.8.2
       multer:
-        specifier: ^2.0.2
+        specifier: 2.0.2
         version: 2.0.2
       openai:
-        specifier: ^6.10.0
+        specifier: 6.10.0
         version: 6.10.0(ws@8.18.3)(zod@4.1.13)
       pino:
-        specifier: ^10.1.0
+        specifier: 10.1.0
         version: 10.1.0
       pino-pretty:
-        specifier: ^13.1.3
+        specifier: 13.1.3
         version: 13.1.3
       redis:
-        specifier: ^5.10.0
+        specifier: 5.10.0
         version: 5.10.0
       uuid:
-        specifier: ^13.0.0
+        specifier: 13.0.0
         version: 13.0.0
       zod:
-        specifier: ^4.1.13
+        specifier: 4.1.13
         version: 4.1.13
     devDependencies:
       '@types/better-sqlite3':
-        specifier: ^7.6.13
+        specifier: 7.6.13
         version: 7.6.13
       '@types/compression':
-        specifier: ^1.8.1
+        specifier: 1.8.1
         version: 1.8.1
       '@types/cors':
-        specifier: ^2.8.19
+        specifier: 2.8.19
         version: 2.8.19
       '@types/express':
-        specifier: ^5.0.6
+        specifier: 5.0.6
         version: 5.0.6
       '@types/express-session':
-        specifier: ^1.18.2
+        specifier: 1.18.2
         version: 1.18.2
       '@types/multer':
-        specifier: ^2.0.0
+        specifier: 2.0.0
         version: 2.0.0
       '@types/node':
-        specifier: ^22.10.1
-        version: 22.19.2
+        specifier: 22.10.1
+        version: 22.10.1
       '@types/uuid':
-        specifier: ^11.0.0
+        specifier: 11.0.0
         version: 11.0.0
       tsx:
-        specifier: ^4.21.0
+        specifier: 4.21.0
         version: 4.21.0
       typescript:
-        specifier: ^5.9.3
+        specifier: 5.9.3
         version: 5.9.3
 
   packages/frontend:
@@ -139,89 +139,89 @@ importers:
         specifier: workspace:*
         version: link:../shared
       '@tanstack/react-query':
-        specifier: ^5.90.12
+        specifier: 5.90.12
         version: 5.90.12(react@19.2.3)
       axios:
-        specifier: ^1.13.2
+        specifier: 1.13.2
         version: 1.13.2
       clsx:
-        specifier: ^2.1.1
+        specifier: 2.1.1
         version: 2.1.1
       dayjs:
-        specifier: ^1.11.19
+        specifier: 1.11.19
         version: 1.11.19
       fuse.js:
-        specifier: ^7.1.0
+        specifier: 7.1.0
         version: 7.1.0
       i18next:
-        specifier: ^25.7.3
+        specifier: 25.7.3
         version: 25.7.3(typescript@5.9.3)
       lucide-react:
-        specifier: ^0.561.0
+        specifier: 0.561.0
         version: 0.561.0(react@19.2.3)
       react:
-        specifier: ^19.2.3
+        specifier: 19.2.3
         version: 19.2.3
       react-dom:
-        specifier: ^19.2.3
+        specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
       react-dropzone:
-        specifier: ^14.3.8
+        specifier: 14.3.8
         version: 14.3.8(react@19.2.3)
       react-hook-form:
-        specifier: ^7.68.0
+        specifier: 7.68.0
         version: 7.68.0(react@19.2.3)
       react-hot-toast:
-        specifier: ^2.6.0
+        specifier: 2.6.0
         version: 2.6.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-i18next:
-        specifier: ^16.5.0
+        specifier: 16.5.0
         version: 16.5.0(i18next@25.7.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       react-player:
-        specifier: ^3.4.0
+        specifier: 3.4.0
         version: 3.4.0(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react-router-dom:
-        specifier: ^7.10.1
+        specifier: 7.10.1
         version: 7.10.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       tailwind-merge:
-        specifier: ^3.4.0
+        specifier: 3.4.0
         version: 3.4.0
       zod:
-        specifier: ^4.1.13
+        specifier: 4.1.13
         version: 4.1.13
     devDependencies:
       '@tailwindcss/postcss':
-        specifier: ^4.1.18
+        specifier: 4.1.18
         version: 4.1.18
       '@types/react':
-        specifier: ^19.2.7
+        specifier: 19.2.7
         version: 19.2.7
       '@types/react-dom':
-        specifier: ^19.2.3
+        specifier: 19.2.3
         version: 19.2.3(@types/react@19.2.7)
       '@vitejs/plugin-react':
-        specifier: ^5.1.2
+        specifier: 5.1.2
         version: 5.1.2(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       autoprefixer:
-        specifier: ^10.4.22
+        specifier: 10.4.22
         version: 10.4.22(postcss@8.5.6)
       postcss:
-        specifier: ^8.5.6
+        specifier: 8.5.6
         version: 8.5.6
       tailwindcss:
-        specifier: ^4.1.18
+        specifier: 4.1.18
         version: 4.1.18
       typescript:
-        specifier: ^5.9.3
+        specifier: 5.9.3
         version: 5.9.3
       vite:
-        specifier: ^7.2.7
+        specifier: 7.2.7
         version: 7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
   packages/shared:
     devDependencies:
       typescript:
-        specifier: ^5.9.3
+        specifier: 5.9.3
         version: 5.9.3
 
 packages:
@@ -1452,6 +1452,9 @@ packages:
 
   '@types/multer@2.0.0':
     resolution: {integrity: sha512-C3Z9v9Evij2yST3RSBktxP9STm6OdMc5uR1xF1SGr98uv8dUlAL2hqwrZ3GVB3uyMyiegnscEK6PGtYvNrjTjw==}
+
+  '@types/node@22.10.1':
+    resolution: {integrity: sha512-qKgsUwfHZV2WCWLAnVP1JqnpE6Im6h3Y0+fYgMTasNQ7V++CBX5OT1as0g0f+OyubbFqhf6XVNIsmN4IIhEgGQ==}
 
   '@types/node@22.19.2':
     resolution: {integrity: sha512-LPM2G3Syo1GLzXLGJAKdqoU35XvrWzGJ21/7sgZTUpbkBaOasTj8tjwn6w+hCkqaa1TfJ/w67rJSwYItlJ2mYw==}
@@ -3004,6 +3007,9 @@ packages:
   uint8array-extras@1.5.0:
     resolution: {integrity: sha512-rvKSBiC5zqCCiDZ9kAOszZcDvdAHwwIKJG33Ykj43OKcWsnmcBRL09YTU4nOeHZ8Y2a7l1MgTd08SBe9A8Qj6A==}
     engines: {node: '>=18'}
+
+  undici-types@6.20.0:
+    resolution: {integrity: sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==}
 
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
@@ -4600,31 +4606,31 @@ snapshots:
 
   '@types/better-sqlite3@7.6.13':
     dependencies:
-      '@types/node': 22.19.2
+      '@types/node': 22.10.1
 
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 22.19.2
+      '@types/node': 22.10.1
 
   '@types/compression@1.8.1':
     dependencies:
       '@types/express': 5.0.6
-      '@types/node': 22.19.2
+      '@types/node': 22.10.1
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 22.19.2
+      '@types/node': 22.10.1
 
   '@types/cors@2.8.19':
     dependencies:
-      '@types/node': 22.19.2
+      '@types/node': 22.10.1
 
   '@types/estree@1.0.8': {}
 
   '@types/express-serve-static-core@5.1.0':
     dependencies:
-      '@types/node': 22.19.2
+      '@types/node': 22.10.1
       '@types/qs': 6.14.0
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.1
@@ -4647,9 +4653,14 @@ snapshots:
     dependencies:
       '@types/express': 5.0.6
 
+  '@types/node@22.10.1':
+    dependencies:
+      undici-types: 6.20.0
+
   '@types/node@22.19.2':
     dependencies:
       undici-types: 6.21.0
+    optional: true
 
   '@types/qs@6.14.0': {}
 
@@ -4665,12 +4676,12 @@ snapshots:
 
   '@types/send@1.2.1':
     dependencies:
-      '@types/node': 22.19.2
+      '@types/node': 22.10.1
 
   '@types/serve-static@2.2.0':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 22.19.2
+      '@types/node': 22.10.1
 
   '@types/uuid@11.0.0':
     dependencies:
@@ -6310,7 +6321,10 @@ snapshots:
 
   uint8array-extras@1.5.0: {}
 
-  undici-types@6.21.0: {}
+  undici-types@6.20.0: {}
+
+  undici-types@6.21.0:
+    optional: true
 
   unpipe@1.0.0: {}
 
