@@ -222,19 +222,26 @@ S3_ACCESS_KEY=GK...
 S3_SECRET_KEY=...
 ```
 
-### 5. Start all services
+### 5. Create bind mount dirs with correct user permissions
+
+```bash
+mkdir -p docker/data/{app,garage,redis}
+chown -R 1000:1000 docker/data/app
+```
+
+### 6. Start all services
 
 ```bash
 docker compose -f docker/docker-compose.prod.yml up -d
 ```
 
-### 6. Create users
+### 7. Create users
 
 ```bash
 docker exec mrp-app node scripts/seed-users.js
 ```
 
-### 7. Configure reverse proxy
+### 8. Configure reverse proxy
 
 Example nginx configuration to serve under a subpath:
 

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { config } from "../../config/index.js";
 import { getDb } from "../../db/connection.js";
 import { logger } from "../../config/logger.js";
+import { withRetry } from "../../utils/retry.js";
 
 // Security: Zod schemas for validating OpenAI metadata response
 const clinicalIndicatorsSchema = z.object({
@@ -183,21 +184,30 @@ export async function processMetadata(sessionId: string): Promise<MetadataCostRe
 
   const prompt = buildMetadataPrompt(needsTitle, needsTags, outputLanguage);
 
-  const completion = await openai.chat.completions.create({
-    model: config.openai.models.metadata,
-    messages: [
-      {
-        role: "system",
-        content: prompt,
-      },
-      {
-        role: "user",
-        content: transcriptText,
-      },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.3,
-  });
+  // Timeout: 10 minutes, retries: 3 attempts
+  const completion = await withRetry(
+    async () => {
+      return openai.chat.completions.create({
+        model: config.openai.models.metadata,
+        messages: [
+          {
+            role: "system",
+            content: prompt,
+          },
+          {
+            role: "user",
+            content: transcriptText,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+      });
+    },
+    {
+      operationName: "metadata-generation",
+      sessionId,
+    }
+  );
 
   const content = completion.choices[0]?.message?.content;
   if (!content) {

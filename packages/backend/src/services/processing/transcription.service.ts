@@ -7,6 +7,7 @@ import OpenAI from "openai";
 import { config } from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 import { getDb } from "../../db/connection.js";
+import { withRetry } from "../../utils/retry.js";
 import { s3Service } from "../s3.service.js";
 
 const execFileAsync = promisify(execFile);
@@ -231,27 +232,35 @@ export async function processTranscription(sessionId: string): Promise<Transcrip
     logger.debug({ sessionId, fileSizeBytes: audioFile.length }, "Audio file prepared for OpenAI");
 
     // Use transcription model with diarization support
-    let transcription: TranscriptionResponse;
-    try {
-      transcription = (await openai.audio.transcriptions.create({
-        file,
-        model: config.openai.models.transcription,
-        response_format: "diarized_json",
-        chunking_strategy: "auto",
-      })) as TranscriptionResponse;
-    } catch (openaiError) {
-      const err = openaiError as Error & { status?: number; response?: unknown };
-      logger.error(
-        {
-          sessionId,
-          error: err.message,
-          status: err.status,
-          response: err.response,
-        },
-        "OpenAI transcription failed"
-      );
-      throw err;
-    }
+    // Timeout: 10 minutes, retries: 3 attempts
+    const transcription = await withRetry<TranscriptionResponse>(
+      async () => {
+        try {
+          return (await openai.audio.transcriptions.create({
+            file,
+            model: config.openai.models.transcription,
+            response_format: "diarized_json",
+            chunking_strategy: "auto",
+          })) as TranscriptionResponse;
+        } catch (openaiError) {
+          const err = openaiError as Error & { status?: number; response?: unknown };
+          logger.error(
+            {
+              sessionId,
+              error: err.message,
+              status: err.status,
+              response: err.response,
+            },
+            "OpenAI transcription API error"
+          );
+          throw err;
+        }
+      },
+      {
+        operationName: "transcription",
+        sessionId,
+      }
+    );
 
     // Detect language from transcript text if API doesn't provide it
     // (diarized_json format doesn't include language field)

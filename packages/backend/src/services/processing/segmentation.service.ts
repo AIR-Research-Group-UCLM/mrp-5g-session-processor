@@ -6,6 +6,7 @@ import { z } from "zod";
 import { config } from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 import { getDb } from "../../db/connection.js";
+import { withRetry } from "../../utils/retry.js";
 import { s3Service } from "../s3.service.js";
 
 // Section descriptions in English for the prompt
@@ -121,21 +122,30 @@ export async function processSegmentation(sessionId: string): Promise<Segmentati
 
   logger.info({ sessionId, model: config.openai.models.segmentation, outputLanguage }, "Segmenting transcript");
 
-  const completion = await openai.chat.completions.create({
-    model: config.openai.models.segmentation,
-    messages: [
-      {
-        role: "system",
-        content: buildSegmentationPrompt(outputLanguage),
-      },
-      {
-        role: "user",
-        content: `Transcript to segment:\n\n${transcriptData.text}\n\nSegments with timestamps:\n${JSON.stringify(transcriptData.segments, null, 2)}`,
-      },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.3,
-  });
+  // Timeout: 10 minutes, retries: 3 attempts
+  const completion = await withRetry(
+    async () => {
+      return openai.chat.completions.create({
+        model: config.openai.models.segmentation,
+        messages: [
+          {
+            role: "system",
+            content: buildSegmentationPrompt(outputLanguage),
+          },
+          {
+            role: "user",
+            content: `Transcript to segment:\n\n${transcriptData.text}\n\nSegments with timestamps:\n${JSON.stringify(transcriptData.segments, null, 2)}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.3,
+      });
+    },
+    {
+      operationName: "segmentation",
+      sessionId,
+    }
+  );
 
   const content = completion.choices[0]?.message?.content;
   if (!content) {
