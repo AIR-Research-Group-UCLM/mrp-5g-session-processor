@@ -13,11 +13,11 @@ const dayjsLocaleMap: Record<string, string> = {
 };
 
 function syncDayjsLocale(lng: string) {
-  const dayjsLocale = dayjsLocaleMap[lng] ?? "es";
+  const dayjsLocale = dayjsLocaleMap[lng] ?? "en-gb";
   dayjs.locale(dayjsLocale);
 }
 
-const savedLanguage = localStorage.getItem("i18n-language") || "es-ES";
+const savedLanguage = localStorage.getItem("i18n-language") || "en-GB";
 
 // Set initial dayjs locale
 syncDayjsLocale(savedLanguage);
@@ -28,7 +28,7 @@ i18n.use(initReactI18next).init({
     "en-GB": { translation: enGB },
   },
   lng: savedLanguage,
-  fallbackLng: "es-ES",
+  fallbackLng: "en-GB",
   interpolation: {
     escapeValue: false,
   },
