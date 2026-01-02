@@ -1,13 +1,19 @@
 import * as argon2 from "argon2";
 import { v4 as uuidv4 } from "uuid";
 import { getDb } from "../db/connection.js";
-import type { CreateUserInput, UpdateUserInput, UserListItem } from "@mrp/shared";
+import type {
+  CreateUserInput,
+  UpdateUserInput,
+  UserListItem,
+  UserRole,
+} from "@mrp/shared";
 
 interface DbUser {
   id: string;
   email: string;
   password_hash: string;
   name: string;
+  role: string;
   created_at: string;
   updated_at: string;
 }
@@ -19,6 +25,7 @@ function mapDbUserToListItem(row: DbUser): UserListItem {
     id: row.id,
     email: row.email,
     name: row.name,
+    role: row.role as UserRole,
     createdAt: row.created_at,
   };
 }
@@ -26,7 +33,9 @@ function mapDbUserToListItem(row: DbUser): UserListItem {
 async function listAll(): Promise<UserListItem[]> {
   const db = getDb();
   const rows = db
-    .prepare("SELECT id, email, name, created_at FROM users ORDER BY created_at DESC")
+    .prepare(
+      "SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC"
+    )
     .all() as DbUser[];
   return rows.map(mapDbUserToListItem);
 }
@@ -36,13 +45,14 @@ async function create(input: CreateUserInput): Promise<UserListItem> {
   const id = uuidv4();
   const passwordHash = await argon2.hash(input.password);
   const now = new Date().toISOString();
+  const role = input.role || "user";
 
   db.prepare(`
-    INSERT INTO users (id, email, password_hash, name, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(id, input.email, passwordHash, input.name, now, now);
+    INSERT INTO users (id, email, password_hash, name, role, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(id, input.email, passwordHash, input.name, role, now, now);
 
-  return { id, email: input.email, name: input.name, createdAt: now };
+  return { id, email: input.email, name: input.name, role, createdAt: now };
 }
 
 async function update(id: string, input: UpdateUserInput): Promise<UserListItem | null> {
@@ -69,6 +79,12 @@ async function update(id: string, input: UpdateUserInput): Promise<UserListItem 
   if (input.password) {
     updates.push("password_hash = ?");
     params.push(await argon2.hash(input.password));
+  }
+
+  // Allow role changes except for protected admin account
+  if (input.role && input.role !== existing.role && existing.email !== PROTECTED_EMAIL) {
+    updates.push("role = ?");
+    params.push(input.role);
   }
 
   if (updates.length === 0) {

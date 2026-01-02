@@ -13,6 +13,26 @@ export function getDb(): Database.Database {
   return db;
 }
 
+function runMigrations(database: Database.Database): void {
+  // Migration: Add role column to users table
+  const tableInfo = database
+    .prepare("PRAGMA table_info(users)")
+    .all() as Array<{ name: string }>;
+  const hasRoleColumn = tableInfo.some((col) => col.name === "role");
+
+  if (!hasRoleColumn) {
+    logger.info("Running migration: Adding role column to users table...");
+    database.exec(
+      "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'"
+    );
+    // Update existing admin user to have admin role
+    database
+      .prepare("UPDATE users SET role = 'admin' WHERE email = ?")
+      .run("admin@user.com");
+    logger.info("Migration completed: role column added");
+  }
+}
+
 export async function initializeDatabase(): Promise<void> {
   const dbDir = path.dirname(config.databasePath);
 
@@ -29,6 +49,9 @@ export async function initializeDatabase(): Promise<void> {
   const schema = fs.readFileSync(schemaPath, "utf-8");
 
   db.exec(schema);
+
+  // Run migrations for existing databases
+  runMigrations(db);
 
   logger.info(`Database initialized at ${config.databasePath}`);
 }

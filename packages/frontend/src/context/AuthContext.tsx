@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from "react";
 import type { AuthUser, LoginCredentials } from "@mrp/shared";
@@ -15,6 +16,9 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
+  isAdmin: boolean;
+  isReadOnly: boolean;
+  canWrite: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -22,6 +26,14 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Compute role-based flags
+  const isAdmin = useMemo(() => user?.role === "admin", [user?.role]);
+  const isReadOnly = useMemo(() => user?.role === "readonly", [user?.role]);
+  const canWrite = useMemo(
+    () => user !== null && user.role !== "readonly",
+    [user]
+  );
 
   useEffect(() => {
     authApi.getMe().then((user) => {
@@ -42,7 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, logout, isAdmin, isReadOnly, canWrite }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import type { UserListItem, CreateUserInput, UpdateUserInput } from "@mrp/shared";
+import type { UserListItem, CreateUserInput, UpdateUserInput, UserRole } from "@mrp/shared";
+
+const PROTECTED_EMAIL = "admin@user.com";
 
 interface UserFormModalProps {
   isOpen: boolean;
@@ -22,10 +24,12 @@ export function UserFormModal({
 }: UserFormModalProps) {
   const { t } = useTranslation();
   const isEditMode = !!user;
+  const isProtectedUser = user?.email === PROTECTED_EMAIL;
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<UserRole>("user");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -33,6 +37,7 @@ export function UserFormModal({
       setName(user?.name ?? "");
       setEmail(user?.email ?? "");
       setPassword("");
+      setRole(user?.role ?? "user");
       setErrors({});
     }
   }, [isOpen, user]);
@@ -71,9 +76,10 @@ export function UserFormModal({
       if (name !== user?.name) data.name = name;
       if (email !== user?.email) data.email = email;
       if (password) data.password = password;
+      if (role !== user?.role && !isProtectedUser) data.role = role;
       await onSubmit(data);
     } else {
-      await onSubmit({ name, email, password });
+      await onSubmit({ name, email, password, role });
     }
   };
 
@@ -116,6 +122,31 @@ export function UserFormModal({
           placeholder={isEditMode ? t("users.leaveBlankToKeep") : undefined}
           required={!isEditMode}
         />
+
+        <div>
+          <label
+            htmlFor="role"
+            className="mb-1.5 block text-sm font-medium text-gray-700"
+          >
+            {t("users.role")}
+          </label>
+          <select
+            id="role"
+            value={role}
+            onChange={(e) => setRole(e.target.value as UserRole)}
+            disabled={isLoading || isProtectedUser}
+            className="input"
+          >
+            <option value="user">{t("roles.user")}</option>
+            <option value="admin">{t("roles.admin")}</option>
+            <option value="readonly">{t("roles.readonly")}</option>
+          </select>
+          {isProtectedUser && (
+            <p className="mt-1 text-xs text-gray-500">
+              {t("users.protectedUserRole")}
+            </p>
+          )}
+        </div>
 
         <div className="flex justify-end gap-3 pt-4">
           <Button

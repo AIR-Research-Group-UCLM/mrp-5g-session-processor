@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import { authService } from "../services/auth.service.js";
 import { AppError } from "./error.middleware.js";
 
-export const requireAdmin: RequestHandler = async (req, _res, next) => {
+export const requireWriteAccess: RequestHandler = async (req, _res, next) => {
   try {
     if (!req.session.userId) {
       throw new AppError(401, "Authentication required");
@@ -10,8 +10,12 @@ export const requireAdmin: RequestHandler = async (req, _res, next) => {
 
     const user = await authService.getUserById(req.session.userId);
 
-    if (!user || user.role !== "admin") {
-      throw new AppError(403, "Admin access required");
+    if (!user) {
+      throw new AppError(401, "User not found");
+    }
+
+    if (user.role === "readonly") {
+      throw new AppError(403, "Write access required");
     }
 
     next();

@@ -1,3 +1,4 @@
+import type { UserRole } from "@mrp/shared";
 import * as argon2 from "argon2";
 import Database from "better-sqlite3";
 import "dotenv/config";
@@ -10,6 +11,7 @@ interface UserSeed {
   email: string;
   password: string;
   name: string;
+  role: UserRole;
 }
 
 const SEED_USERS: UserSeed[] = [
@@ -17,6 +19,13 @@ const SEED_USERS: UserSeed[] = [
     email: "admin@user.com",
     password: "admin123",
     name: "Admin User",
+    role: "admin",
+  },
+  {
+    email: "guest@user.com",
+    password: "guest123",
+    name: "Guest User",
+    role: "readonly",
   },
 ];
 
@@ -27,8 +36,8 @@ async function seedUsers(): Promise<void> {
   db.pragma("foreign_keys = ON");
 
   const insertStmt = db.prepare(`
-    INSERT OR REPLACE INTO users (id, email, password_hash, name)
-    VALUES (?, ?, ?, ?)
+    INSERT OR REPLACE INTO users (id, email, password_hash, name, role)
+    VALUES (?, ?, ?, ?, ?)
   `);
 
   for (const user of SEED_USERS) {
@@ -39,8 +48,8 @@ async function seedUsers(): Promise<void> {
     const userId = existingUser?.id ?? uuidv4();
     const passwordHash = await argon2.hash(user.password);
 
-    insertStmt.run(userId, user.email, passwordHash, user.name);
-    console.log(`User seeded: ${user.email}`);
+    insertStmt.run(userId, user.email, passwordHash, user.name, user.role);
+    console.log(`User seeded: ${user.email} (role: ${user.role})`);
   }
 
   db.close();

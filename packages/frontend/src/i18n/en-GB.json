@@ -310,6 +310,8 @@
     "emailInvalid": "Invalid email",
     "passwordMinLength": "Password must be at least 8 characters",
     "leaveBlankToKeep": "Leave blank to keep current",
+    "role": "Role",
+    "protectedUserRole": "The admin user role cannot be modified",
     "createSuccess": "User created successfully",
     "createError": "Error creating user",
     "updateSuccess": "User updated successfully",
@@ -317,5 +319,13 @@
     "deleteSuccess": "User deleted successfully",
     "deleteError": "Error deleting user",
     "loadError": "Error loading users"
+  },
+  "permissions": {
+    "noWriteAccess": "You do not have permission to perform this action"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "user": "User",
+    "readonly": "Read only"
   }
 }

@@ -6,8 +6,6 @@ import { useTranslation } from "react-i18next";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useEffect, useRef } from "react";
 
-const ADMIN_EMAIL = "admin@user.com";
-
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -15,9 +13,8 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { isAdmin } = useAuth();
   const location = useLocation();
-  const isAdmin = user?.email === ADMIN_EMAIL;
   const isFirstMount = useRef(true);
 
   // Close sidebar on route change (mobile) - skip first mount

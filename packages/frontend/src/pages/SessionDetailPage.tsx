@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { Spinner } from "@/components/ui/Spinner";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { ProcessingProgress } from "@/components/videos/ProcessingProgress";
+import { useAuth } from "@/hooks/useAuth";
 import { useDeleteSession, useSession, useUpdateSession } from "@/hooks/useSessions";
 import { cn } from "@/utils/cn";
 import { formatDate, formatDuration } from "@/utils/format";
@@ -30,6 +31,7 @@ import { Link, useParams } from "react-router-dom";
 export function SessionDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
+  const { canWrite } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const transcriptContainerRef = useRef<HTMLDivElement>(null);
   const { data, isLoading, refetch } = useSession(id!);
@@ -154,12 +156,29 @@ export function SessionDetailPage() {
         <div className="flex shrink-0 gap-2">
           {!isEditing ? (
             <>
-              <Button variant="secondary" onClick={handleStartEdit}>
-                {t("common.edit")}
-              </Button>
-              <Button variant="danger" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              {canWrite ? (
+                <>
+                  <Button variant="secondary" onClick={handleStartEdit}>
+                    {t("common.edit")}
+                  </Button>
+                  <Button variant="danger" onClick={handleDelete}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Tooltip content={t("permissions.noWriteAccess")} position="bottom">
+                    <Button variant="secondary" disabled>
+                      {t("common.edit")}
+                    </Button>
+                  </Tooltip>
+                  <Tooltip content={t("permissions.noWriteAccess")} position="bottom">
+                    <Button variant="danger" disabled>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </Tooltip>
+                </>
+              )}
             </>
           ) : (
             <>

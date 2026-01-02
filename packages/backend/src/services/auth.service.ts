@@ -6,6 +6,7 @@ interface DbUser {
   email: string;
   password_hash: string;
   name: string;
+  role: string;
   created_at: string;
   updated_at: string;
 }
@@ -14,6 +15,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  role: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +25,7 @@ function mapDbUser(row: DbUser): User {
     id: row.id,
     email: row.email,
     name: row.name,
+    role: row.role,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

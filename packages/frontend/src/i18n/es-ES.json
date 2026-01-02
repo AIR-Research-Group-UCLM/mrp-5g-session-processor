@@ -310,6 +310,8 @@
     "emailInvalid": "Email invalido",
     "passwordMinLength": "La contraseña debe tener al menos 8 caracteres",
     "leaveBlankToKeep": "Dejar en blanco para mantener la actual",
+    "role": "Rol",
+    "protectedUserRole": "El rol del usuario administrador no se puede modificar",
     "createSuccess": "Usuario creado correctamente",
     "createError": "Error al crear el usuario",
     "updateSuccess": "Usuario actualizado correctamente",
@@ -317,5 +319,13 @@
     "deleteSuccess": "Usuario eliminado correctamente",
     "deleteError": "Error al eliminar el usuario",
     "loadError": "Error al cargar los usuarios"
+  },
+  "permissions": {
+    "noWriteAccess": "No tienes permisos para realizar esta accion"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "user": "Usuario",
+    "readonly": "Solo lectura"
   }
 }

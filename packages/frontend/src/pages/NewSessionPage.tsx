@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { ProcessingProgress } from "@/components/videos/ProcessingProgress";
 import { VideoUploader } from "@/components/videos/VideoUploader";
+import { useAuth } from "@/hooks/useAuth";
 import { useCreateSession } from "@/hooks/useSessions";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 export function NewSessionPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { canWrite } = useAuth();
   const createSession = useCreateSession();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -81,8 +84,13 @@ export function NewSessionPage() {
               selectedFile={file}
               onFileSelect={setFile}
               onClear={() => setFile(null)}
-              disabled={createSession.isPending}
+              disabled={createSession.isPending || !canWrite}
             />
+            {!canWrite && (
+              <p className="mt-2 text-sm text-amber-600">
+                {t("permissions.noWriteAccess")}
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -134,13 +142,21 @@ export function NewSessionPage() {
           >
             {t("common.cancel")}
           </Button>
-          <Button
-            type="submit"
-            disabled={!file || createSession.isPending}
-            isLoading={createSession.isPending}
-          >
-            {t("newSession.processSession")}
-          </Button>
+          {canWrite ? (
+            <Button
+              type="submit"
+              disabled={!file || createSession.isPending}
+              isLoading={createSession.isPending}
+            >
+              {t("newSession.processSession")}
+            </Button>
+          ) : (
+            <Tooltip content={t("permissions.noWriteAccess")} position="top">
+              <Button type="button" disabled>
+                {t("newSession.processSession")}
+              </Button>
+            </Tooltip>
+          )}
         </div>
       </form>
     </div>
