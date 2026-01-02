@@ -54,10 +54,17 @@ export function SessionCard({ session }: SessionCardProps) {
             )}
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
-            <SessionStatusBadge status={session.status} />
+            {session.status !== "completed" && (
+              <SessionStatusBadge status={session.status} />
+            )}
             {session.isSimulated && (
               <Badge variant="secondary">
                 {t("sessions.simulated")}
+              </Badge>
+            )}
+            {session.isAssigned && !session.isOwner && (
+              <Badge variant="info">
+                {t("assignments.assignedBadge")}
               </Badge>
             )}
           </div>

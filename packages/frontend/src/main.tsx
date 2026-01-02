@@ -26,7 +26,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <BrowserRouter basename={basename}>
         <AuthProvider>
           <App />
-          <Toaster position="top-right" />
+          <Toaster position="bottom-right" />
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

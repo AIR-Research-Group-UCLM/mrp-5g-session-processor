@@ -5,3 +5,4 @@ export * from "./api.js";
 export * from "./clinical-indicators.js";
 export * from "./simulator.js";
 export * from "./accuracy.js";
+export * from "./assignment.js";

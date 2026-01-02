@@ -157,6 +157,23 @@ CREATE TABLE IF NOT EXISTS simulations (
 CREATE INDEX IF NOT EXISTS idx_simulations_user_id ON simulations(user_id);
 CREATE INDEX IF NOT EXISTS idx_simulations_status ON simulations(status);
 
+-- Session assignments table (many-to-many: sessions can be assigned to multiple users)
+CREATE TABLE IF NOT EXISTS session_assignments (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    can_write INTEGER NOT NULL DEFAULT 0,  -- 0 = read-only, 1 = can modify
+    assigned_by TEXT NOT NULL,
+    assigned_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL,
+    UNIQUE(session_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_session_assignments_session_id ON session_assignments(session_id);
+CREATE INDEX IF NOT EXISTS idx_session_assignments_user_id ON session_assignments(user_id);
+
 -- FTS5 virtual table for full-text search on transcripts
 CREATE VIRTUAL TABLE IF NOT EXISTS transcript_fts USING fts5(
     session_id,

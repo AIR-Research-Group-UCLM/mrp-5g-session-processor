@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import type { UserListItem, CreateUserInput, UpdateUserInput, UserRole } from "@mrp/shared";
+import { SessionAssignmentSection } from "./SessionAssignmentSection";
+import { useUserAssignments, useSetUserAssignments } from "@/hooks/useAssignments";
+import type { UserListItem, CreateUserInput, UpdateUserInput, UserRole, AssignmentInput } from "@mrp/shared";
 
 const PROTECTED_EMAIL = "admin@user.com";
 
@@ -32,6 +34,11 @@ export function UserFormModal({
   const [role, setRole] = useState<UserRole>("user");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Assignment state
+  const [pendingAssignments, setPendingAssignments] = useState<AssignmentInput[]>([]);
+  const { data: currentAssignments } = useUserAssignments(isEditMode && isOpen ? user?.id ?? null : null);
+  const setUserAssignments = useSetUserAssignments();
+
   useEffect(() => {
     if (isOpen) {
       setName(user?.name ?? "");
@@ -39,8 +46,25 @@ export function UserFormModal({
       setPassword("");
       setRole(user?.role ?? "user");
       setErrors({});
+      setPendingAssignments([]);
     }
   }, [isOpen, user]);
+
+  // Initialize pendingAssignments from currentAssignments when loaded
+  useEffect(() => {
+    if (currentAssignments) {
+      setPendingAssignments(
+        currentAssignments.map((a) => ({
+          sessionId: a.sessionId,
+          canWrite: a.canWrite,
+        }))
+      );
+    }
+  }, [currentAssignments]);
+
+  const handleAssignmentsChange = useCallback((assignments: AssignmentInput[]) => {
+    setPendingAssignments(assignments);
+  }, []);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -78,6 +102,26 @@ export function UserFormModal({
       if (password) data.password = password;
       if (role !== user?.role && !isProtectedUser) data.role = role;
       await onSubmit(data);
+
+      // Update assignments if changed
+      if (user) {
+        const currentIds = new Set(
+          currentAssignments?.map((a) => `${a.sessionId}:${a.canWrite}`) ?? []
+        );
+        const pendingIds = new Set(
+          pendingAssignments.map((a) => `${a.sessionId}:${a.canWrite}`)
+        );
+        const hasChanges =
+          currentIds.size !== pendingIds.size ||
+          ![...currentIds].every((id) => pendingIds.has(id));
+
+        if (hasChanges) {
+          await setUserAssignments.mutateAsync({
+            userId: user.id,
+            assignments: pendingAssignments,
+          });
+        }
+      }
     } else {
       await onSubmit({ name, email, password, role });
     }
@@ -148,16 +192,32 @@ export function UserFormModal({
           )}
         </div>
 
+        {/* Session assignments section (only in edit mode) */}
+        {isEditMode && user && (
+          <div className="mt-4 border-t pt-4">
+            <SessionAssignmentSection
+              userId={user.id}
+              initialAssignments={
+                currentAssignments?.map((a) => ({
+                  sessionId: a.sessionId,
+                  canWrite: a.canWrite,
+                })) ?? []
+              }
+              onAssignmentsChange={handleAssignmentsChange}
+            />
+          </div>
+        )}
+
         <div className="flex justify-end gap-3 pt-4">
           <Button
             type="button"
             variant="secondary"
             onClick={onClose}
-            disabled={isLoading}
+            disabled={isLoading || setUserAssignments.isPending}
           >
             {t("common.cancel")}
           </Button>
-          <Button type="submit" isLoading={isLoading}>
+          <Button type="submit" isLoading={isLoading || setUserAssignments.isPending}>
             {isEditMode ? t("common.save") : t("users.create")}
           </Button>
         </div>

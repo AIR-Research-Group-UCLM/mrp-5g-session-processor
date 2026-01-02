@@ -327,5 +327,18 @@
     "admin": "Administrator",
     "user": "User",
     "readonly": "Read only"
+  },
+  "assignments": {
+    "assignedSessions": "Assigned Sessions",
+    "assignedSessionsDescription": "Select sessions this user should have access to",
+    "searchSessions": "Search sessions...",
+    "noSessionsFound": "No sessions found",
+    "noSessionsAvailable": "No sessions available for assignment",
+    "selectedCount": "{{count}} session(s) selected",
+    "updateSuccess": "Assignments updated successfully",
+    "updateError": "Error updating assignments",
+    "assignedBadge": "Assigned",
+    "canWrite": "Can modify",
+    "readOnly": "Read only"
   }
 }

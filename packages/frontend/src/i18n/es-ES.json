@@ -327,5 +327,18 @@
     "admin": "Administrador",
     "user": "Usuario",
     "readonly": "Solo lectura"
+  },
+  "assignments": {
+    "assignedSessions": "Sesiones Asignadas",
+    "assignedSessionsDescription": "Selecciona las sesiones a las que este usuario debe tener acceso",
+    "searchSessions": "Buscar sesiones...",
+    "noSessionsFound": "No se encontraron sesiones",
+    "noSessionsAvailable": "No hay sesiones disponibles para asignar",
+    "selectedCount": "{{count}} sesion(es) seleccionada(s)",
+    "updateSuccess": "Asignaciones actualizadas correctamente",
+    "updateError": "Error al actualizar asignaciones",
+    "assignedBadge": "Asignada",
+    "canWrite": "Puede modificar",
+    "readOnly": "Solo lectura"
   }
 }

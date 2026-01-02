@@ -2,6 +2,10 @@ import { Router } from "express";
 import { sessionsController } from "../controllers/sessions.controller.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { requireWriteAccess } from "../middleware/write-access.middleware.js";
+import {
+  requireSessionReadAccess,
+  requireSessionWriteAccess,
+} from "../middleware/session-access.middleware.js";
 import { uploadMiddleware } from "../middleware/upload.middleware.js";
 import { uploadLimiter } from "../middleware/rate-limit.middleware.js";
 
@@ -9,16 +13,22 @@ export const sessionsRoutes = Router();
 
 sessionsRoutes.use(requireAuth);
 
-// Read operations
+// List sessions (includes owned + assigned, no session-specific check needed)
 sessionsRoutes.get("/", sessionsController.list);
-sessionsRoutes.get("/:id", sessionsController.getById);
-sessionsRoutes.get("/:id/status", sessionsController.getStatus);
-sessionsRoutes.get("/:id/accuracy", sessionsController.getAccuracy);
-sessionsRoutes.get("/:id/video", sessionsController.getVideoUrl);
-sessionsRoutes.get("/:id/video/stream", sessionsController.streamVideo);
 
-// Write operations - require write access
+// Read operations on specific sessions - require session read access
+sessionsRoutes.get("/:id", requireSessionReadAccess, sessionsController.getById);
+sessionsRoutes.get("/:id/status", requireSessionReadAccess, sessionsController.getStatus);
+sessionsRoutes.get("/:id/accuracy", requireSessionReadAccess, sessionsController.getAccuracy);
+sessionsRoutes.get("/:id/video", requireSessionReadAccess, sessionsController.getVideoUrl);
+sessionsRoutes.get("/:id/video/stream", requireSessionReadAccess, sessionsController.streamVideo);
+
+// Create session - only requires general write access (no session yet)
 // Security: Rate limit uploads to prevent abuse, validate magic bytes
 sessionsRoutes.post("/", requireWriteAccess, uploadLimiter, ...uploadMiddleware.single("video"), sessionsController.create);
-sessionsRoutes.patch("/:id", requireWriteAccess, sessionsController.update);
-sessionsRoutes.delete("/:id", requireWriteAccess, sessionsController.delete);
+
+// Write operations on specific sessions - require session write access
+// For PATCH: requires canWrite permission
+// For DELETE: requires ownership (handled in middleware)
+sessionsRoutes.patch("/:id", requireSessionWriteAccess, sessionsController.update);
+sessionsRoutes.delete("/:id", requireSessionWriteAccess, sessionsController.delete);

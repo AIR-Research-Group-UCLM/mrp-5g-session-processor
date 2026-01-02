@@ -287,23 +287,34 @@ async function listByUser(
   const { page, pageSize, status } = options;
   const offset = (page - 1) * pageSize;
 
+  // Get user's role for canWrite calculation
+  const user = db
+    .prepare("SELECT role FROM users WHERE id = ?")
+    .get(userId) as { role: string } | undefined;
+  const userRole = user?.role ?? "readonly";
+
+  // Query includes both owned and assigned sessions
   let query = `
     SELECT
       ms.id, ms.title, ms.status, ms.summary, ms.keywords, ms.user_tags,
       ms.video_duration_seconds, ms.language, ms.is_simulated, ms.created_at,
-      ms.started_at, ms.completed_at, ms.processing_cost_usd,
+      ms.started_at, ms.completed_at, ms.processing_cost_usd, ms.user_id,
       s.conversation_started_at as sim_conversation_started_at,
       s.conversation_completed_at as sim_conversation_completed_at,
       s.audio_started_at as sim_audio_started_at,
       s.audio_completed_at as sim_audio_completed_at,
       s.concatenation_started_at as sim_concatenation_started_at,
       s.concatenation_completed_at as sim_concatenation_completed_at,
-      s.total_cost_usd as sim_total_cost_usd
+      s.total_cost_usd as sim_total_cost_usd,
+      CASE WHEN ms.user_id = ? THEN 1 ELSE 0 END as is_owner,
+      CASE WHEN sa.id IS NOT NULL THEN 1 ELSE 0 END as is_assigned,
+      sa.can_write as assignment_can_write
     FROM medical_sessions ms
     LEFT JOIN simulations s ON s.session_id = ms.id
-    WHERE ms.user_id = ?
+    LEFT JOIN session_assignments sa ON sa.session_id = ms.id AND sa.user_id = ?
+    WHERE (ms.user_id = ? OR sa.user_id = ?)
   `;
-  const params: (string | number)[] = [userId];
+  const params: (string | number)[] = [userId, userId, userId, userId];
 
   if (status) {
     query += " AND ms.status = ?";
@@ -313,12 +324,22 @@ async function listByUser(
   query += " ORDER BY ms.created_at DESC LIMIT ? OFFSET ?";
   params.push(pageSize, offset);
 
-  const rows = db.prepare(query).all(...params) as DbSessionWithSimulation[];
+  const rows = db.prepare(query).all(...params) as (DbSessionWithSimulation & {
+    user_id: string;
+    is_owner: number;
+    is_assigned: number;
+    assignment_can_write: number | null;
+  })[];
 
+  // Count query also includes assigned sessions
   const countQuery = status
-    ? "SELECT COUNT(*) as count FROM medical_sessions WHERE user_id = ? AND status = ?"
-    : "SELECT COUNT(*) as count FROM medical_sessions WHERE user_id = ?";
-  const countParams = status ? [userId, status] : [userId];
+    ? `SELECT COUNT(DISTINCT ms.id) as count FROM medical_sessions ms
+       LEFT JOIN session_assignments sa ON sa.session_id = ms.id AND sa.user_id = ?
+       WHERE (ms.user_id = ? OR sa.user_id = ?) AND ms.status = ?`
+    : `SELECT COUNT(DISTINCT ms.id) as count FROM medical_sessions ms
+       LEFT JOIN session_assignments sa ON sa.session_id = ms.id AND sa.user_id = ?
+       WHERE (ms.user_id = ? OR sa.user_id = ?)`;
+  const countParams = status ? [userId, userId, userId, status] : [userId, userId, userId];
   const { count } = db.prepare(countQuery).get(...countParams) as { count: number };
 
   const sessions: SessionListItem[] = rows.map((row) => {
@@ -351,6 +372,12 @@ async function listByUser(
         ? (processingCostUsd ?? 0) + (simulationCostUsd ?? 0)
         : null;
 
+    // Calculate access permissions
+    const isOwner = row.is_owner === 1;
+    const isAssigned = row.is_assigned === 1;
+    // canWrite: owner always can write, assigned users need assignment.can_write=1 AND role != readonly
+    const canWrite = isOwner || (isAssigned && row.assignment_can_write === 1 && userRole !== "readonly");
+
     return {
       id: row.id,
       title: row.title,
@@ -370,6 +397,9 @@ async function listByUser(
       simulationCostUsd,
       totalDurationMs,
       totalCostUsd,
+      isOwner,
+      isAssigned,
+      canWrite,
     };
   });
 
@@ -425,14 +455,14 @@ async function create(
 }
 
 async function getByIdWithTranscript(
-  userId: string,
   sessionId: string
 ): Promise<{ session: SessionWithTranscript; videoUrl: string | null } | null> {
   const db = getDb();
 
+  // Access validation is done by middleware, just fetch by ID
   const sessionRow = db
-    .prepare("SELECT * FROM medical_sessions WHERE id = ? AND user_id = ?")
-    .get(sessionId, userId) as DbSession | undefined;
+    .prepare("SELECT * FROM medical_sessions WHERE id = ?")
+    .get(sessionId) as DbSession | undefined;
 
   if (!sessionRow) {
     return null;
@@ -500,14 +530,14 @@ async function getByIdWithTranscript(
 }
 
 async function getProcessingStatus(
-  userId: string,
   sessionId: string
 ): Promise<ProcessingProgress | null> {
   const db = getDb();
 
+  // Access validation is done by middleware, just fetch by ID
   const sessionRow = db
-    .prepare("SELECT status, error_message, started_at, completed_at FROM medical_sessions WHERE id = ? AND user_id = ?")
-    .get(sessionId, userId) as { status: string; error_message: string | null; started_at: string | null; completed_at: string | null } | undefined;
+    .prepare("SELECT status, error_message, started_at, completed_at FROM medical_sessions WHERE id = ?")
+    .get(sessionId) as { status: string; error_message: string | null; started_at: string | null; completed_at: string | null } | undefined;
 
   if (!sessionRow) {
     return null;
@@ -556,15 +586,15 @@ async function getProcessingStatus(
 }
 
 async function update(
-  userId: string,
   sessionId: string,
   input: UpdateSessionInput
 ): Promise<MedicalSession | null> {
   const db = getDb();
 
+  // Access validation is done by middleware, just check existence
   const existing = db
-    .prepare("SELECT id FROM medical_sessions WHERE id = ? AND user_id = ?")
-    .get(sessionId, userId);
+    .prepare("SELECT id FROM medical_sessions WHERE id = ?")
+    .get(sessionId);
 
   if (!existing) {
     return null;
@@ -604,12 +634,13 @@ async function update(
   return mapDbSession(row);
 }
 
-async function deleteSession(userId: string, sessionId: string): Promise<boolean> {
+async function deleteSession(sessionId: string): Promise<boolean> {
   const db = getDb();
 
+  // Access validation (owner-only for delete) is done by middleware
   const session = db
-    .prepare("SELECT video_s3_key FROM medical_sessions WHERE id = ? AND user_id = ?")
-    .get(sessionId, userId) as { video_s3_key: string | null } | undefined;
+    .prepare("SELECT video_s3_key FROM medical_sessions WHERE id = ?")
+    .get(sessionId) as { video_s3_key: string | null } | undefined;
 
   if (!session) {
     return false;
@@ -628,12 +659,13 @@ async function deleteSession(userId: string, sessionId: string): Promise<boolean
   return true;
 }
 
-async function getVideoUrl(userId: string, sessionId: string): Promise<string | null> {
+async function getVideoUrl(sessionId: string): Promise<string | null> {
   const db = getDb();
 
+  // Access validation is done by middleware
   const session = db
-    .prepare("SELECT video_s3_key FROM medical_sessions WHERE id = ? AND user_id = ?")
-    .get(sessionId, userId) as { video_s3_key: string | null } | undefined;
+    .prepare("SELECT video_s3_key FROM medical_sessions WHERE id = ?")
+    .get(sessionId) as { video_s3_key: string | null } | undefined;
 
   if (!session?.video_s3_key) {
     return null;
@@ -642,12 +674,13 @@ async function getVideoUrl(userId: string, sessionId: string): Promise<string | 
   return s3Service.getPresignedUrl(session.video_s3_key);
 }
 
-async function getVideoS3Key(userId: string, sessionId: string): Promise<string | null> {
+async function getVideoS3Key(sessionId: string): Promise<string | null> {
   const db = getDb();
 
+  // Access validation is done by middleware
   const session = db
-    .prepare("SELECT video_s3_key FROM medical_sessions WHERE id = ? AND user_id = ?")
-    .get(sessionId, userId) as { video_s3_key: string | null } | undefined;
+    .prepare("SELECT video_s3_key FROM medical_sessions WHERE id = ?")
+    .get(sessionId) as { video_s3_key: string | null } | undefined;
 
   return session?.video_s3_key ?? null;
 }

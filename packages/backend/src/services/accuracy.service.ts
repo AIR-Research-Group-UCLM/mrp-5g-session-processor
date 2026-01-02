@@ -191,12 +191,13 @@ function calculateSpeakerAccuracy(
 
 /**
  * Fetch simulated transcript from S3
+ * @param ownerUserId - The user ID of the session owner (for S3 path)
  */
 async function fetchSimulatedTranscript(
-  userId: string,
+  ownerUserId: string,
   sessionId: string
 ): Promise<SimulatedTranscript | null> {
-  const s3Key = `${userId}/${sessionId}/simulated_transcript.json`;
+  const s3Key = `${ownerUserId}/${sessionId}/simulated_transcript.json`;
 
   try {
     const url = await s3Service.getPresignedUrl(s3Key);
@@ -226,28 +227,26 @@ function fetchTranscriptSections(sessionId: string): DbTranscriptSection[] {
 
 /**
  * Get session basic info
+ * Access validation is done by middleware, just fetch by ID
  */
-function getSessionInfo(
-  sessionId: string,
-  userId: string
-): DbSession | null {
+function getSessionInfo(sessionId: string): DbSession | null {
   const db = getDb();
   const row = db
-    .prepare("SELECT id, user_id, video_s3_key, is_simulated, status FROM medical_sessions WHERE id = ? AND user_id = ?")
-    .get(sessionId, userId) as DbSession | undefined;
+    .prepare("SELECT id, user_id, video_s3_key, is_simulated, status FROM medical_sessions WHERE id = ?")
+    .get(sessionId) as DbSession | undefined;
 
   return row ?? null;
 }
 
 /**
  * Calculate transcription accuracy for a simulated session
+ * Access validation is done by middleware
  */
 async function calculateTranscriptionAccuracy(
-  sessionId: string,
-  userId: string
+  sessionId: string
 ): Promise<TranscriptionAccuracy | null> {
-  // Get session info
-  const session = getSessionInfo(sessionId, userId);
+  // Get session info (access validation done by middleware)
+  const session = getSessionInfo(sessionId);
   if (!session) {
     return null;
   }
@@ -261,8 +260,8 @@ async function calculateTranscriptionAccuracy(
     throw new Error("Session processing not completed");
   }
 
-  // Fetch source data
-  const simulatedTranscript = await fetchSimulatedTranscript(userId, sessionId);
+  // Fetch source data using session owner's user_id for S3 path
+  const simulatedTranscript = await fetchSimulatedTranscript(session.user_id, sessionId);
   if (!simulatedTranscript) {
     throw new Error("Simulated transcript not found in S3");
   }

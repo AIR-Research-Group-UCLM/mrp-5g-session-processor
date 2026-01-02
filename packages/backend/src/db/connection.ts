@@ -31,6 +31,34 @@ function runMigrations(database: Database.Database): void {
       .run("admin@user.com");
     logger.info("Migration completed: role column added");
   }
+
+  // Migration: Add session_assignments table
+  const hasAssignmentsTable = database
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='session_assignments'"
+    )
+    .get();
+
+  if (!hasAssignmentsTable) {
+    logger.info("Running migration: Creating session_assignments table...");
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS session_assignments (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        can_write INTEGER NOT NULL DEFAULT 0,
+        assigned_by TEXT NOT NULL,
+        assigned_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL,
+        UNIQUE(session_id, user_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_session_assignments_session_id ON session_assignments(session_id);
+      CREATE INDEX IF NOT EXISTS idx_session_assignments_user_id ON session_assignments(user_id);
+    `);
+    logger.info("Migration completed: session_assignments table created");
+  }
 }
 
 export async function initializeDatabase(): Promise<void> {

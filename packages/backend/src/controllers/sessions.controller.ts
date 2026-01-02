@@ -63,10 +63,10 @@ const create: RequestHandler = async (req, res, next) => {
 
 const getById: RequestHandler = async (req, res, next) => {
   try {
-    const userId = req.session.userId!;
     const sessionId = req.params.id!;
 
-    const result = await sessionService.getByIdWithTranscript(userId, sessionId);
+    // Access validation is done by middleware (requireSessionReadAccess)
+    const result = await sessionService.getByIdWithTranscript(sessionId);
 
     if (!result) {
       throw new AppError(404, "Session not found");
@@ -83,10 +83,10 @@ const getById: RequestHandler = async (req, res, next) => {
 
 const getStatus: RequestHandler = async (req, res, next) => {
   try {
-    const userId = req.session.userId!;
     const sessionId = req.params.id!;
 
-    const progress = await sessionService.getProcessingStatus(userId, sessionId);
+    // Access validation is done by middleware (requireSessionReadAccess)
+    const progress = await sessionService.getProcessingStatus(sessionId);
 
     if (!progress) {
       throw new AppError(404, "Session not found");
@@ -103,11 +103,11 @@ const getStatus: RequestHandler = async (req, res, next) => {
 
 const update: RequestHandler = async (req, res, next) => {
   try {
-    const userId = req.session.userId!;
     const sessionId = req.params.id!;
     const body = updateBodySchema.parse(req.body);
 
-    const session = await sessionService.update(userId, sessionId, body);
+    // Access validation is done by middleware (requireSessionWriteAccess)
+    const session = await sessionService.update(sessionId, body);
 
     if (!session) {
       throw new AppError(404, "Session not found");
@@ -124,10 +124,10 @@ const update: RequestHandler = async (req, res, next) => {
 
 const deleteSession: RequestHandler = async (req, res, next) => {
   try {
-    const userId = req.session.userId!;
     const sessionId = req.params.id!;
 
-    const deleted = await sessionService.delete(userId, sessionId);
+    // Access validation (owner-only) is done by middleware (requireSessionWriteAccess)
+    const deleted = await sessionService.delete(sessionId);
 
     if (!deleted) {
       throw new AppError(404, "Session not found");
@@ -141,10 +141,10 @@ const deleteSession: RequestHandler = async (req, res, next) => {
 
 const getVideoUrl: RequestHandler = async (req, res, next) => {
   try {
-    const userId = req.session.userId!;
     const sessionId = req.params.id!;
 
-    const url = await sessionService.getVideoUrl(userId, sessionId);
+    // Access validation is done by middleware (requireSessionReadAccess)
+    const url = await sessionService.getVideoUrl(sessionId);
 
     if (!url) {
       throw new AppError(404, "Video not found");
@@ -161,10 +161,10 @@ const getVideoUrl: RequestHandler = async (req, res, next) => {
 
 const streamVideo: RequestHandler = async (req, res, next) => {
   try {
-    const userId = req.session.userId!;
     const sessionId = req.params.id!;
 
-    const s3Key = await sessionService.getVideoS3Key(userId, sessionId);
+    // Access validation is done by middleware (requireSessionReadAccess)
+    const s3Key = await sessionService.getVideoS3Key(sessionId);
     if (!s3Key) {
       throw new AppError(404, "Video not found");
     }
@@ -241,12 +241,11 @@ const streamVideo: RequestHandler = async (req, res, next) => {
 
 const getAccuracy: RequestHandler = async (req, res, next) => {
   try {
-    const userId = req.session.userId!;
     const sessionId = req.params.id!;
 
+    // Access validation is done by middleware (requireSessionReadAccess)
     const accuracy = await accuracyService.calculateTranscriptionAccuracy(
-      sessionId,
-      userId
+      sessionId
     );
 
     if (!accuracy) {

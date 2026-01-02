@@ -93,6 +93,10 @@ export interface SessionListItem
   // Totals (processing + simulation if applicable)
   totalDurationMs: number | null;
   totalCostUsd: number | null;
+  // Assignment data
+  isOwner: boolean;
+  isAssigned: boolean;
+  canWrite: boolean; // true if owner OR (assignment.canWrite=true AND role != readonly)
 }
 
 export interface CreateSessionInput {
