@@ -8,13 +8,11 @@ Application for processing medical session videos. It allows uploading medical c
 
 ## Screenshots
 
-### Dashboard
-![Dashboard](screenshots/20251214T002128-Screenshot.png)
-*Dashboard with session statistics, list of recent consultations with status, duration, tags, and keywords.*
-
-### Session Detail
-![Session Detail](screenshots/20251214T002026-Screenshot.png)
-*Session view with video player, transcription segmented by medical sections, automatic summaries, and general information.*
+|![](screenshots/2.png) Dashboard|![](screenshots/3.png) New session|![](screenshots/5.png) Session simulator|
+|:---:|:---:|:---:|
+|![](screenshots/7.png) Session: details and overview|![](screenshots/8.png) Session: clinical indicators|![](screenshots/9.png) Session: transcription accuracy|
+|![](screenshots/10.png) Session: processing times|![](screenshots/11.png) Session: transcription (introduction)|![](screenshots/12.png) Session: transcription (sympton description)|
+|![](screenshots/13.png) Session: transcription (diagnosis)|![](screenshots/14.png) Session: transcription (treatment plan)|![](screenshots/15.png) Session: transcription (closing)|
 
 ## Features
 
@@ -25,6 +23,8 @@ Application for processing medical session videos. It allows uploading medical c
 - **Full-text search** in transcriptions and metadata
 - **Video streaming** with transcription synchronization
 - **Asynchronous processing** with job queue
+- **Role-based access control (RBAC)**: admin, user, and readonly roles with different permissions
+- **Session sharing**: admins can assign sessions to other users with read-only or read-write permissions
 
 ## Tech Stack
 
@@ -162,6 +162,12 @@ mrp-5g-session-processor/
 ### Search
 - `GET /api/search?q=` - Fuzzy search in transcriptions and metadata
 
+### Session Assignments (admin only)
+- `GET /api/users/:userId/assignments` - List sessions assigned to a user
+- `GET /api/users/:userId/available-sessions` - List sessions available for assignment
+- `POST /api/users/:userId/assignments` - Assign sessions to a user
+- `DELETE /api/users/:userId/assignments/:sessionId` - Remove assignment
+
 ## Processing Flow
 
 1. User uploads video → saved to S3
@@ -171,6 +177,18 @@ mrp-5g-session-processor/
 5. Segmentation into medical sections and speaker re-labeling (gpt-5.1)
 6. Summary and metadata generation (gpt-5.1)
 7. Status updated to "completed"
+
+## User Roles (RBAC)
+
+| Role | Permissions |
+|------|-------------|
+| `admin` | Full access: manage users, create/edit/delete sessions, use simulator, assign sessions to other users |
+| `user` | Create and manage own sessions, use simulator |
+| `readonly` | View only assigned sessions (cannot create, edit, or use simulator) |
+
+Admins can assign any session to other users with either:
+- **Read-only**: User can view the session but not modify it
+- **Read-write**: User can view and edit session metadata
 
 ## Production Deployment
 

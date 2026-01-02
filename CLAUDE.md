@@ -103,13 +103,14 @@ SIMULATOR_AUDIO_CONCURRENCY=3
 ## Modelo de Datos
 
 ### Tablas principales:
-- `users` - Usuarios del sistema (email, password_hash con Argon2)
+- `users` - Usuarios del sistema (email, password_hash con Argon2, role)
 - `auth_sessions` - Sesiones de autenticación (almacenadas en Redis)
 - `medical_sessions` - Sesiones médicas (vídeo/audio, estado, metadatos, idioma detectado, `is_simulated`)
 - `transcript_sections` - Secciones de transcripción segmentadas
 - `section_summaries` - Resúmenes por tipo de sección (generados por GPT-5.1)
 - `clinical_indicators` - Indicadores clínicos extraídos (urgencia, diagnóstico, tratamiento, etc.)
 - `simulations` - Estado y progreso de simulaciones (contexto, voces, segmentos completados)
+- `session_assignments` - Asignaciones de sesiones a usuarios (permite compartir sesiones con permisos de lectura o escritura)
 
 ### Secciones médicas:
 1. `introduction` - Presentación inicial
@@ -123,6 +124,18 @@ SIMULATOR_AUDIO_CONCURRENCY=3
 - `PATIENT` - El paciente
 - `SPECIALIST` - Un médico especialista
 - `OTHER` - Acompañante u otra persona
+
+### Roles de usuario (RBAC):
+- `admin` - Acceso completo: gestión de usuarios, crear/editar/eliminar sesiones, simulador, asignar sesiones
+- `user` - Puede crear y gestionar sus propias sesiones, usar el simulador
+- `readonly` - Solo puede ver sesiones asignadas por un admin (no puede crear, editar ni usar el simulador)
+
+### Asignaciones de sesiones:
+Los administradores pueden asignar sesiones de cualquier usuario a otros usuarios:
+- **Solo lectura**: El usuario asignado puede ver la sesión pero no modificarla
+- **Lectura/escritura**: El usuario asignado puede ver y editar los metadatos de la sesión
+- Un usuario puede ver sus propias sesiones y las sesiones asignadas
+- Las asignaciones se gestionan desde el panel de administración de usuarios
 
 ## API Endpoints
 
@@ -148,6 +161,12 @@ SIMULATOR_AUDIO_CONCURRENCY=3
 - `GET /api/simulator/voices` - Listar voces disponibles
 - `POST /api/simulator` - Iniciar simulación (contexto, idioma, voces)
 - `GET /api/simulator/:id/status` - Estado y progreso de la simulación
+
+### Asignaciones (solo admin)
+- `GET /api/users/:userId/assignments` - Listar sesiones asignadas a un usuario
+- `GET /api/users/:userId/available-sessions` - Listar sesiones disponibles para asignar
+- `POST /api/users/:userId/assignments` - Asignar sesiones a un usuario
+- `DELETE /api/users/:userId/assignments/:sessionId` - Eliminar asignación
 
 ## Flujo de Procesamiento
 
@@ -254,8 +273,10 @@ pnpm --filter frontend test  # Solo frontend
 
 ## Notas Importantes
 
-- Los usuarios se crean únicamente via script de seed (no hay registro)
+- Los usuarios se crean únicamente via script de seed o por administradores (no hay registro público)
 - Todos los endpoints (excepto login) requieren autenticación
+- El acceso a funcionalidades está controlado por roles (admin/user/readonly)
+- Los usuarios `readonly` solo ven sesiones asignadas; crear sesiones y usar el simulador requiere rol `user` o superior
 - Las sesiones de autenticación se almacenan en Redis (connect-redis con cliente oficial `redis`)
 - Los archivos multimedia se almacenan en S3 bajo `/{user_uuid}/{session_id}/`
 - Se aceptan vídeos (MP4, WebM, MOV, AVI, MKV) y audios (MP3, M4A, WAV, OGG)
