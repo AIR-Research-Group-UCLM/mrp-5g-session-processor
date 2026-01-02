@@ -1,8 +1,9 @@
-import { Navigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { useAuth } from "@/hooks/useAuth";
+import { basePathNormalized } from "@/api/client";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
+import { Navigate } from "react-router-dom";
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -24,17 +25,17 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-primary-600">{t("common.appName")}</h1>
-          <p className="mt-2 text-gray-600">
-            {t("common.appDescription")}
-          </p>
+          <img
+            src={`${basePathNormalized}/logo.png`}
+            alt={t("common.appName")}
+            className="mx-auto h-52 w-auto object-contain"
+          />
+          <p className="mt-2 text-gray-600">{t("common.appDescription")}</p>
         </div>
         <Card>
           <CardHeader>
             <CardTitle>{t("auth.login")}</CardTitle>
-            <CardDescription>
-              {t("auth.enterCredentials")}
-            </CardDescription>
+            <CardDescription>{t("auth.enterCredentials")}</CardDescription>
           </CardHeader>
           <CardContent>
             <LoginForm />
