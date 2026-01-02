@@ -13,6 +13,7 @@ const updateUserSchema = z.object({
   name: z.string().min(1, "Name is required").optional(),
   email: z.string().email("Invalid email format").optional(),
   password: z.string().min(8, "Password must be at least 8 characters").optional(),
+  role: z.enum(["admin", "user", "readonly"]).optional(),
 });
 
 const list: RequestHandler = async (_req, res, next) => {
