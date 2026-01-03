@@ -146,10 +146,8 @@ export function SessionDetailPage() {
                   })}
                 </span>
               )}
-              <SessionStatusBadge status={session.status} />
-              {session.isSimulated && (
-                <Badge variant="secondary">{t("sessions.simulated")}</Badge>
-              )}
+              {session.status !== "completed" && <SessionStatusBadge status={session.status} />}
+              {session.isSimulated && <Badge variant="secondary">{t("sessions.simulated")}</Badge>}
             </div>
           </div>
         </div>
