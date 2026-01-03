@@ -86,12 +86,13 @@ async function search(
         FROM transcript_fts fts
         JOIN transcript_sections ts ON ts.session_id = fts.session_id AND ts.content = fts.content
         JOIN medical_sessions ms ON ms.id = ts.session_id
-        WHERE ms.user_id = ? AND fts.content MATCH ?
+        LEFT JOIN session_assignments sa ON sa.session_id = ms.id AND sa.user_id = ?
+        WHERE (ms.user_id = ? OR sa.user_id = ?) AND fts.content MATCH ?
         ORDER BY rank
         LIMIT ?
       `
       )
-      .all(userId, ftsQuery, limit) as DbTranscriptSearchResult[];
+      .all(userId, userId, userId, ftsQuery, limit) as DbTranscriptSearchResult[];
 
     for (const row of transcriptRows) {
       results.push({
@@ -110,19 +111,22 @@ async function search(
   const sessionRows = db
     .prepare(
       `
-      SELECT id, title, summary, keywords, user_tags, created_at
-      FROM medical_sessions
-      WHERE user_id = ? AND (
-        LOWER(title) LIKE ? OR
-        LOWER(summary) LIKE ? OR
-        LOWER(keywords) LIKE ? OR
-        LOWER(user_tags) LIKE ?
+      SELECT ms.id, ms.title, ms.summary, ms.keywords, ms.user_tags, ms.created_at
+      FROM medical_sessions ms
+      LEFT JOIN session_assignments sa ON sa.session_id = ms.id AND sa.user_id = ?
+      WHERE (ms.user_id = ? OR sa.user_id = ?) AND (
+        LOWER(ms.title) LIKE ? OR
+        LOWER(ms.summary) LIKE ? OR
+        LOWER(ms.keywords) LIKE ? OR
+        LOWER(ms.user_tags) LIKE ?
       )
-      ORDER BY created_at DESC
+      ORDER BY ms.created_at DESC
       LIMIT ?
     `
     )
     .all(
+      userId,
+      userId,
       userId,
       `%${searchTerms}%`,
       `%${searchTerms}%`,
@@ -216,7 +220,8 @@ async function search(
         ms.created_at
       FROM clinical_indicators ci
       JOIN medical_sessions ms ON ms.id = ci.session_id
-      WHERE ms.user_id = ? AND (
+      LEFT JOIN session_assignments sa ON sa.session_id = ms.id AND sa.user_id = ?
+      WHERE (ms.user_id = ? OR sa.user_id = ?) AND (
         LOWER(ci.reason_for_visit) LIKE ? OR
         LOWER(ci.consulted_specialty) LIKE ? OR
         LOWER(ci.main_clinical_problem) LIKE ? OR
@@ -230,6 +235,8 @@ async function search(
     `
     )
     .all(
+      userId,
+      userId,
       userId,
       `%${searchTerms}%`,
       `%${searchTerms}%`,
