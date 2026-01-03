@@ -1,10 +1,9 @@
-# MRP 5G Session Processor
+<div align="center">
+  <img src="screenshots/mrp-5g-session-processor-logo-hd.png" alt="MRP 5G Session Processor Logo" width="250"/>
 
-<p align="center">
-  <img src="screenshots/mrp-5g-session-processor-logo-hd.png" alt="MRP 5G Session Processor Logo" width="200">
-</p>
-
-Application for processing medical session videos. It allows uploading medical consultation recordings, automatically transcribing them, identifying speakers (doctor/patient/specialist), and segmenting the content into structured clinical sections with automatic summaries.
+  <h3>Application for processing medical session videos</h3>
+  <p>MRP 5G Session Processor allows uploading medical consultation recordings, automatically transcribing them, identifying speakers (doctor/patient/specialist), and segmenting the content into structured clinical sections with automatic summaries.</p>
+</div>
 
 ## Screenshots
 
@@ -37,14 +36,16 @@ Application for processing medical session videos. It allows uploading medical c
 | Queue | BullMQ + Redis |
 | AI | OpenAI SDK (gpt-4o-transcribe-diarize, gpt-5.1) |
 
-## Prerequisites
+## Development setup
+
+### Prerequisites
 
 - Node.js 20+
 - pnpm 9+
 - Docker and Docker Compose
 - ffmpeg (installed and accessible in PATH)
 
-## Installation
+### Quick start
 
 ```bash
 # Clone the repository
@@ -60,41 +61,30 @@ pnpm docker:up
 # Initialize Garage S3
 pnpm docker:init
 
-# Run migrations
-pnpm db:migrate
-
 # Seed users
 pnpm db:seed
 ```
 
-## Configuration
+### Configuration
 
-Create a `.env` file in the project root:
+Create a `.env` file in `packages/backend/`, by copying from `.env.example`, and edit the variables as desired. Minimum required:
 
 ```env
-# Backend
-PORT=3001
-NODE_ENV=development
-SESSION_SECRET=your-secret-key
-
-# SQLite
-DATABASE_PATH=./data/mrp.db
-
-# S3 (Garage)
-S3_ENDPOINT=http://localhost:3900
-S3_BUCKET=mrp-videos
-S3_ACCESS_KEY=your-access-key
-S3_SECRET_KEY=your-secret-key
-S3_REGION=garage
-
-# Redis (BullMQ)
-REDIS_URL=redis://localhost:6379
+S3_ACCESS_KEY=your-garage-access-key
+S3_SECRET_KEY=your-garage-secret-key
 
 # OpenAI
-OPENAI_API_KEY=sk-...
+OPENAI_API_KEY=sk-your-openai-api-key
+
+# ElevenLabs (for session simulator)
+ELEVENLABS_API_KEY=your-elevenlabs-api-key
+
+# Simulator Voices (format: ID:Name;ID:Name;...)
+# IDs coming from ElevenLabs voices
+SIMULATOR_VOICES=voice-id-1:Dr. Rodriguez;voice-id-2:Patient Voice;voice-id-3:Dr. Smith (Specialist)
 ```
 
-## Usage
+### Usage
 
 ```bash
 # Development (frontend + backend in parallel)
@@ -120,53 +110,46 @@ pnpm lint
 
 ```
 mrp-5g-session-processor/
-├── docker/                   # Docker Compose (Garage S3 + Redis)
+├── docker/                       # Docker Compose (Garage S3 + Redis)
+├── screenshots/                  # README screenshots
 ├── packages/
-│   ├── shared/               # Shared TypeScript types
-│   ├── backend/              # Express.js API
-│   │   ├── src/
-│   │   │   ├── controllers/  # REST controllers
-│   │   │   ├── db/           # Schema, migrations, repositories
-│   │   │   ├── middleware/   # Auth, upload, errors
-│   │   │   ├── routes/       # Route definitions
-│   │   │   ├── services/     # Business logic
-│   │   │   └── services/processing/  # Processing workers
-│   │   └── scripts/          # seed-users.ts
-│   └── frontend/             # React SPA
+│   ├── shared/                   # Shared TypeScript types and constants
+│   │   └── src/
+│   │       ├── constants/        # Shared constants (languages, etc.)
+│   │       └── types/            # Shared TypeScript types
+│   ├── backend/                  # Express.js API
+│   │   ├── scripts/              # seed-users.ts
+│   │   ├── .env                  # Configuration (not to be committed)
+│   │   └── src/
+│   │       ├── config/           # App configuration
+│   │       ├── controllers/      # REST controllers
+│   │       ├── db/               # Schema, migrations, repositories
+│   │       ├── middleware/       # Auth, upload, errors
+│   │       ├── routes/           # Route definitions
+│   │       ├── utils/            # Utility functions
+│   │       └── services/         # Business logic
+│   │           ├── processing/   # Processing workers
+│   │           └── simulator/    # Session simulator (TTS)
+│   └── frontend/                 # React SPA
 │       └── src/
-│           ├── api/          # HTTP client
-│           ├── components/   # UI components
-│           ├── context/      # AuthContext
-│           ├── hooks/        # Custom hooks
-│           └── pages/        # App pages
-├── pnpm-workspace.yaml
-└── .env                      # Configuration (do not commit)
+│           ├── api/              # HTTP client
+│           ├── components/       # UI components
+│           │   ├── auth/         # Authentication components
+│           │   ├── layout/       # Layout components
+│           │   ├── sessions/     # Session-related components
+│           │   ├── simulator/    # Simulator components
+│           │   ├── ui/           # Reusable UI components
+│           │   ├── users/        # User management components
+│           │   └── videos/       # Video player components
+│           ├── context/          # React contexts (Auth, etc.)
+│           ├── hooks/            # Custom hooks
+│           ├── i18n/             # Translations (es-ES, en-GB)
+│           ├── pages/            # App pages
+│           ├── routes/           # Route definitions
+│           ├── styles/           # Global styles
+│           └── utils/            # Utility functions
+└── pnpm-workspace.yaml
 ```
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/login` - Login with email/password
-- `POST /api/auth/logout` - Logout
-- `GET /api/auth/me` - Current authenticated user
-
-### Medical Sessions
-- `GET /api/sessions` - List user sessions
-- `POST /api/sessions` - Create session + upload video
-- `GET /api/sessions/:id` - Detail with transcription and summaries
-- `GET /api/sessions/:id/status` - Processing status
-- `GET /api/sessions/:id/video/stream` - Video streaming
-- `PATCH /api/sessions/:id` - Update metadata
-- `DELETE /api/sessions/:id` - Delete session
-
-### Search
-- `GET /api/search?q=` - Fuzzy search in transcriptions and metadata
-
-### Session Assignments (admin only)
-- `GET /api/users/:userId/assignments` - List sessions assigned to a user
-- `GET /api/users/:userId/available-sessions` - List sessions available for assignment
-- `POST /api/users/:userId/assignments` - Assign sessions to a user
-- `DELETE /api/users/:userId/assignments/:sessionId` - Remove assignment
 
 ## Processing Flow
 
@@ -208,14 +191,24 @@ Edit `docker/.env` with actual values:
 
 | Variable | Description |
 |----------|-------------|
+| `BASE_PATH` | Deployment subpath (e.g., `/mrp-5g-session-processor`) |
+| `PORT` | Server port (default: `3001`) |
+| `CORS_ORIGIN` | Allowed domain (e.g., `https://app.example.com`) |
+| `COOKIE_SECURE` | Cookie secure flag: `auto` (default), `true`, or `false` |
 | `SESSION_SECRET` | Secret key of 32+ characters |
+| `S3_ENDPOINT` | S3 endpoint (default: `http://garage:3900`) |
+| `S3_BUCKET` | S3 bucket name (default: `mrp-videos`) |
 | `S3_ACCESS_KEY` | Garage credential (see step 4) |
 | `S3_SECRET_KEY` | Garage credential (see step 4) |
+| `S3_REGION` | S3 region (default: `garage`) |
 | `OPENAI_API_KEY` | OpenAI API key |
+| `OPENAI_MODEL_TRANSCRIPTION` | Transcription model (default: `gpt-4o-transcribe-diarize`) |
+| `OPENAI_MODEL_SEGMENTATION` | Segmentation model (default: `gpt-5.1`) |
+| `OPENAI_MODEL_METADATA` | Metadata model (default: `gpt-5.1`) |
 | `ELEVENLABS_API_KEY` | ElevenLabs API key |
 | `SIMULATOR_VOICES` | ElevenLabs voice IDs (format: `id1:Name1;id2:Name2`) |
-| `BASE_PATH` | Deployment subpath (e.g., `/mrp-5g-session-processor`) |
-| `CORS_ORIGIN` | Allowed domain (e.g., `https://app.example.com`) |
+| `SIMULATOR_PAUSE_BETWEEN_SEGMENTS_MS` | Pause between segments in ms (default: `1000`) |
+| `SIMULATOR_AUDIO_CONCURRENCY` | Concurrent audio generation jobs (default: `3`) |
 
 ### 3. Build the image
 

@@ -1,298 +1,229 @@
 # CLAUDE.md - mrp-5g-session-processor
 
-## Descripción del Proyecto
+## Quick Reference
 
-Aplicación para procesar vídeos de sesiones médicas. Permite subir grabaciones de consultas médicas, transcribirlas automáticamente, identificar los hablantes (doctor/paciente/especialista) y segmentar el contenido en secciones clínicas estructuradas con resúmenes automáticos.
+**Tech Stack:** pnpm monorepo | React 19 + Vite + Tailwind | Express.js 5 | SQLite (better-sqlite3) | BullMQ + Redis | S3 (Garage) | OpenAI SDK | ElevenLabs SDK
 
-## Stack Técnico
+**Node Requirements:** Node >=22.0.0 | pnpm >=9.0.0
 
-- **Monorepo**: pnpm workspaces
-- **Frontend**: React 19 + Vite + Tailwind CSS + TypeScript
-- **Backend**: Express.js + TypeScript
-- **Base de datos**: SQLite (better-sqlite3)
-- **Almacenamiento de vídeos**: S3 (Garage para desarrollo local)
-- **Cola de procesamiento**: BullMQ + Redis
-- **IA**: OpenAI SDK (gpt-4o-transcribe-diarize para transcripción con identificación de hablantes, gpt-5.1 para segmentación y metadatos)
-- **TTS**: ElevenLabs SDK (síntesis de voz para simulador)
-- **i18n**: react-i18next (es-ES, en-GB)
+**Key Commands:**
+```bash
+pnpm install          # Install all dependencies
+pnpm dev              # Run frontend (5173) + backend (3001)
+pnpm build            # Build all packages
+pnpm lint             # Lint all packages
+pnpm docker:up        # Start Garage S3 + Redis
+pnpm db:seed          # Seed test users
+```
 
-## Estructura del Proyecto
+## Project Description
+
+Medical session video processing application. Upload consultation recordings, automatically transcribe with speaker identification (doctor/patient/specialist), segment into clinical sections, and generate AI summaries.
+
+## Project Structure
 
 ```
 mrp-5g-session-processor/
-├── docker/                   # Docker Compose (Garage S3 + Redis)
 ├── packages/
-│   ├── shared/               # Tipos TypeScript compartidos
-│   ├── backend/              # API Express.js
+│   ├── backend/              # Express.js API (port 3001)
 │   │   ├── src/
-│   │   │   ├── controllers/  # Controladores REST
-│   │   │   ├── db/           # Schema, migraciones, repositorios
-│   │   │   ├── middleware/   # Auth, upload, errors
-│   │   │   ├── routes/       # Definición de rutas
-│   │   │   ├── services/     # Lógica de negocio
-│   │   │   ├── services/processing/  # Workers de procesamiento
-│   │   │   └── services/simulator/   # Simulador de sesiones (TTS)
+│   │   │   ├── controllers/  # REST controllers
+│   │   │   ├── routes/       # Route definitions
+│   │   │   ├── services/     # Business logic
+│   │   │   │   ├── processing/   # BullMQ workers (transcription, segmentation, metadata)
+│   │   │   │   └── simulator/    # Session simulator (TTS)
+│   │   │   ├── middleware/   # Auth, upload, RBAC, rate-limit
+│   │   │   ├── db/           # schema.sql + connection.ts (embedded migrations)
+│   │   │   └── config/       # Config + Pino logger
 │   │   └── scripts/          # seed-users.ts
-│   └── frontend/             # React SPA
+│   ├── frontend/             # React SPA (port 5173)
+│   │   └── src/
+│   │       ├── api/          # Axios HTTP client
+│   │       ├── components/   # UI components (layout/, ui/, sessions/, videos/, simulator/, users/)
+│   │       ├── pages/        # Route pages
+│   │       ├── hooks/        # React Query hooks
+│   │       ├── context/      # AuthContext
+│   │       ├── i18n/         # es-ES.json, en-GB.json
+│   │       └── utils/        # cn.ts (Tailwind), format.ts
+│   └── shared/               # Shared TypeScript types + constants
 │       └── src/
-│           ├── api/          # Cliente HTTP
-│           ├── components/   # UI components
-│           ├── context/      # AuthContext
-│           ├── hooks/        # Custom hooks
-│           └── pages/        # Páginas de la app
-├── pnpm-workspace.yaml
-└── .env                      # Configuración (no commitear)
+│           ├── types/        # User, Session, Processing, Simulator, etc.
+│           └── constants/    # languages.ts, sections.ts
+├── docker/
+│   ├── docker-compose.yml      # Development (Garage S3 + Redis)
+│   └── docker-compose.prod.yml # Production
+├── Dockerfile                  # Multi-stage production build
+├── tsconfig.base.json          # Base TS config (strict mode)
+└── .prettierrc                 # semi: true, singleQuote: false, tabWidth: 2
 ```
 
-## Comandos Principales
+## Code Conventions
 
-```bash
-# Desarrollo
-pnpm install              # Instalar dependencias
-pnpm dev                  # Ejecutar frontend y backend en paralelo
-pnpm dev:backend          # Solo backend
-pnpm dev:frontend         # Solo frontend
+### TypeScript
+- Strict mode enabled across all packages
+- Import types from `@mrp/shared` for consistency
+- Prefer interfaces over types for objects
 
-# Docker
-pnpm docker:up            # Levantar Garage S3 + Redis
-pnpm docker:down          # Parar servicios
+### Backend
+- Thin controllers, business logic in services
+- Repositories pattern not used - services access DB directly
+- Validation with Zod on endpoints
+- Pino for structured logging
 
-# Base de datos
-pnpm db:migrate           # Ejecutar migraciones
-pnpm db:seed              # Seedear usuarios (script bash wrapper)
+### Frontend
+- Functional components with hooks
+- React Query for server state (`useQuery`, `useMutation`)
+- Tailwind for styles (no custom CSS files)
+- Use `cn()` utility from `utils/cn.ts` for conditional classes
+- react-i18next for translations
 
-# Build y test
-pnpm build                # Build de todos los packages
-pnpm test                 # Tests de todos los packages
-pnpm lint                 # Linting
-```
+## Database
 
-## Configuración (.env)
+SQLite with better-sqlite3. WAL mode and foreign keys enabled.
+
+**Schema location:** `packages/backend/src/db/schema.sql`
+
+**Migrations:** Embedded in `packages/backend/src/db/connection.ts` (run on startup)
+
+### Main Tables
+- `users` - email, password_hash (Argon2), role (admin/user/readonly)
+- `medical_sessions` - video/audio, status, metadata, detected_language, is_simulated
+- `transcript_sections` - speaker, section_type, text, start_time, end_time
+- `section_summaries` - section_type, summary (GPT-generated)
+- `clinical_indicators` - urgency, diagnosis, treatment, etc.
+- `simulations` - simulator state and progress
+- `session_assignments` - user session sharing (read/write permissions)
+- `transcript_fts` - FTS5 virtual table for full-text search
+
+### Medical Sections
+`introduction` | `symptoms` | `diagnosis` | `treatment` | `closing`
+
+### Speaker Types
+`DOCTOR` | `PATIENT` | `SPECIALIST` | `OTHER`
+
+### User Roles (RBAC)
+- `admin` - Full access: user management, all sessions, simulator, assignments
+- `user` - Own sessions, simulator
+- `readonly` - Only view assigned sessions
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/login` - Login
+- `POST /api/auth/logout` - Logout
+- `GET /api/auth/me` - Current user
+
+### Sessions
+- `GET /api/sessions` - List user sessions
+- `POST /api/sessions` - Create + upload video
+- `GET /api/sessions/:id` - Detail with transcript/summaries
+- `GET /api/sessions/:id/status` - Processing status
+- `GET /api/sessions/:id/video/stream` - Video streaming (S3 proxy)
+- `PATCH /api/sessions/:id` - Update metadata
+- `DELETE /api/sessions/:id` - Delete
+- `GET /api/sessions/:id/accuracy` - Accuracy metrics (simulated only)
+
+### Search
+- `GET /api/search?q=` - Full-text search (FTS5 + LIKE)
+
+### Simulator
+- `GET /api/simulator/voices` - List ElevenLabs voices
+- `POST /api/simulator` - Start simulation
+- `GET /api/simulator/:id/status` - Simulation progress
+
+### Assignments (admin)
+- `GET /api/users/:userId/assignments` - List assignments
+- `GET /api/users/:userId/available-sessions` - Available sessions
+- `POST /api/users/:userId/assignments` - Create assignment
+- `DELETE /api/users/:userId/assignments/:sessionId` - Remove
+
+## Processing Flow
+
+1. Upload video/audio → S3 (`/{user_uuid}/{session_id}/`)
+2. BullMQ job created
+3. Worker extracts audio with ffmpeg (must be in PATH)
+4. **Transcription** - `gpt-4o-transcribe-diarize`: speaker identification (A, B, C...), timestamps, language detection
+5. **Segmentation** - `gpt-5.1`: classify sections, re-label speakers semantically, generate summaries
+6. **Metadata** - `gpt-5.1`: title, keywords, tags, clinical indicators, general summary
+7. Status → "completed"
+
+## Simulator Flow
+
+1. User provides context, language, voices
+2. GPT-5.1 generates dialogue JSON (DOCTOR, PATIENT, SPECIALIST required)
+3. ElevenLabs generates MP3 segments (concurrent)
+4. ffmpeg concatenates with silences
+5. Creates `medical_session` with `is_simulated = 1`
+6. Enqueues normal processing
+
+## Environment Variables (.env)
 
 ```env
-# Backend
 PORT=3001
 NODE_ENV=development
 SESSION_SECRET=your-secret-key
-
-# SQLite
 DATABASE_PATH=./data/mrp.db
 
 # S3 (Garage)
 S3_ENDPOINT=http://localhost:3900
 S3_BUCKET=mrp-videos
-S3_ACCESS_KEY=your-access-key
-S3_SECRET_KEY=your-secret-key
+S3_ACCESS_KEY=...
+S3_SECRET_KEY=...
 S3_REGION=garage
 
-# Redis (BullMQ)
+# Redis
 REDIS_URL=redis://localhost:6379
 
-# OpenAI
+# AI
 OPENAI_API_KEY=sk-...
+ELEVENLABS_API_KEY=...
 
-# ElevenLabs (simulador)
-ELEVENLABS_API_KEY=your-elevenlabs-api-key
-
-# Simulador - Voces (formato: ID:Nombre;ID:Nombre;...)
-SIMULATOR_VOICES=voice-id-1:Dr. Rodriguez;voice-id-2:Patient Voice;voice-id-3:Specialist
+# Simulator
+SIMULATOR_VOICES=voice-id-1:Dr. Rodriguez;voice-id-2:Patient;voice-id-3:Specialist
 SIMULATOR_PAUSE_BETWEEN_SEGMENTS_MS=1000
 SIMULATOR_AUDIO_CONCURRENCY=3
 ```
 
-## Modelo de Datos
+## Docker
 
-### Tablas principales:
-- `users` - Usuarios del sistema (email, password_hash con Argon2, role)
-- `auth_sessions` - Sesiones de autenticación (almacenadas en Redis)
-- `medical_sessions` - Sesiones médicas (vídeo/audio, estado, metadatos, idioma detectado, `is_simulated`)
-- `transcript_sections` - Secciones de transcripción segmentadas
-- `section_summaries` - Resúmenes por tipo de sección (generados por GPT-5.1)
-- `clinical_indicators` - Indicadores clínicos extraídos (urgencia, diagnóstico, tratamiento, etc.)
-- `simulations` - Estado y progreso de simulaciones (contexto, voces, segmentos completados)
-- `session_assignments` - Asignaciones de sesiones a usuarios (permite compartir sesiones con permisos de lectura o escritura)
+**Development:**
+```bash
+pnpm docker:up    # Garage S3 (3900) + Redis (6379)
+pnpm docker:down
+```
 
-### Secciones médicas:
-1. `introduction` - Presentación inicial
-2. `symptoms` - Exposición de síntomas
-3. `diagnosis` - Diagnóstico médico
-4. `treatment` - Asignación de tratamiento
-5. `closing` - Despedida
+**Production:** Multi-stage Dockerfile
+- Builder: Node 22-alpine, compiles TS, deploys deps
+- Runner: Node 22-alpine + ffmpeg, non-root user, port 3001
 
-### Tipos de hablantes:
-- `DOCTOR` - El médico de cabecera o general
-- `PATIENT` - El paciente
-- `SPECIALIST` - Un médico especialista
-- `OTHER` - Acompañante u otra persona
+## Key Middleware
 
-### Roles de usuario (RBAC):
-- `admin` - Acceso completo: gestión de usuarios, crear/editar/eliminar sesiones, simulador, asignar sesiones
-- `user` - Puede crear y gestionar sus propias sesiones, usar el simulador
-- `readonly` - Solo puede ver sesiones asignadas por un admin (no puede crear, editar ni usar el simulador)
+- `auth.middleware.ts` - Session authentication check
+- `admin.middleware.ts` - Admin role required
+- `write-access.middleware.ts` - Write permission check
+- `session-access.middleware.ts` - Session ownership/assignment check
+- `rate-limit.middleware.ts` - Rate limiting
+- `upload.middleware.ts` - Multer file upload
 
-### Asignaciones de sesiones:
-Los administradores pueden asignar sesiones de cualquier usuario a otros usuarios:
-- **Solo lectura**: El usuario asignado puede ver la sesión pero no modificarla
-- **Lectura/escritura**: El usuario asignado puede ver y editar los metadatos de la sesión
-- Un usuario puede ver sus propias sesiones y las sesiones asignadas
-- Las asignaciones se gestionan desde el panel de administración de usuarios
+## Internationalization
 
-## API Endpoints
+- Languages: `es-ES`, `en-GB`
+- Translations: `packages/frontend/src/i18n/{es-ES,en-GB}.json`
+- Backend prompts in English, content generated in transcript language
+- Language constants: `packages/shared/src/constants/languages.ts`
 
-### Autenticación
-- `POST /api/auth/login` - Login con email/password
-- `POST /api/auth/logout` - Cerrar sesión
-- `GET /api/auth/me` - Usuario autenticado actual
+## Important Notes
 
-### Sesiones médicas
-- `GET /api/sessions` - Listar sesiones del usuario
-- `POST /api/sessions` - Crear sesión + subir vídeo
-- `GET /api/sessions/:id` - Detalle con transcripción y resúmenes
-- `GET /api/sessions/:id/status` - Estado de procesamiento
-- `GET /api/sessions/:id/video/stream` - Streaming de vídeo (proxy S3 con soporte Range)
-- `PATCH /api/sessions/:id` - Actualizar metadatos manuales
-- `DELETE /api/sessions/:id` - Eliminar sesión
-- `GET /api/sessions/:id/accuracy` - Métricas de precisión de transcripción (solo simuladas)
-
-### Búsqueda
-- `GET /api/search?q=` - Búsqueda en transcripciones, título, resumen, keywords y etiquetas
-
-### Simulador
-- `GET /api/simulator/voices` - Listar voces disponibles
-- `POST /api/simulator` - Iniciar simulación (contexto, idioma, voces)
-- `GET /api/simulator/:id/status` - Estado y progreso de la simulación
-
-### Asignaciones (solo admin)
-- `GET /api/users/:userId/assignments` - Listar sesiones asignadas a un usuario
-- `GET /api/users/:userId/available-sessions` - Listar sesiones disponibles para asignar
-- `POST /api/users/:userId/assignments` - Asignar sesiones a un usuario
-- `DELETE /api/users/:userId/assignments/:sessionId` - Eliminar asignación
-
-## Flujo de Procesamiento
-
-1. Usuario sube vídeo o audio → se guarda en S3
-2. Se crea job en cola BullMQ
-3. Worker descarga vídeo, extrae audio con ffmpeg via child_process.exec (ffmpeg debe estar instalado y accesible en el PATH)
-4. **Transcripción** con `gpt-4o-transcribe-diarize`:
-   - Identifica hablantes automáticamente (Speaker A, Speaker B, etc.):
-      {
-         type: 'transcript.text.segment',
-         text: 'Hola qué tal?',
-         speaker: 'A',
-         start: 300.904,
-         end: 301.854,
-         id: 'seg_72'
-      },
-      {
-         type: 'transcript.text.segment',
-         text: 'Bien, gracias',
-         speaker: 'B',
-         start: 301.954,
-         end: 302.504,
-         id: 'seg_73'
-      },
-      ...
-   - Genera timestamps por segmento
-   - Detecta idioma automáticamente (código ISO 639-1, ej: `es`, `en`)
-5. **Segmentación** con `gpt-5.1`:
-   - Clasifica en secciones médicas (introduction, symptoms, diagnosis, treatment, closing)
-   - Re-etiqueta speakers semánticamente (DOCTOR, PATIENT, SPECIALIST, OTHER)
-   - Genera resumen por cada tipo de sección en el idioma de la transcripción
-6. **Generación de metadatos** con `gpt-5.1`:
-   - Resumen general de la consulta
-   - Keywords para búsqueda
-   - Título automático (si no se proporcionó)
-   - Etiquetas automáticas (si no se proporcionaron)
-   - Indicadores clínicos estructurados (urgencia, hipótesis diagnósticas, plan de tratamiento, etc.)
-   - Todo el contenido generado en el idioma de la transcripción
-7. Estado actualizado a "completed"
-
-## Flujo del Simulador
-
-El simulador genera sesiones médicas sintéticas a partir de un contexto textual:
-
-1. Usuario proporciona contexto (descripción del escenario médico), idioma y voces para cada hablante
-2. **Generación de conversación** con GPT-5.1:
-   - Genera JSON con segmentos de diálogo
-   - Obligatoriamente incluye 3 hablantes: DOCTOR, PATIENT, SPECIALIST
-   - Se guarda en S3
-3. **Generación de audio** con ElevenLabs (concurrente, configurable):
-   - Cada segmento se convierte a MP3 con la voz seleccionada
-   - Los archivos se nombran `segment_0000.mp3`, `segment_0001.mp3`, etc. para mantener orden
-   - Frontend muestra progreso en tiempo real (polling)
-4. **Concatenación** con ffmpeg:
-   - Une todos los segmentos con silencios configurables entre ellos
-   - Genera `audio.mp3` final
-5. **Creación de sesión**:
-   - Se crea `medical_session` con `is_simulated = 1`
-   - Se encola el procesamiento normal (transcripción → segmentación → metadatos)
-6. Frontend redirige a la vista de sesión
-
-## Análisis de Precisión (Sesiones Simuladas)
-
-Para sesiones simuladas completadas, se puede calcular la precisión de la transcripción comparando el diálogo original generado con el resultado del procesamiento:
-
-### Métricas disponibles:
-- **Word Error Rate (WER)**: Tasa de error a nivel de palabra usando distancia Levenshtein
-- **Text Similarity**: Precisión general del texto (calculada como 1 - WER)
-- **Speaker Accuracy**: Precisión de identificación de hablantes basada en distribución de palabras
-- **Desglose por hablante**: Palabras originales vs transcritas por cada speaker
-
-### Fuentes de datos:
-- **Original**: `{userId}/{sessionId}/simulated_transcript.json` en S3
-- **Transcrito**: Tabla `transcript_sections` en SQLite
-
-### UI:
-- Panel visible solo en sesiones simuladas completadas
-- Código de colores: verde (≥90%), amarillo (70-90%), rojo (<70%)
-
-## Convenciones de Código
-
-### TypeScript
-- Strict mode habilitado
-- Usar tipos del package `shared` para consistencia
-- Preferir interfaces sobre types para objetos
-
-### Backend
-- Controladores delgados, lógica en servicios
-- Repositorios para acceso a datos
-- Validación con Zod en endpoints
-
-### Frontend
-- Componentes funcionales con hooks
-- React Query para estado del servidor
-- Tailwind para estilos (no CSS custom)
+- No public registration - users via seed script or admin
+- All endpoints (except login) require authentication
+- Media files stored in S3: `/{user_uuid}/{session_id}/`
+- Accepted formats: MP4, WebM, MOV, AVI, MKV, MP3, M4A, WAV, OGG
+- Video streaming proxied through backend (CORS)
+- Processing is async - frontend polls for status
+- Auth sessions stored in Redis (connect-redis)
+- Dates displayed in user timezone (dayjs + utc plugin)
+- Simulated sessions show "Simulated" badge
 
 ## Testing
 
-```bash
-pnpm test                    # Todos los tests
-pnpm --filter backend test   # Solo backend
-pnpm --filter frontend test  # Solo frontend
-```
-
-## Notas Importantes
-
-- Los usuarios se crean únicamente via script de seed o por administradores (no hay registro público)
-- Todos los endpoints (excepto login) requieren autenticación
-- El acceso a funcionalidades está controlado por roles (admin/user/readonly)
-- Los usuarios `readonly` solo ven sesiones asignadas; crear sesiones y usar el simulador requiere rol `user` o superior
-- Las sesiones de autenticación se almacenan en Redis (connect-redis con cliente oficial `redis`)
-- Los archivos multimedia se almacenan en S3 bajo `/{user_uuid}/{session_id}/`
-- Se aceptan vídeos (MP4, WebM, MOV, AVI, MKV) y audios (MP3, M4A, WAV, OGG)
-- El streaming de vídeo/audio pasa por el backend (proxy) para evitar problemas CORS con S3
-- El procesamiento es asíncrono; el frontend hace polling del estado
-- La búsqueda usa FTS5 de SQLite para transcripciones + LIKE para metadatos (incluye indicadores clínicos)
-- Las fechas se muestran en la zona horaria local del usuario (dayjs con plugin utc)
-- El frontend resalta automáticamente la sección de transcripción durante la reproducción del vídeo
-- Los resultados de búsqueda muestran el origen del match (transcripción, título, resumen, keywords, etiquetas, indicadores clínicos) con highlighting
-- Las sesiones simuladas se marcan con `is_simulated` y muestran badge "Simulada" en la UI
-
-## Internacionalización (i18n)
-
-- Frontend localizado con react-i18next (idiomas: es-ES, en-GB)
-- Traducciones en `packages/frontend/src/i18n/{es-ES,en-GB}.json`
-- Fechas relativas localizadas con dayjs (sincronizado con idioma de UI)
-- Prompts del backend en inglés, con instrucción de generar contenido en el idioma de la transcripción
-- Constantes compartidas en `packages/shared/src/constants/languages.ts` para mapeo de códigos ISO a nombres de idioma
-- Los identificadores de secciones y speakers son claves neutrales (inglés) traducidas en frontend
+**Status:** No test framework currently configured. Tests not implemented.
