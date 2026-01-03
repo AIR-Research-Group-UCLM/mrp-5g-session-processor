@@ -1,0 +1,296 @@
+{
+  "segments": [
+    {
+      "text": "Good morning, please come in and have a seat. What brings you in today?",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Good morning, doctor. I’m here because I’ve developed these red patches on my skin over the last few weeks.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Can you describe these patches in a bit more detail—where they’re located and how they feel?",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "They’re mostly on my arms and my torso, reddish with drier, flaky areas. They sometimes itch, especially at night and after showering.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "When did you first notice them, and have they changed in size, shape, or color since then?",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "I first noticed a few small spots maybe four or five weeks ago. Some have gotten a bit larger and slightly darker red, but not painful.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "You mentioned itching. On a scale from 0 to 10, how bad does the itch get, and does anything make it better or worse?",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "At its worst it’s maybe a 7, mostly at night or right after a hot shower. Scratching helps briefly, but I sometimes break the skin.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Have you noticed any oozing, bleeding on its own, or crusting, apart from the small scratch wounds?",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "No spontaneous bleeding or oozing, just tiny scabs where I’ve scratched too much. The patches themselves don’t hurt.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Any fever, weight loss, night sweats, fatigue, joint pain, or feeling generally unwell recently?",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "No, I actually feel fine otherwise. No fever or fatigue, my weight is stable, and my joints are okay.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Have you changed soaps, detergents, creams, or started any new medications, supplements, or foods around the time this started?",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Not that I can recall. Same shower gel and laundry detergent, no new meds, and my diet hasn’t changed much.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Any history of allergies, asthma, eczema, or psoriasis in you or close family members?",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "I had mild hay fever as a teenager, but no skin diseases that I know of. My parents don’t have psoriasis or eczema.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Do you work with chemicals, solvents, or irritants, or have you had any recent travel, hiking, or contact with plants or animals?",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "I work in an office, mostly at a computer. No special chemicals, and I haven’t traveled or done anything unusual outdoors recently.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Okay, I’d like to examine your skin now. I’ll need you to roll up your sleeves and lift your shirt so I can see your arms and trunk.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Sure, no problem.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "I see multiple well-defined reddish plaques with some fine scaling on the forearms and upper chest, some excoriation marks but no active infection or blisters.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Does it look serious? I’m a bit worried because some spots seem to be spreading slowly.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "From what I see, it doesn’t look like an emergency, but the pattern is a bit atypical, and I’d like a dermatologist’s opinion.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "How would that work today? Do I need another appointment somewhere else?",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "We can actually connect with a skin specialist right now using these VR smart glasses, so they can see what I’m seeing and help guide us.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "That sounds good. I’d appreciate having a specialist look at it.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Great, I’m putting the VR glasses on now and starting the connection. You’ll see me talking, but the specialist will also hear and see everything in the room.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Understood.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Hello, this is Dr. Miller, dermatologist. I can see the consultation room and the skin lesions through your VR feed. Can you both hear me clearly?",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Yes, we hear you clearly. This is Dr. Evans in primary care with a patient with progressive red, scaly patches on arms and trunk.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Hello, doctor. Yes, I can hear you. It’s a bit strange knowing you can see us through the glasses, but it’s fine.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Thank you. I’ll ask a few questions and guide Dr. Evans on the exam. Patient, have these lesions ever completely disappeared, or do they persist and slowly change?",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "They don’t really go away. Some fade a bit, others appear nearby or get slightly larger over time.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Dr. Evans, could you bring the camera closer to one of the plaques on the forearm and tilt so I can see the scale and borders clearly?",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Of course. I’m moving closer now and focusing on a mid-forearm lesion with scaling and a small scratch mark.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Perfect, hold there. I see a well-demarcated erythematous plaque with fine white scaling and superficial excoriations, no vesicles or pustules. Any involvement of the scalp, elbows, or knees?",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "No scalp lesions that I can see, and the elbows and knees look clear—no thick plaques or silvery scale in those areas.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Patient, does anyone in your family have autoimmune conditions, like thyroid disease, vitiligo, or rheumatoid arthritis, in addition to psoriasis or eczema?",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Not that I’m aware of. My parents have high blood pressure and cholesterol, but no autoimmune diseases that I know.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Dr. Evans, could you gently stretch the skin on one plaque and scrape a bit of scale with a tongue depressor, so I can see how the scale behaves?",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "I’m stretching the skin now and lightly scraping. The scale is fine, comes off easily, no pinpoint bleeding underneath.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Thank you. Patient, do the lesions ever form ring shapes with a clearer center, or are they mostly solid patches of redness and scale?",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Some look a bit like rings, but the center is still slightly pink and dry. They’re not completely clear in the middle.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Dr. Evans, can you show me a trunk lesion and slowly rotate around it so I can assess symmetry and edge quality?",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Yes, I’m focusing on a chest lesion now and moving around it. It’s oval, with slightly raised, sharper borders and central mild clearing.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "That’s helpful. Given the distribution and border, I’m considering nummular eczema versus tinea corporis. Any lesions in skin folds, like groin or armpits?",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "I’ve checked the axillae and groin; there are no obvious lesions there, just the arms and upper trunk.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Patient, have you used any over-the-counter creams, like steroids or antifungals, on these spots so far?",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "No, I’ve only used some basic moisturizer because the skin felt dry. Nothing medicated.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "With that in mind, this looks more like subacute eczema, possibly nummular, rather than psoriasis or fungal infection, though tinea can’t be fully excluded.",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "So it’s probably an eczema-type rash? Is it something serious or long-term?",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "It’s usually not dangerous, but it can be chronic or recurrent. With proper treatment and skin care, we can usually control the symptoms well.",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Dr. Miller, would you recommend any immediate tests, like a skin scraping for fungus, or should we start empiric treatment first?",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Given the appearance and lack of fold involvement, I’d start with a medium-potency topical corticosteroid plus emollients, and do a scraping only if it doesn’t improve.",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Okay, and for the patient, how long should we try the steroid before reassessing?",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Two weeks of once-daily application should show clear improvement. If there’s no response or it worsens, then consider fungal testing or biopsy.",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Could you please explain the treatment to me in simpler terms—what cream I’ll use and how often?",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Of course. You’ll use a prescription anti-inflammatory cream, like a medium-strength steroid, once a day on the red patches for about two weeks.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "In addition, apply a fragrance-free moisturizer twice daily over the whole affected area and after showering, and try shorter, lukewarm showers instead of hot ones.",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Will the cream have side effects? I’ve heard steroids on the skin can be harmful.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Used correctly for a short period, the risk is low. We’ll avoid sensitive areas and limit duration to reduce any chance of thinning the skin.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Exactly. If you notice burning, worsening redness, or signs of infection like pus, stop and contact Dr. Evans promptly.",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Is there anything I should avoid—like certain soaps, clothes, or foods?",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Use mild, fragrance-free soap, avoid harsh scrubbing, and wear loose cotton clothing. There’s no specific food you must avoid unless you notice a clear trigger.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "From my side, I agree. If the lesions become ring-shaped with a very clear center or spread despite steroids, we’ll reassess for a fungal cause.",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "How soon should I come back to check if it’s improving?",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "Let’s schedule a follow-up in about three weeks. If things worsen before then—more redness, pain, or spreading—come in sooner.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "I’ll also leave a note in your record. If there’s no improvement, Dr. Evans can reconnect with me, and we’ll consider skin scraping or referral.",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Thank you both. It’s reassuring to have a specialist involved without needing to go to another clinic today.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "You’re welcome. I’m disconnecting from the VR session now. Dr. Evans will give you the prescription and written care instructions.",
+      "speaker": "SPECIALIST"
+    },
+    {
+      "text": "Alright, I’ve removed the glasses. I’ll print your prescription, a leaflet about eczema care, and set up your follow-up appointment.",
+      "speaker": "DOCTOR"
+    },
+    {
+      "text": "Great, I appreciate the help and explanations. I’ll follow the instructions and see you in a few weeks.",
+      "speaker": "PATIENT"
+    },
+    {
+      "text": "You’re welcome. Take care of your skin, and don’t hesitate to contact us if anything changes before your next visit.",
+      "speaker": "DOCTOR"
+    }
+  ]
+}
