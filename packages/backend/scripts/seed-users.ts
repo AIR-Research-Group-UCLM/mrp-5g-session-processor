@@ -2,6 +2,8 @@ import type { UserRole } from "@mrp/shared";
 import * as argon2 from "argon2";
 import Database from "better-sqlite3";
 import "dotenv/config";
+import fs from "node:fs";
+import path from "node:path";
 import { v4 as uuidv4 } from "uuid";
 
 // Get database path from environment or use default
@@ -31,7 +33,23 @@ const SEED_USERS: UserSeed[] = [
 
 async function seedUsers(): Promise<void> {
   console.log(`Opening database at ${DATABASE_PATH}`);
+
+  // Ensure the database directory exists
+  const dbDir = path.dirname(DATABASE_PATH);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+
   const db = new Database(DATABASE_PATH);
+
+  // Initialize schema
+  const schemaPath = path.resolve(
+    import.meta.dirname,
+    "../src/db/schema.sql"
+  );
+  const schema = fs.readFileSync(schemaPath, "utf-8");
+  db.pragma("journal_mode = WAL");
+  db.exec(schema);
 
   db.pragma("foreign_keys = ON");
 

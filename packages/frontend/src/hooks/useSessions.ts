@@ -98,6 +98,56 @@ export function useSearchSessions(query: string, enabled: boolean = true) {
   });
 }
 
+export function usePatientInquiry(sessionId: string) {
+  return useQuery({
+    queryKey: ["patient-inquiry", sessionId],
+    queryFn: () => sessionsApi.getPatientInquiry(sessionId),
+    enabled: !!sessionId,
+  });
+}
+
+export function useGeneratePatientInquiry() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sessionId: string) => sessionsApi.generatePatientInquiry(sessionId),
+    onSuccess: (data, sessionId) => {
+      queryClient.setQueryData(["patient-inquiry", sessionId], data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Error generating patient inquiry");
+    },
+  });
+}
+
+export function useCreateShareToken() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sessionId: string) => sessionsApi.createShareToken(sessionId),
+    onSuccess: (_, sessionId) => {
+      queryClient.invalidateQueries({ queryKey: ["patient-inquiry", sessionId] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Error creating share link");
+    },
+  });
+}
+
+export function useRevokeShareToken() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (sessionId: string) => sessionsApi.revokeShareToken(sessionId),
+    onSuccess: (_, sessionId) => {
+      queryClient.invalidateQueries({ queryKey: ["patient-inquiry", sessionId] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Error revoking share link");
+    },
+  });
+}
+
 export function useSessionAccuracy(id: string, enabled: boolean = true) {
   return useQuery({
     queryKey: ["session-accuracy", id],

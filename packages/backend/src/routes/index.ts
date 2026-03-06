@@ -5,6 +5,7 @@ import { searchRoutes } from "./search.routes.js";
 import { simulatorRoutes } from "./simulator.routes.js";
 import { usersRoutes } from "./users.routes.js";
 import { assignmentsRoutes } from "./assignments.routes.js";
+import { patientInquiryRoutes } from "./patient-inquiry.routes.js";
 
 export const routes = Router();
 
@@ -14,3 +15,4 @@ routes.use("/search", searchRoutes);
 routes.use("/simulator", simulatorRoutes);
 routes.use("/users", usersRoutes);
 routes.use("/assignments", assignmentsRoutes);
+routes.use("/patient-inquiry", patientInquiryRoutes);

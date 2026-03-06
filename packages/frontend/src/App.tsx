@@ -7,6 +7,7 @@ import { SessionDetailPage } from "@/pages/SessionDetailPage";
 import { SessionsPage } from "@/pages/SessionsPage";
 import { SimulatorPage } from "@/pages/SimulatorPage";
 import { UsersPage } from "@/pages/UsersPage";
+import { PatientInquiryPage } from "@/pages/PatientInquiryPage";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 const ADMIN_EMAIL = "admin@user.com";
@@ -51,6 +52,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/p/:token" element={<PatientInquiryPage />} />
       <Route
         path="/"
         element={

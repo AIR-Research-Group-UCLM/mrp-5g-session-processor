@@ -59,6 +59,37 @@ function runMigrations(database: Database.Database): void {
     `);
     logger.info("Migration completed: session_assignments table created");
   }
+
+  // Migration: Add patient_inquiries table
+  const hasPatientInquiriesTable = database
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='patient_inquiries'"
+    )
+    .get();
+
+  if (!hasPatientInquiriesTable) {
+    logger.info("Running migration: Creating patient_inquiries table...");
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS patient_inquiries (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL UNIQUE,
+        what_happened TEXT NOT NULL,
+        diagnosis TEXT NOT NULL,
+        treatment_plan TEXT NOT NULL,
+        follow_up TEXT NOT NULL,
+        warning_signs TEXT NOT NULL,
+        additional_notes TEXT,
+        share_token TEXT UNIQUE,
+        share_expires_at TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_patient_inquiries_session_id ON patient_inquiries(session_id);
+      CREATE INDEX IF NOT EXISTS idx_patient_inquiries_share_token ON patient_inquiries(share_token);
+    `);
+    logger.info("Migration completed: patient_inquiries table created");
+  }
 }
 
 export async function initializeDatabase(): Promise<void> {

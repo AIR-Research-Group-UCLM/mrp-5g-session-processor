@@ -3,6 +3,12 @@ import { z } from "zod";
 import { sessionService } from "../services/session.service.js";
 import { s3Service } from "../services/s3.service.js";
 import { accuracyService } from "../services/accuracy.service.js";
+import {
+  generatePatientInquiry as generatePatientInquiryService,
+  getPatientInquiry as getPatientInquiryService,
+  createShareToken as createShareTokenService,
+  revokeShareToken as revokeShareTokenService,
+} from "../services/patient-inquiry.service.js";
 import { AppError } from "../middleware/error.middleware.js";
 import { logger } from "../config/logger.js";
 
@@ -277,6 +283,46 @@ const getAccuracy: RequestHandler = async (req, res, next) => {
   }
 };
 
+const getPatientInquiry: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    const inquiry = getPatientInquiryService(sessionId);
+    res.json({ success: true, data: { inquiry } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const generatePatientInquiry: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    const inquiry = await generatePatientInquiryService(sessionId);
+    res.json({ success: true, data: { inquiry } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createShareToken: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    const result = createShareTokenService(sessionId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const revokeShareToken: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    revokeShareTokenService(sessionId);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const sessionsController = {
   list,
   create,
@@ -287,4 +333,8 @@ export const sessionsController = {
   getVideoUrl,
   streamVideo,
   getAccuracy,
+  getPatientInquiry,
+  generatePatientInquiry,
+  createShareToken,
+  revokeShareToken,
 };

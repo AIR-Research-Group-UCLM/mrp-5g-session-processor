@@ -328,6 +328,37 @@
     "user": "Usuario",
     "readonly": "Solo lectura"
   },
+  "patientInquiry": {
+    "title": "Consulta del Paciente",
+    "description": "Genera un resumen simplificado y comprensible para el paciente de esta consulta utilizando IA.",
+    "generate": "Generar Resumen para Paciente",
+    "regenerate": "Regenerar",
+    "generating": "Generando resumen para el paciente...",
+    "errorGenerating": "Error al generar el resumen del paciente. Intentalo de nuevo.",
+    "whatHappened": "Que ocurrio",
+    "diagnosis": "Diagnostico",
+    "treatmentPlan": "Plan de tratamiento",
+    "followUp": "Seguimiento",
+    "warningSigns": "Signos de alarma",
+    "additionalNotes": "Notas adicionales",
+    "disclaimer": "Este resumen fue generado por IA y tiene unicamente fines informativos. No sustituye el consejo medico profesional. Consulte siempre a su profesional sanitario ante cualquier duda sobre su salud.",
+    "createShareLink": "Crear enlace para compartir",
+    "copyLink": "Copiar enlace",
+    "linkCopied": "Enlace copiado al portapapeles",
+    "revokeLink": "Revocar enlace",
+    "linkActive": "Enlace activo",
+    "linkExpires": "Expira el {{date}}",
+    "linkExpired": "El enlace anterior ha expirado.",
+    "patientPage": {
+      "title": "Resumen de su consulta",
+      "expired": "Enlace expirado",
+      "expiredDescription": "Este enlace ha expirado o ha sido revocado. Solicite un nuevo enlace a su profesional sanitario.",
+      "notFound": "No encontrado",
+      "notFoundDescription": "Este enlace no es valido o no se pudo encontrar el resumen de la consulta.",
+      "expiresOn": "El enlace expira el {{date}}",
+      "disclaimer": "Este resumen fue generado por IA y tiene unicamente fines informativos. No sustituye el consejo medico profesional. Consulte siempre a su profesional sanitario ante cualquier duda sobre su salud."
+    }
+  },
   "assignments": {
     "assignedSessions": "Sesiones Asignadas",
     "assignedSessionsDescription": "Selecciona las sesiones a las que este usuario debe tener acceso",
