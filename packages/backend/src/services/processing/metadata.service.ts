@@ -8,32 +8,45 @@ import { logger } from "../../config/logger.js";
 import { withRetry } from "../../utils/retry.js";
 
 // Security: Zod schemas for validating OpenAI metadata response
-const clinicalIndicatorsSchema = z.object({
-  urgencyLevel: z.string().nullable().optional(),
-  appointmentPriority: z.string().nullable().optional(),
-  reasonForVisit: z.string().nullable().optional(),
-  consultedSpecialty: z.string().nullable().optional(),
-  mainClinicalProblem: z.string().nullable().optional(),
-  problemStatus: z.string().nullable().optional(),
-  diagnosticHypothesis: z.array(z.object({
-    condition: z.string(),
-    certainty: z.string(),
-  })).nullable().optional(),
-  requestedTests: z.array(z.string()).nullable().optional(),
-  treatmentPlan: z.object({
-    medicationStarted: z.array(z.string()).optional(),
-    medicationAdjusted: z.array(z.string()).optional(),
-    medicationDiscontinued: z.array(z.string()).optional(),
-    nonPharmacologicalMeasures: z.array(z.string()).optional(),
-  }).nullable().optional(),
-  patientEducation: z.array(z.string()).nullable().optional(),
-  warningSigns: z.array(z.string()).nullable().optional(),
-  followUpPlan: z.object({
-    followUpType: z.string().optional(),
-    timeFrame: z.string().optional(),
-    responsibleCareLevel: z.string().optional(),
-  }).nullable().optional(),
-}).optional();
+const clinicalIndicatorsSchema = z
+  .object({
+    urgencyLevel: z.string().nullable().optional(),
+    appointmentPriority: z.string().nullable().optional(),
+    reasonForVisit: z.string().nullable().optional(),
+    consultedSpecialty: z.string().nullable().optional(),
+    mainClinicalProblem: z.string().nullable().optional(),
+    problemStatus: z.string().nullable().optional(),
+    diagnosticHypothesis: z
+      .array(
+        z.object({
+          condition: z.string(),
+          certainty: z.string(),
+        })
+      )
+      .nullable()
+      .optional(),
+    requestedTests: z.array(z.string()).nullable().optional(),
+    treatmentPlan: z
+      .object({
+        medicationStarted: z.array(z.string()).optional(),
+        medicationAdjusted: z.array(z.string()).optional(),
+        medicationDiscontinued: z.array(z.string()).optional(),
+        nonPharmacologicalMeasures: z.array(z.string()).optional(),
+      })
+      .nullable()
+      .optional(),
+    patientEducation: z.array(z.string()).nullable().optional(),
+    warningSigns: z.union([z.array(z.string()), z.string().transform((s) => [s])]),
+    followUpPlan: z
+      .object({
+        followUpType: z.string().optional(),
+        timeFrame: z.string().optional(),
+        responsibleCareLevel: z.string().optional(),
+      })
+      .nullable()
+      .optional(),
+  })
+  .optional();
 
 const metadataResponseSchema = z.object({
   summary: z.string(),
@@ -57,7 +70,11 @@ interface SessionInfo {
   user_tags: string | null;
 }
 
-function buildMetadataPrompt(needsTitle: boolean, needsTags: boolean, outputLanguage: string): string {
+function buildMetadataPrompt(
+  needsTitle: boolean,
+  needsTags: boolean,
+  outputLanguage: string
+): string {
   let fieldNum = 1;
   const fields: string[] = [
     `${fieldNum++}. A brief summary (2-3 sentences) of the consultation content`,
@@ -65,7 +82,9 @@ function buildMetadataPrompt(needsTitle: boolean, needsTags: boolean, outputLang
   ];
 
   if (needsTitle) {
-    fields.push(`${fieldNum++}. A descriptive and concise title (maximum 10 words) to identify this session`);
+    fields.push(
+      `${fieldNum++}. A descriptive and concise title (maximum 10 words) to identify this session`
+    );
   }
 
   if (needsTags) {
@@ -78,14 +97,22 @@ function buildMetadataPrompt(needsTitle: boolean, needsTags: boolean, outputLang
 
   return `You are an expert in medical consultation analysis. Given the segmented transcript of a medical session, generate:
 
-${fields.join('\n')}
+${fields.join("\n")}
 
 Respond in JSON with the following format:
 {
   "summary": "Summary of the consultation...",
-  "keywords": ["keyword1", "keyword2", ...]${needsTitle ? `,
-  "title": "Session title"` : ''}${needsTags ? `,
-  "userTags": ["tag1", "tag2", ...]` : ''},
+  "keywords": ["keyword1", "keyword2", ...]${
+    needsTitle
+      ? `,
+  "title": "Session title"`
+      : ""
+  }${
+    needsTags
+      ? `,
+  "userTags": ["tag1", "tag2", ...]`
+      : ""
+  },
   "clinicalIndicators": {
     "urgencyLevel": "low" | "medium" | "high",
     "appointmentPriority": "preferred" | "non_preferred",
@@ -117,17 +144,25 @@ Keywords should include:
 - Symptoms mentioned
 - Diagnoses discussed
 - Recommended treatments
-- Relevant medical terms${needsTitle ? `
+- Relevant medical terms${
+    needsTitle
+      ? `
 
 The title should be descriptive but brief, for example:
 - "Acute abdominal pain consultation"
 - "Hypertension follow-up"
-- "Initial visit: recurrent headache"` : ''}${needsTags ? `
+- "Initial visit: recurrent headache"`
+      : ""
+  }${
+    needsTags
+      ? `
 
 Tags should be general categories useful for filtering, for example:
 - Consultation type: "initial visit", "follow-up", "urgent"
 - Specialty: "cardiology", "neurology", "general medicine"
-- Age group if relevant: "pediatric", "geriatric"` : ''}
+- Age group if relevant: "pediatric", "geriatric"`
+      : ""
+  }
 
 IMPORTANT NOTES for clinical indicators:
 - urgencyLevel: Evaluate urgency based on symptom severity, evolution, or need for immediate action
@@ -180,7 +215,10 @@ export async function processMetadata(sessionId: string): Promise<MetadataCostRe
     .map((s) => `[${s.section_type.toUpperCase()}]\n${s.content}`)
     .join("\n\n");
 
-  logger.info({ sessionId, needsTitle, needsTags, outputLanguage, model: config.openai.models.metadata }, "Generating metadata");
+  logger.info(
+    { sessionId, needsTitle, needsTags, outputLanguage, model: config.openai.models.metadata },
+    "Generating metadata"
+  );
 
   const prompt = buildMetadataPrompt(needsTitle, needsTags, outputLanguage);
 
@@ -256,11 +294,13 @@ export async function processMetadata(sessionId: string): Promise<MetadataCostRe
 
   params.push(sessionId);
 
-  db.prepare(`
+  db.prepare(
+    `
     UPDATE medical_sessions
     SET ${updates.join(", ")}
     WHERE id = ?
-  `).run(...params);
+  `
+  ).run(...params);
 
   logger.info(
     {
@@ -296,7 +336,8 @@ export async function processMetadata(sessionId: string): Promise<MetadataCostRe
         }
       : null;
 
-    db.prepare(`
+    db.prepare(
+      `
       INSERT OR REPLACE INTO clinical_indicators (
         id, session_id, urgency_level, appointment_priority,
         reason_for_visit, consulted_specialty, main_clinical_problem,
@@ -304,7 +345,8 @@ export async function processMetadata(sessionId: string): Promise<MetadataCostRe
         treatment_plan, patient_education, warning_signs, follow_up_plan,
         updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-    `).run(
+    `
+    ).run(
       indicatorId,
       sessionId,
       ci.urgencyLevel ?? null,
