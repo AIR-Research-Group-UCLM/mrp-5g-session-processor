@@ -6,4 +6,4 @@ export * from "./clinical-indicators.js";
 export * from "./simulator.js";
 export * from "./accuracy.js";
 export * from "./assignment.js";
-export * from "./patient-inquiry.js";
+export * from "./consultation-summary.js";

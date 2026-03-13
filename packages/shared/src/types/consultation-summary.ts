@@ -1,4 +1,4 @@
-export interface PatientInquiry {
+export interface ConsultationSummary {
   whatHappened: string;
   diagnosis: string;
   treatmentPlan: string;
@@ -7,7 +7,7 @@ export interface PatientInquiry {
   additionalNotes: string | null;
 }
 
-export interface StoredPatientInquiry extends PatientInquiry {
+export interface StoredConsultationSummary extends ConsultationSummary {
   id: string;
   sessionId: string;
   createdAt: string;
@@ -16,8 +16,8 @@ export interface StoredPatientInquiry extends PatientInquiry {
   shareExpiresAt: string | null;
 }
 
-export interface PatientInquiryPublic {
-  inquiry: PatientInquiry;
+export interface ConsultationSummaryPublic {
+  summary: ConsultationSummary;
   sessionTitle: string | null;
   sessionDate: string;
   expiresAt: string;
