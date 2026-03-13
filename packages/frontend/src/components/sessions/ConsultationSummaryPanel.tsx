@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Spinner } from "@/components/ui/Spinner";
 import {
   useCreateShareToken,
-  useGeneratePatientInquiry,
-  usePatientInquiry,
+  useGenerateConsultationSummary,
+  useConsultationSummary,
   useRevokeShareToken,
 } from "@/hooks/useSessions";
-import type { PatientInquiry } from "@mrp/shared";
+import type { ConsultationSummary } from "@mrp/shared";
 import {
   AlertCircle,
   AlertTriangle,
@@ -28,53 +28,53 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 
-interface PatientInquiryPanelProps {
+interface ConsultationSummaryPanelProps {
   sessionId: string;
 }
 
-export function InquiryContent({ inquiry }: { inquiry: PatientInquiry }) {
+export function SummaryContent({ summary }: { summary: ConsultationSummary }) {
   const { t } = useTranslation();
 
   return (
     <div className="space-y-5">
-      <Section icon={MessageCircle} title={t("patientInquiry.whatHappened")}>
-        <p className="text-sm text-gray-700">{inquiry.whatHappened}</p>
+      <Section icon={MessageCircle} title={t("consultationSummary.whatHappened")}>
+        <p className="text-sm text-gray-700">{summary.whatHappened}</p>
       </Section>
 
-      <Section icon={Stethoscope} title={t("patientInquiry.diagnosis")}>
-        <p className="text-sm text-gray-700">{inquiry.diagnosis}</p>
+      <Section icon={Stethoscope} title={t("consultationSummary.diagnosis")}>
+        <p className="text-sm text-gray-700">{summary.diagnosis}</p>
       </Section>
 
-      <Section icon={Pill} title={t("patientInquiry.treatmentPlan")}>
-        <p className="text-sm text-gray-700">{inquiry.treatmentPlan}</p>
+      <Section icon={Pill} title={t("consultationSummary.treatmentPlan")}>
+        <p className="text-sm text-gray-700">{summary.treatmentPlan}</p>
       </Section>
 
-      <Section icon={Calendar} title={t("patientInquiry.followUp")}>
-        <p className="text-sm text-gray-700">{inquiry.followUp}</p>
+      <Section icon={Calendar} title={t("consultationSummary.followUp")}>
+        <p className="text-sm text-gray-700">{summary.followUp}</p>
       </Section>
 
-      {inquiry.warningSigns.length > 0 && (
+      {summary.warningSigns.length > 0 && (
         <div className="rounded-lg bg-amber-50 p-3">
           <h4 className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
-            {t("patientInquiry.warningSigns")}
+            {t("consultationSummary.warningSigns")}
           </h4>
           <ul className="list-inside list-disc space-y-1 text-sm text-gray-700">
-            {inquiry.warningSigns.map((sign, i) => (
+            {summary.warningSigns.map((sign, i) => (
               <li key={i}>{sign}</li>
             ))}
           </ul>
         </div>
       )}
 
-      {inquiry.additionalNotes && (
-        <Section icon={FileText} title={t("patientInquiry.additionalNotes")}>
-          <p className="text-sm text-gray-700">{inquiry.additionalNotes}</p>
+      {summary.additionalNotes && (
+        <Section icon={FileText} title={t("consultationSummary.additionalNotes")}>
+          <p className="text-sm text-gray-700">{summary.additionalNotes}</p>
         </Section>
       )}
 
       <p className="text-xs italic text-gray-400">
-        {t("patientInquiry.disclaimer")}
+        {t("consultationSummary.disclaimer")}
       </p>
     </div>
   );
@@ -121,19 +121,19 @@ function ShareSection({ sessionId, shareToken, shareExpiresAt }: {
     if (!shareUrl) return;
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
-    toast.success(t("patientInquiry.linkCopied"));
+    toast.success(t("consultationSummary.linkCopied"));
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="border-t pt-4">
+    <div>
       {hasActiveLink ? (
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-green-700">
             <Link2 className="h-4 w-4" />
             <span>
-              {t("patientInquiry.linkActive")} &middot;{" "}
-              {t("patientInquiry.linkExpires", {
+              {t("consultationSummary.linkActive")} &middot;{" "}
+              {t("consultationSummary.linkExpires", {
                 date: new Date(shareExpiresAt!).toLocaleDateString(),
               })}
             </span>
@@ -145,7 +145,7 @@ function ShareSection({ sessionId, shareToken, shareExpiresAt }: {
               onClick={handleCopy}
             >
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {t("patientInquiry.copyLink")}
+              {t("consultationSummary.copyLink")}
             </Button>
             <Button
               size="sm"
@@ -154,14 +154,14 @@ function ShareSection({ sessionId, shareToken, shareExpiresAt }: {
               isLoading={revokeShare.isPending}
             >
               <Link2Off className="h-4 w-4" />
-              {t("patientInquiry.revokeLink")}
+              {t("consultationSummary.revokeLink")}
             </Button>
           </div>
         </div>
       ) : (
         <div className="space-y-2">
           {shareToken && isExpired && (
-            <p className="text-sm text-amber-600">{t("patientInquiry.linkExpired")}</p>
+            <p className="text-sm text-amber-600">{t("consultationSummary.linkExpired")}</p>
           )}
           <Button
             size="sm"
@@ -170,7 +170,7 @@ function ShareSection({ sessionId, shareToken, shareExpiresAt }: {
             isLoading={createShare.isPending}
           >
             <Link2 className="h-4 w-4" />
-            {t("patientInquiry.createShareLink")}
+            {t("consultationSummary.createShareLink")}
           </Button>
         </div>
       )}
@@ -178,37 +178,41 @@ function ShareSection({ sessionId, shareToken, shareExpiresAt }: {
   );
 }
 
-export function PatientInquiryPanel({ sessionId }: PatientInquiryPanelProps) {
+export function ConsultationSummaryPanel({ sessionId }: ConsultationSummaryPanelProps) {
   const { t } = useTranslation();
-  const { data: storedInquiry, isLoading: isLoadingInquiry } = usePatientInquiry(sessionId);
-  const mutation = useGeneratePatientInquiry();
+  const { data: storedSummary, isLoading: isLoadingSummary } = useConsultationSummary(sessionId);
+  const mutation = useGenerateConsultationSummary();
 
-  const inquiry = mutation.data ?? storedInquiry;
-  const hasInquiry = !!inquiry;
+  const summary = storedSummary;
+  const hasSummary = !!summary;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <HeartPulse className="h-5 w-5 text-rose-600" />
-          {t("patientInquiry.title")}
+          {t("consultationSummary.title")}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoadingInquiry && (
+        {isLoadingSummary && (
           <div className="flex items-center gap-3 py-6">
             <Spinner />
             <span className="text-sm text-gray-500">{t("common.loading")}</span>
           </div>
         )}
 
-        {!isLoadingInquiry && !hasInquiry && !mutation.isPending && !mutation.isError && (
+        {!isLoadingSummary && !hasSummary && !mutation.isPending && !mutation.isError && (
           <div className="space-y-3">
             <p className="text-sm text-gray-500">
-              {t("patientInquiry.description")}
+              {t("consultationSummary.notGenerated")}
             </p>
-            <Button onClick={() => mutation.mutate(sessionId)}>
-              {t("patientInquiry.generate")}
+            <Button
+              variant="secondary"
+              onClick={() => mutation.mutate(sessionId)}
+            >
+              <RefreshCw className="h-4 w-4" />
+              {t("consultationSummary.regenerate")}
             </Button>
           </div>
         )}
@@ -217,7 +221,7 @@ export function PatientInquiryPanel({ sessionId }: PatientInquiryPanelProps) {
           <div className="flex items-center gap-3 py-6">
             <Spinner />
             <span className="text-sm text-gray-500">
-              {t("patientInquiry.generating")}
+              {t("consultationSummary.generating")}
             </span>
           </div>
         )}
@@ -226,32 +230,25 @@ export function PatientInquiryPanel({ sessionId }: PatientInquiryPanelProps) {
           <div className="space-y-3">
             <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-sm text-red-700">
               <AlertCircle className="h-4 w-4" />
-              {t("patientInquiry.errorGenerating")}
+              {t("consultationSummary.errorGenerating")}
             </div>
             <Button
               variant="secondary"
               onClick={() => mutation.mutate(sessionId)}
             >
               <RefreshCw className="h-4 w-4" />
-              {t("patientInquiry.regenerate")}
+              {t("consultationSummary.regenerate")}
             </Button>
           </div>
         )}
 
-        {hasInquiry && !mutation.isPending && (
+        {hasSummary && !mutation.isPending && (
           <div className="space-y-4">
-            <InquiryContent inquiry={inquiry} />
-            <Button
-              variant="secondary"
-              onClick={() => mutation.mutate(sessionId)}
-            >
-              <RefreshCw className="h-4 w-4" />
-              {t("patientInquiry.regenerate")}
-            </Button>
+            <SummaryContent summary={summary} />
             <ShareSection
               sessionId={sessionId}
-              shareToken={inquiry.shareToken ?? null}
-              shareExpiresAt={inquiry.shareExpiresAt ?? null}
+              shareToken={summary.shareToken ?? null}
+              shareExpiresAt={summary.shareExpiresAt ?? null}
             />
           </div>
         )}

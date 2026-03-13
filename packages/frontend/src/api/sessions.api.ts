@@ -7,7 +7,7 @@ import type {
   UpdateSessionInput,
   SearchResult,
   TranscriptionAccuracy,
-  StoredPatientInquiry,
+  StoredConsultationSummary,
 } from "@mrp/shared";
 
 interface ApiResponse<T> {
@@ -122,25 +122,25 @@ export async function searchSessions(
   return response.data.data.results;
 }
 
-export async function getPatientInquiry(
+export async function getConsultationSummary(
   id: string
-): Promise<StoredPatientInquiry | null> {
+): Promise<StoredConsultationSummary | null> {
   const response = await apiClient.get<
-    ApiResponse<{ inquiry: StoredPatientInquiry | null }>
-  >(`/sessions/${id}/patient-inquiry`);
-  return response.data.data?.inquiry ?? null;
+    ApiResponse<{ summary: StoredConsultationSummary | null }>
+  >(`/sessions/${id}/consultation-summary`);
+  return response.data.data?.summary ?? null;
 }
 
-export async function generatePatientInquiry(
+export async function generateConsultationSummary(
   id: string
-): Promise<StoredPatientInquiry> {
+): Promise<StoredConsultationSummary> {
   const response = await apiClient.post<
-    ApiResponse<{ inquiry: StoredPatientInquiry }>
-  >(`/sessions/${id}/patient-inquiry`);
+    ApiResponse<{ summary: StoredConsultationSummary }>
+  >(`/sessions/${id}/consultation-summary`);
   if (!response.data.data) {
-    throw new Error(response.data.error ?? "Failed to generate patient inquiry");
+    throw new Error(response.data.error ?? "Failed to generate consultation summary");
   }
-  return response.data.data.inquiry;
+  return response.data.data.summary;
 }
 
 export async function createShareToken(
@@ -148,7 +148,7 @@ export async function createShareToken(
 ): Promise<{ token: string; expiresAt: string }> {
   const response = await apiClient.post<
     ApiResponse<{ token: string; expiresAt: string }>
-  >(`/sessions/${sessionId}/patient-inquiry/share`);
+  >(`/sessions/${sessionId}/consultation-summary/share`);
   if (!response.data.data) {
     throw new Error(response.data.error ?? "Failed to create share link");
   }
@@ -156,7 +156,7 @@ export async function createShareToken(
 }
 
 export async function revokeShareToken(sessionId: string): Promise<void> {
-  await apiClient.delete(`/sessions/${sessionId}/patient-inquiry/share`);
+  await apiClient.delete(`/sessions/${sessionId}/consultation-summary/share`);
 }
 
 export async function getSessionAccuracy(

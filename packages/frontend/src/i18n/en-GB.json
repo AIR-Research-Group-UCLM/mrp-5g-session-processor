@@ -117,6 +117,7 @@
     "transcribe": "Transcribing audio",
     "segment": "Segmenting sections",
     "generate-metadata": "Generating metadata",
+    "generate-consultation-summary": "Generating consultation summary",
     "complete": "Finishing"
   },
   "sessionDetail": {
@@ -258,7 +259,8 @@
     "audioConcatenation": "Audio concatenation",
     "transcribe": "Transcription",
     "segment": "Segmentation",
-    "generate-metadata": "Metadata generation"
+    "generate-metadata": "Metadata generation",
+    "generate-consultation-summary": "Consultation summary generation"
   },
   "costs": {
     "title": "Processing costs",
@@ -328,13 +330,12 @@
     "user": "User",
     "readonly": "Read only"
   },
-  "patientInquiry": {
-    "title": "Patient Inquiry",
-    "description": "Generate a simplified, patient-friendly summary of this consultation using AI.",
-    "generate": "Generate Patient Summary",
+  "consultationSummary": {
+    "title": "Patient Consultation Summary",
+    "notGenerated": "Summary could not be generated automatically. You can try regenerating it.",
     "regenerate": "Regenerate",
-    "generating": "Generating patient summary...",
-    "errorGenerating": "Error generating patient summary. Please try again.",
+    "generating": "Generating consultation summary...",
+    "errorGenerating": "Error generating consultation summary. Please try again.",
     "whatHappened": "What happened",
     "diagnosis": "Diagnosis",
     "treatmentPlan": "Treatment plan",

@@ -117,6 +117,7 @@
     "transcribe": "Transcribiendo audio",
     "segment": "Segmentando secciones",
     "generate-metadata": "Generando metadatos",
+    "generate-consultation-summary": "Generando resumen de consulta",
     "complete": "Finalizando"
   },
   "sessionDetail": {
@@ -258,7 +259,8 @@
     "audioConcatenation": "Concatenacion de audio",
     "transcribe": "Transcripcion",
     "segment": "Segmentacion",
-    "generate-metadata": "Generacion de metadatos"
+    "generate-metadata": "Generacion de metadatos",
+    "generate-consultation-summary": "Generacion de resumen de consulta"
   },
   "costs": {
     "title": "Costes de procesamiento",
@@ -328,13 +330,12 @@
     "user": "Usuario",
     "readonly": "Solo lectura"
   },
-  "patientInquiry": {
-    "title": "Consulta del Paciente",
-    "description": "Genera un resumen simplificado y comprensible para el paciente de esta consulta utilizando IA.",
-    "generate": "Generar Resumen para Paciente",
+  "consultationSummary": {
+    "title": "Resumen de Consulta del Paciente",
+    "notGenerated": "El resumen no se pudo generar automaticamente. Puedes intentar regenerarlo.",
     "regenerate": "Regenerar",
-    "generating": "Generando resumen para el paciente...",
-    "errorGenerating": "Error al generar el resumen del paciente. Intentalo de nuevo.",
+    "generating": "Generando resumen de consulta...",
+    "errorGenerating": "Error al generar el resumen de consulta. Intentalo de nuevo.",
     "whatHappened": "Que ocurrio",
     "diagnosis": "Diagnostico",
     "treatmentPlan": "Plan de tratamiento",

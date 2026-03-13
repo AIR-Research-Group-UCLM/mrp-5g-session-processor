@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { PatientInquiryPublic } from "@mrp/shared";
+import type { ConsultationSummaryPublic } from "@mrp/shared";
 import { basePathNormalized } from "./client";
 
 const publicClient = axios.create({
@@ -15,14 +15,14 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-export async function getPatientInquiryByToken(
+export async function getConsultationSummaryByToken(
   token: string
-): Promise<PatientInquiryPublic> {
-  const response = await publicClient.get<ApiResponse<PatientInquiryPublic>>(
-    `/patient-inquiry/${token}`
+): Promise<ConsultationSummaryPublic> {
+  const response = await publicClient.get<ApiResponse<ConsultationSummaryPublic>>(
+    `/consultation-summary/${token}`
   );
   if (!response.data.data) {
-    throw new Error(response.data.error ?? "Failed to fetch patient inquiry");
+    throw new Error(response.data.error ?? "Failed to fetch consultation summary");
   }
   return response.data.data;
 }

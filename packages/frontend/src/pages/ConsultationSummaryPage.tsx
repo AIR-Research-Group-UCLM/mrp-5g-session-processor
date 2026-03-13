@@ -1,18 +1,18 @@
-import { getPatientInquiryByToken } from "@/api/patient-inquiry.api";
-import { InquiryContent } from "@/components/sessions/PatientInquiryPanel";
+import { getConsultationSummaryByToken } from "@/api/consultation-summary.api";
+import { SummaryContent } from "@/components/sessions/ConsultationSummaryPanel";
 import { Spinner } from "@/components/ui/Spinner";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, Calendar, Clock, HeartPulse } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 
-export function PatientInquiryPage() {
+export function ConsultationSummaryPage() {
   const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["public-patient-inquiry", token],
-    queryFn: () => getPatientInquiryByToken(token!),
+    queryKey: ["public-consultation-summary", token],
+    queryFn: () => getConsultationSummaryByToken(token!),
     enabled: !!token,
     retry: false,
     staleTime: Infinity,
@@ -28,7 +28,7 @@ export function PatientInquiryPage() {
       <div className="w-full max-w-2xl">
         <div className="mb-6 flex items-center justify-center gap-2 text-rose-600">
           <HeartPulse className="h-8 w-8" />
-          <h1 className="text-2xl font-bold">{t("patientInquiry.patientPage.title")}</h1>
+          <h1 className="text-2xl font-bold">{t("consultationSummary.patientPage.title")}</h1>
         </div>
 
         {isLoading && (
@@ -43,13 +43,13 @@ export function PatientInquiryPage() {
             <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
             <h2 className="mt-4 text-lg font-semibold text-gray-900">
               {isNotFound
-                ? t("patientInquiry.patientPage.expired")
-                : t("patientInquiry.patientPage.notFound")}
+                ? t("consultationSummary.patientPage.expired")
+                : t("consultationSummary.patientPage.notFound")}
             </h2>
             <p className="mt-2 text-sm text-gray-500">
               {isNotFound
-                ? t("patientInquiry.patientPage.expiredDescription")
-                : t("patientInquiry.patientPage.notFoundDescription")}
+                ? t("consultationSummary.patientPage.expiredDescription")
+                : t("consultationSummary.patientPage.notFoundDescription")}
             </p>
           </div>
         )}
@@ -68,16 +68,16 @@ export function PatientInquiryPage() {
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
-                {t("patientInquiry.patientPage.expiresOn", {
+                {t("consultationSummary.patientPage.expiresOn", {
                   date: new Date(data.expiresAt).toLocaleDateString(),
                 })}
               </span>
             </div>
 
-            <InquiryContent inquiry={data.inquiry} />
+            <SummaryContent summary={data.summary} />
 
             <div className="mt-6 rounded-lg bg-blue-50 p-4 text-xs text-blue-700">
-              {t("patientInquiry.patientPage.disclaimer")}
+              {t("consultationSummary.patientPage.disclaimer")}
             </div>
           </div>
         )}

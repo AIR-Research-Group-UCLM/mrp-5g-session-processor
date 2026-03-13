@@ -98,24 +98,24 @@ export function useSearchSessions(query: string, enabled: boolean = true) {
   });
 }
 
-export function usePatientInquiry(sessionId: string) {
+export function useConsultationSummary(sessionId: string) {
   return useQuery({
-    queryKey: ["patient-inquiry", sessionId],
-    queryFn: () => sessionsApi.getPatientInquiry(sessionId),
+    queryKey: ["consultation-summary", sessionId],
+    queryFn: () => sessionsApi.getConsultationSummary(sessionId),
     enabled: !!sessionId,
   });
 }
 
-export function useGeneratePatientInquiry() {
+export function useGenerateConsultationSummary() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (sessionId: string) => sessionsApi.generatePatientInquiry(sessionId),
+    mutationFn: (sessionId: string) => sessionsApi.generateConsultationSummary(sessionId),
     onSuccess: (data, sessionId) => {
-      queryClient.setQueryData(["patient-inquiry", sessionId], data);
+      queryClient.setQueryData(["consultation-summary", sessionId], data);
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Error generating patient inquiry");
+      toast.error(error.message || "Error generating consultation summary");
     },
   });
 }
@@ -126,7 +126,7 @@ export function useCreateShareToken() {
   return useMutation({
     mutationFn: (sessionId: string) => sessionsApi.createShareToken(sessionId),
     onSuccess: (_, sessionId) => {
-      queryClient.invalidateQueries({ queryKey: ["patient-inquiry", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["consultation-summary", sessionId] });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Error creating share link");
@@ -140,7 +140,7 @@ export function useRevokeShareToken() {
   return useMutation({
     mutationFn: (sessionId: string) => sessionsApi.revokeShareToken(sessionId),
     onSuccess: (_, sessionId) => {
-      queryClient.invalidateQueries({ queryKey: ["patient-inquiry", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["consultation-summary", sessionId] });
     },
     onError: (error: Error) => {
       toast.error(error.message || "Error revoking share link");

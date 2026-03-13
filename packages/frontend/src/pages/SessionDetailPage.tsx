@@ -1,6 +1,6 @@
 import { basePathNormalized } from "@/api/client";
 import { ClinicalIndicatorsPanel } from "@/components/sessions/ClinicalIndicatorsPanel";
-import { PatientInquiryPanel } from "@/components/sessions/PatientInquiryPanel";
+import { ConsultationSummaryPanel } from "@/components/sessions/ConsultationSummaryPanel";
 import { ProcessingTimeline } from "@/components/sessions/ProcessingTimeline";
 import { TranscriptionAccuracyPanel } from "@/components/sessions/TranscriptionAccuracyPanel";
 import { TranscriptViewer } from "@/components/sessions/TranscriptViewer";
@@ -310,7 +310,7 @@ export function SessionDetailPage() {
             )}
 
             {session.status === "completed" && (
-              <PatientInquiryPanel sessionId={session.id} />
+              <ConsultationSummaryPanel sessionId={session.id} />
             )}
 
             {session.isSimulated && session.status === "completed" && (
