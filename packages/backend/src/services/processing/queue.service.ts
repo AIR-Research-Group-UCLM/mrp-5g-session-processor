@@ -3,6 +3,7 @@ import { Redis } from "ioredis";
 import { config } from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 import { getDb } from "../../db/connection.js";
+import { processConsultationSummary } from "../consultation-summary.service.js";
 import { processMetadata } from "./metadata.service.js";
 import { processSegmentation } from "./segmentation.service.js";
 import { processTranscription } from "./transcription.service.js";
@@ -15,7 +16,7 @@ const videoQueue = new Queue("video-processing", { connection });
 
 type JobData = {
   sessionId: string;
-  step: "transcribe" | "segment" | "generate-metadata" | "complete";
+  step: "transcribe" | "segment" | "generate-metadata" | "generate-consultation-summary" | "complete";
 };
 
 async function enqueueProcessing(sessionId: string): Promise<void> {
@@ -119,6 +120,30 @@ async function startWorker(): Promise<void> {
             inputTokens = result.inputTokens;
             outputTokens = result.outputTokens;
             costUsd = result.costUsd;
+            await videoQueue.add(
+              "generate-consultation-summary",
+              { sessionId, step: "generate-consultation-summary" },
+              { jobId: `${sessionId}-consultation-summary` }
+            );
+            db.prepare(
+              `
+              INSERT INTO processing_jobs (id, session_id, job_type, status)
+              VALUES (?, ?, 'generate-consultation-summary', 'pending')
+            `
+            ).run(`${sessionId}-consultation-summary`, sessionId);
+            break;
+          }
+
+          case "generate-consultation-summary": {
+            try {
+              await processConsultationSummary(sessionId);
+            } catch (error) {
+              // Non-blocking: log the error but proceed to complete
+              logger.error(
+                { sessionId, error },
+                "Consultation summary generation failed, proceeding to complete"
+              );
+            }
             await videoQueue.add(
               "complete",
               { sessionId, step: "complete" },
