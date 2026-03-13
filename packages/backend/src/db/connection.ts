@@ -60,17 +60,17 @@ function runMigrations(database: Database.Database): void {
     logger.info("Migration completed: session_assignments table created");
   }
 
-  // Migration: Add patient_inquiries table
-  const hasPatientInquiriesTable = database
+  // Migration: Add consultation_summaries table
+  const hasConsultationSummariesTable = database
     .prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='patient_inquiries'"
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='consultation_summaries'"
     )
     .get();
 
-  if (!hasPatientInquiriesTable) {
-    logger.info("Running migration: Creating patient_inquiries table...");
+  if (!hasConsultationSummariesTable) {
+    logger.info("Running migration: Creating consultation_summaries table...");
     database.exec(`
-      CREATE TABLE IF NOT EXISTS patient_inquiries (
+      CREATE TABLE IF NOT EXISTS consultation_summaries (
         id TEXT PRIMARY KEY,
         session_id TEXT NOT NULL UNIQUE,
         what_happened TEXT NOT NULL,
@@ -85,10 +85,10 @@ function runMigrations(database: Database.Database): void {
         updated_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE
       );
-      CREATE INDEX IF NOT EXISTS idx_patient_inquiries_session_id ON patient_inquiries(session_id);
-      CREATE INDEX IF NOT EXISTS idx_patient_inquiries_share_token ON patient_inquiries(share_token);
+      CREATE INDEX IF NOT EXISTS idx_consultation_summaries_session_id ON consultation_summaries(session_id);
+      CREATE INDEX IF NOT EXISTS idx_consultation_summaries_share_token ON consultation_summaries(share_token);
     `);
-    logger.info("Migration completed: patient_inquiries table created");
+    logger.info("Migration completed: consultation_summaries table created");
   }
 }
 

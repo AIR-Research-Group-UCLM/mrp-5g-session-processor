@@ -4,11 +4,11 @@ import { sessionService } from "../services/session.service.js";
 import { s3Service } from "../services/s3.service.js";
 import { accuracyService } from "../services/accuracy.service.js";
 import {
-  generatePatientInquiry as generatePatientInquiryService,
-  getPatientInquiry as getPatientInquiryService,
+  generateConsultationSummary as generateConsultationSummaryService,
+  getConsultationSummary as getConsultationSummaryService,
   createShareToken as createShareTokenService,
   revokeShareToken as revokeShareTokenService,
-} from "../services/patient-inquiry.service.js";
+} from "../services/consultation-summary.service.js";
 import { AppError } from "../middleware/error.middleware.js";
 import { logger } from "../config/logger.js";
 
@@ -283,21 +283,21 @@ const getAccuracy: RequestHandler = async (req, res, next) => {
   }
 };
 
-const getPatientInquiry: RequestHandler = async (req, res, next) => {
+const getConsultationSummary: RequestHandler = async (req, res, next) => {
   try {
     const sessionId = req.params.id!;
-    const inquiry = getPatientInquiryService(sessionId);
-    res.json({ success: true, data: { inquiry } });
+    const summary = getConsultationSummaryService(sessionId);
+    res.json({ success: true, data: { summary } });
   } catch (error) {
     next(error);
   }
 };
 
-const generatePatientInquiry: RequestHandler = async (req, res, next) => {
+const generateConsultationSummary: RequestHandler = async (req, res, next) => {
   try {
     const sessionId = req.params.id!;
-    const inquiry = await generatePatientInquiryService(sessionId);
-    res.json({ success: true, data: { inquiry } });
+    const summary = await generateConsultationSummaryService(sessionId);
+    res.json({ success: true, data: { summary } });
   } catch (error) {
     next(error);
   }
@@ -333,8 +333,8 @@ export const sessionsController = {
   getVideoUrl,
   streamVideo,
   getAccuracy,
-  getPatientInquiry,
-  generatePatientInquiry,
+  getConsultationSummary,
+  generateConsultationSummary,
   createShareToken,
   revokeShareToken,
 };

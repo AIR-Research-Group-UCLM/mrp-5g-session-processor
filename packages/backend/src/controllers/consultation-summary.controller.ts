@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { getByShareToken } from "../services/patient-inquiry.service.js";
+import { getByShareToken } from "../services/consultation-summary.service.js";
 import { AppError } from "../middleware/error.middleware.js";
 
 const TOKEN_REGEX = /^[a-f0-9]{64}$/;
@@ -15,7 +15,7 @@ const getByToken: RequestHandler = async (req, res, next) => {
     const result = getByShareToken(token);
 
     if (!result) {
-      throw new AppError(404, "Patient inquiry not found or link has expired");
+      throw new AppError(404, "Consultation summary not found or link has expired");
     }
 
     res.json({ success: true, data: result });
@@ -24,6 +24,6 @@ const getByToken: RequestHandler = async (req, res, next) => {
   }
 };
 
-export const patientInquiryController = {
+export const consultationSummaryController = {
   getByToken,
 };

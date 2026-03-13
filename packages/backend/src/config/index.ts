@@ -27,13 +27,13 @@ const envSchema = z.object({
   OPENAI_MODEL_SEGMENTATION: z.string().default("gpt-5.1"),
   OPENAI_MODEL_METADATA: z.string().default("gpt-5.1"),
 
-  // Open WebUI (optional - patient inquiry feature)
+  // Open WebUI (optional - consultation summary feature)
   OPEN_WEBUI_BASE_URL: z.string().optional(),
   OPEN_WEBUI_API_KEY: z.string().optional(),
   OPEN_WEBUI_MODEL: z.string().default("gemma3:12b"),
 
-  // Patient Inquiry
-  PATIENT_INQUIRY_SHARE_EXPIRY_HOURS: z.coerce.number().default(168),
+  // Consultation Summary
+  CONSULTATION_SUMMARY_SHARE_EXPIRY_HOURS: z.coerce.number().default(168),
 
   // ElevenLabs
   ELEVENLABS_API_KEY: z.string(),
@@ -118,8 +118,8 @@ export const config = {
     model: env.OPEN_WEBUI_MODEL,
   },
 
-  patientInquiry: {
-    shareExpiryHours: env.PATIENT_INQUIRY_SHARE_EXPIRY_HOURS,
+  consultationSummary: {
+    shareExpiryHours: env.CONSULTATION_SUMMARY_SHARE_EXPIRY_HOURS,
   },
 
   elevenlabs: {
