@@ -21,6 +21,31 @@ const consultationSummarySchema = z.object({
   additionalNotes: z.string().nullable(),
 });
 
+/** Map of normalized key (lowercase, no separators) → canonical camelCase field name */
+const CANONICAL_KEYS: Record<string, string> = {
+  whathappened: "whatHappened",
+  what_happened: "whatHappened",
+  diagnosis: "diagnosis",
+  treatmentplan: "treatmentPlan",
+  treatment_plan: "treatmentPlan",
+  followup: "followUp",
+  follow_up: "followUp",
+  warningsigns: "warningSigns",
+  warning_signs: "warningSigns",
+  additionalnotes: "additionalNotes",
+  additional_notes: "additionalNotes",
+};
+
+function normalizeKeys(obj: Record<string, unknown>): Record<string, unknown> {
+  const normalized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const lookup = key.replace(/[_-]/g, "").toLowerCase();
+    const canonical = CANONICAL_KEYS[key.toLowerCase()] ?? CANONICAL_KEYS[lookup];
+    normalized[canonical ?? key] = value;
+  }
+  return normalized;
+}
+
 interface TranscriptSection {
   section_type: string;
   speaker: string | null;
@@ -189,6 +214,8 @@ async function generateSummaryFromTranscript(sessionId: string): Promise<StoredC
   const userMessage = buildUserMessage(sections);
 
   logger.info({ sessionId, model: config.openWebUi.model }, "Generating consultation summary");
+  logger.debug({ sessionId, systemPrompt }, "Consultation summary system message");
+  logger.debug({ sessionId, userMessage }, "Consultation summary user message");
 
   const content = await withRetry(
     () => callOpenWebUi(systemPrompt, userMessage),
@@ -200,7 +227,10 @@ async function generateSummaryFromTranscript(sessionId: string): Promise<StoredC
     }
   );
 
-  const parsed = extractJson(content);
+  const raw = extractJson(content);
+  const parsed = raw && typeof raw === "object" && !Array.isArray(raw)
+    ? normalizeKeys(raw as Record<string, unknown>)
+    : raw;
   const validationResult = consultationSummarySchema.safeParse(parsed);
 
   if (!validationResult.success) {
