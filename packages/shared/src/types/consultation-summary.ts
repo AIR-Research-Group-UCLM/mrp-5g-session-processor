@@ -5,6 +5,7 @@ export interface ConsultationSummary {
   followUp: string;
   warningSigns: string[];
   additionalNotes: string | null;
+  tooltips: Record<string, string> | null;
 }
 
 export interface StoredConsultationSummary extends ConsultationSummary {

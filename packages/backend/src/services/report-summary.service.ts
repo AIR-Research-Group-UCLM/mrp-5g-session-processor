@@ -8,7 +8,7 @@ import { config } from "../config/index.js";
 import { getDb } from "../db/connection.js";
 import { logger } from "../config/logger.js";
 import { withRetry } from "../utils/retry.js";
-import { callOpenWebUi, validateAndParseSummary, buildSummaryPrompt } from "../utils/llm.js";
+import { callOpenWebUi, validateAndParseSummary, buildSummaryPrompt, generateTooltips } from "../utils/llm.js";
 import {
   createShareToken as createShareTokenUtil,
   revokeShareToken as revokeShareTokenUtil,
@@ -33,6 +33,7 @@ interface ReportSummaryRow {
   follow_up: string;
   warning_signs: string;
   additional_notes: string | null;
+  tooltips: string | null;
   share_token: string | null;
   share_expires_at: string | null;
   created_at: string;
@@ -85,12 +86,13 @@ export async function generateReportSummary(
   );
 
   const summary = validateAndParseSummary(content);
+  const tooltips = await generateTooltips(summary);
   const id = uuidv4();
   const db = getDb();
 
   db.prepare(
-    `INSERT INTO report_summaries (id, user_id, title, what_happened, diagnosis, treatment_plan, follow_up, warning_signs, additional_notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO report_summaries (id, user_id, title, what_happened, diagnosis, treatment_plan, follow_up, warning_signs, additional_notes, tooltips)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     userId,
@@ -101,6 +103,7 @@ export async function generateReportSummary(
     summary.followUp,
     JSON.stringify(summary.warningSigns),
     summary.additionalNotes,
+    tooltips ? JSON.stringify(tooltips) : null,
   );
 
   logger.info({ userId, summaryId: id }, "Report summary generated successfully");

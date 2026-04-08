@@ -158,7 +158,11 @@ export function ReportSummaryPage() {
 
           {generatedSummary && (
             <div className="space-y-4">
-              <SummaryContent summary={generatedSummary} />
+              <SummaryContent
+                summary={generatedSummary}
+                title={generatedSummary.title}
+                date={new Date(generatedSummary.createdAt).toLocaleDateString()}
+              />
               <ShareSection
                 shareToken={generatedSummary.shareToken ?? null}
                 shareExpiresAt={generatedSummary.shareExpiresAt ?? null}

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { config } from "../config/index.js";
+import { logger } from "../config/logger.js";
 import { AppError } from "../middleware/error.middleware.js";
 
 export const consultationSummarySchema = z.object({
@@ -142,4 +143,53 @@ export function buildCommonRules(languageInstruction: string): string {
 - If there is no information for a field, provide a reasonable "No specific information was discussed" message
 - additionalNotes should be null if there is nothing extra to add
 - CRITICAL: ${languageInstruction}`;
+}
+
+const tooltipsSchema = z.record(z.string(), z.string());
+
+/**
+ * Make a second LLM call to identify medical/technical terms in the summary
+ * and provide plain-language explanations. Returns null on failure (non-critical).
+ */
+/** The summary fields produced by the first LLM call (before tooltips are added). */
+export type SummaryFields = z.infer<typeof consultationSummarySchema>;
+
+export async function generateTooltips(
+  summary: SummaryFields,
+): Promise<Record<string, string> | null> {
+  const summaryText = [
+    summary.whatHappened,
+    summary.diagnosis,
+    summary.treatmentPlan,
+    summary.followUp,
+    ...summary.warningSigns,
+    summary.additionalNotes,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const systemPrompt = `Given this patient-facing medical summary, identify terms that a patient might not understand. Return a JSON object where each key is the exact term as it appears in the text and each value is a brief, simple explanation (one sentence max).
+
+Only include terms that genuinely need explanation — skip everyday words. Return an empty object \`{}\` if all terms are already simple enough.
+
+CRITICAL: Generate explanations in the same language as the summary.`;
+
+  try {
+    const content = await callOpenWebUi(systemPrompt, summaryText);
+    const raw = extractJson(content);
+    const result = tooltipsSchema.safeParse(raw);
+
+    if (!result.success) {
+      logger.warn({ errors: result.error.issues }, "Invalid tooltips response structure");
+      return null;
+    }
+
+    return Object.keys(result.data).length > 0 ? result.data : null;
+  } catch (error) {
+    logger.warn(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Tooltip generation failed (non-critical)",
+    );
+    return null;
+  }
 }

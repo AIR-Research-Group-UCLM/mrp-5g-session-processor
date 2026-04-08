@@ -122,6 +122,27 @@ function runMigrations(database: Database.Database): void {
     `);
     logger.info("Migration completed: report_summaries table created");
   }
+
+  // Migration: Add tooltips column to consultation_summaries and report_summaries
+  const csColumns = database
+    .prepare("PRAGMA table_info(consultation_summaries)")
+    .all() as Array<{ name: string }>;
+
+  if (!csColumns.some((col) => col.name === "tooltips")) {
+    logger.info("Running migration: Adding tooltips column to consultation_summaries...");
+    database.exec("ALTER TABLE consultation_summaries ADD COLUMN tooltips TEXT");
+    logger.info("Migration completed: tooltips column added to consultation_summaries");
+  }
+
+  const rsColumns = database
+    .prepare("PRAGMA table_info(report_summaries)")
+    .all() as Array<{ name: string }>;
+
+  if (!rsColumns.some((col) => col.name === "tooltips")) {
+    logger.info("Running migration: Adding tooltips column to report_summaries...");
+    database.exec("ALTER TABLE report_summaries ADD COLUMN tooltips TEXT");
+    logger.info("Migration completed: tooltips column added to report_summaries");
+  }
 }
 
 export async function initializeDatabase(): Promise<void> {

@@ -93,7 +93,11 @@ export function ReportSummaryDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <SummaryContent summary={summary} />
+              <SummaryContent
+                summary={summary}
+                title={summary.title}
+                date={new Date(summary.createdAt).toLocaleDateString()}
+              />
               <ShareSection
                 shareToken={summary.shareToken ?? null}
                 shareExpiresAt={summary.shareExpiresAt ?? null}

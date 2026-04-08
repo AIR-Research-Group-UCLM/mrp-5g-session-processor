@@ -350,6 +350,8 @@
     "revokeLink": "Revocar enlace",
     "linkActive": "Enlace activo",
     "linkExpires": "Expira el {{date}}",
+    "copyMarkdown": "Copiar como texto",
+    "markdownCopied": "Resumen copiado al portapapeles",
     "linkExpired": "El enlace anterior ha expirado.",
     "patientPage": {
       "title": "Resumen de su consulta",

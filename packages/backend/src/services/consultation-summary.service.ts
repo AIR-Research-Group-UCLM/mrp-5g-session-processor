@@ -6,7 +6,7 @@ import { getDb } from "../db/connection.js";
 import { logger } from "../config/logger.js";
 import { withRetry } from "../utils/retry.js";
 import { AppError } from "../middleware/error.middleware.js";
-import { callOpenWebUi, validateAndParseSummary, buildSummaryPrompt } from "../utils/llm.js";
+import { callOpenWebUi, validateAndParseSummary, buildSummaryPrompt, generateTooltips } from "../utils/llm.js";
 import {
   createShareToken as createShareTokenUtil,
   revokeShareToken as revokeShareTokenUtil,
@@ -42,6 +42,7 @@ interface ConsultationSummaryRow {
   follow_up: string;
   warning_signs: string;
   additional_notes: string | null;
+  tooltips: string | null;
   share_token: string | null;
   share_expires_at: string | null;
   created_at: string;
@@ -117,12 +118,13 @@ async function generateSummaryFromTranscript(sessionId: string): Promise<StoredC
   );
 
   const summary = validateAndParseSummary(content);
+  const tooltips = await generateTooltips(summary);
   const id = uuidv4();
 
   // Upsert: preserve share_token/share_expires_at on regeneration
   db.prepare(
-    `INSERT INTO consultation_summaries (id, session_id, what_happened, diagnosis, treatment_plan, follow_up, warning_signs, additional_notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO consultation_summaries (id, session_id, what_happened, diagnosis, treatment_plan, follow_up, warning_signs, additional_notes, tooltips)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(session_id) DO UPDATE SET
        what_happened = excluded.what_happened,
        diagnosis = excluded.diagnosis,
@@ -130,6 +132,7 @@ async function generateSummaryFromTranscript(sessionId: string): Promise<StoredC
        follow_up = excluded.follow_up,
        warning_signs = excluded.warning_signs,
        additional_notes = excluded.additional_notes,
+       tooltips = excluded.tooltips,
        updated_at = datetime('now')`
   ).run(
     id,
@@ -140,6 +143,7 @@ async function generateSummaryFromTranscript(sessionId: string): Promise<StoredC
     summary.followUp,
     JSON.stringify(summary.warningSigns),
     summary.additionalNotes,
+    tooltips ? JSON.stringify(tooltips) : null,
   );
 
   logger.info({ sessionId }, "Consultation summary generated successfully");

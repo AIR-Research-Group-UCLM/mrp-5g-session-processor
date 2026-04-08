@@ -350,6 +350,8 @@
     "revokeLink": "Revoke Link",
     "linkActive": "Share link active",
     "linkExpires": "Expires {{date}}",
+    "copyMarkdown": "Copy as text",
+    "markdownCopied": "Summary copied to clipboard",
     "linkExpired": "Previous share link has expired.",
     "patientPage": {
       "title": "Your Consultation Summary",

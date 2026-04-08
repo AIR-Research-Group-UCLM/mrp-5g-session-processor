@@ -73,7 +73,7 @@ export function revokeShareToken(
   logger.info({ [cfg.idColumn]: id }, `Share token revoked for ${cfg.label}`);
 }
 
-/** Parse the 6 common summary columns from a DB row into a ConsultationSummary. */
+/** Parse the common summary columns from a DB row into a ConsultationSummary. */
 export function parseSummaryFields(row: {
   what_happened: string;
   diagnosis: string;
@@ -81,6 +81,7 @@ export function parseSummaryFields(row: {
   follow_up: string;
   warning_signs: string;
   additional_notes: string | null;
+  tooltips?: string | null;
 }): ConsultationSummary {
   return {
     whatHappened: row.what_happened,
@@ -89,6 +90,7 @@ export function parseSummaryFields(row: {
     followUp: row.follow_up,
     warningSigns: JSON.parse(row.warning_signs),
     additionalNotes: row.additional_notes,
+    tooltips: row.tooltips ? JSON.parse(row.tooltips) : null,
   };
 }
 
