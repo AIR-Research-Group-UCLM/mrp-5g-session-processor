@@ -1,7 +1,7 @@
 import { basePathNormalized } from "@/api/client";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/utils/cn";
-import { FolderOpen, Home, PlusCircle, Users, Wand2, X } from "lucide-react";
+import { ClipboardList, FolderOpen, Home, PlusCircle, Users, Wand2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useEffect, useRef } from "react";
@@ -41,6 +41,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { to: "/new-session", icon: PlusCircle, labelKey: "navigation.newSession" },
     { to: "/simulator", icon: Wand2, labelKey: "navigation.simulator" },
     { to: "/sessions", icon: FolderOpen, labelKey: "navigation.mySessions" },
+    { to: "/report-summary", icon: ClipboardList, labelKey: "navigation.reportSummary" },
   ];
 
   return (

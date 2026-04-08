@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
-import { getByShareToken } from "../services/consultation-summary.service.js";
+import { getByShareToken as getConsultationByToken } from "../services/consultation-summary.service.js";
+import { getByShareToken as getReportByToken } from "../services/report-summary.service.js";
 import { AppError } from "../middleware/error.middleware.js";
 
 const TOKEN_REGEX = /^[a-f0-9]{64}$/;
@@ -12,10 +13,10 @@ const getByToken: RequestHandler = async (req, res, next) => {
       throw new AppError(400, "Invalid token format");
     }
 
-    const result = getByShareToken(token);
+    const result = getConsultationByToken(token) ?? getReportByToken(token);
 
     if (!result) {
-      throw new AppError(404, "Consultation summary not found or link has expired");
+      throw new AppError(404, "Summary not found or link has expired");
     }
 
     res.json({ success: true, data: result });

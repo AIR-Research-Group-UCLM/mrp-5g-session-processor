@@ -1,50 +1,24 @@
-import crypto from "node:crypto";
 import { getLanguageName } from "@mrp/shared";
 import { v4 as uuidv4 } from "uuid";
 import type { StoredConsultationSummary, ConsultationSummaryPublic } from "@mrp/shared";
-import { z } from "zod";
 import { config } from "../config/index.js";
 import { getDb } from "../db/connection.js";
 import { logger } from "../config/logger.js";
 import { withRetry } from "../utils/retry.js";
 import { AppError } from "../middleware/error.middleware.js";
+import { callOpenWebUi, validateAndParseSummary, buildSummaryPrompt } from "../utils/llm.js";
+import {
+  createShareToken as createShareTokenUtil,
+  revokeShareToken as revokeShareTokenUtil,
+  getByShareToken as getByShareTokenUtil,
+  parseSummaryFields,
+} from "../utils/share-token.js";
 
-const consultationSummarySchema = z.object({
-  whatHappened: z.string(),
-  diagnosis: z.string(),
-  treatmentPlan: z.string(),
-  followUp: z.string(),
-  warningSigns: z.union([
-    z.array(z.string()),
-    z.string().transform((s) => [s]),
-  ]),
-  additionalNotes: z.string().nullable(),
-});
-
-/** Map of normalized key (lowercase, no separators) → canonical camelCase field name */
-const CANONICAL_KEYS: Record<string, string> = {
-  whathappened: "whatHappened",
-  what_happened: "whatHappened",
-  diagnosis: "diagnosis",
-  treatmentplan: "treatmentPlan",
-  treatment_plan: "treatmentPlan",
-  followup: "followUp",
-  follow_up: "followUp",
-  warningsigns: "warningSigns",
-  warning_signs: "warningSigns",
-  additionalnotes: "additionalNotes",
-  additional_notes: "additionalNotes",
-};
-
-function normalizeKeys(obj: Record<string, unknown>): Record<string, unknown> {
-  const normalized: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    const lookup = key.replace(/[_-]/g, "").toLowerCase();
-    const canonical = CANONICAL_KEYS[key.toLowerCase()] ?? CANONICAL_KEYS[lookup];
-    normalized[canonical ?? key] = value;
-  }
-  return normalized;
-}
+const TABLE_CFG = {
+  table: "consultation_summaries",
+  idColumn: "session_id",
+  label: "Consultation summary",
+} as const;
 
 interface TranscriptSection {
   section_type: string;
@@ -74,90 +48,16 @@ interface ConsultationSummaryRow {
   updated_at: string;
 }
 
-interface PublicSummaryRow extends ConsultationSummaryRow {
-  session_title: string | null;
-  session_date: string;
-}
-
 function rowToStoredSummary(row: ConsultationSummaryRow): StoredConsultationSummary {
   return {
     id: row.id,
     sessionId: row.session_id,
-    whatHappened: row.what_happened,
-    diagnosis: row.diagnosis,
-    treatmentPlan: row.treatment_plan,
-    followUp: row.follow_up,
-    warningSigns: JSON.parse(row.warning_signs),
-    additionalNotes: row.additional_notes,
+    ...parseSummaryFields(row),
     shareToken: row.share_token,
     shareExpiresAt: row.share_expires_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
-}
-
-async function callOpenWebUi(
-  systemPrompt: string,
-  userMessage: string,
-): Promise<string> {
-  if (!config.openWebUi.baseUrl || !config.openWebUi.apiKey) {
-    throw new AppError(503, "Consultation summary feature is not configured");
-  }
-
-  const url = `${config.openWebUi.baseUrl}/chat/completions`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.openWebUi.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: config.openWebUi.model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.3,
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(`Open WebUI returned ${response.status}: ${text}`);
-  }
-
-  const data = (await response.json()) as {
-    choices?: { message?: { content?: string } }[];
-  };
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error("No response content from Open WebUI");
-  }
-  return content;
-}
-
-function buildPrompt(languageName: string): string {
-  return `You are a medical communication specialist. Given the raw transcript of a medical consultation (with speaker roles and section types), generate a clear, patient-friendly explanation of the consultation.
-
-Write as if you are explaining directly to the patient what happened during their visit. Use simple, non-technical language that a patient without medical training can understand.
-
-Respond in JSON with the following format:
-{
-  "whatHappened": "A clear summary of what took place during the consultation",
-  "diagnosis": "What the doctor found or suspects, explained simply",
-  "treatmentPlan": "What the patient needs to do (medications, lifestyle changes, etc.)",
-  "followUp": "Next steps, when to come back, what appointments to schedule",
-  "warningSigns": ["Sign 1 to watch for", "Sign 2 to watch for"],
-  "additionalNotes": "Any other important information, or null if none"
-}
-
-IMPORTANT RULES:
-- Use simple, everyday language — avoid medical jargon
-- Be reassuring but honest
-- If warning signs were mentioned, list them clearly
-- If there is no information for a field, provide a reasonable "No specific information was discussed" message
-- additionalNotes should be null if there is nothing extra to add
-- CRITICAL: Generate ALL text in ${languageName}`;
 }
 
 function buildUserMessage(sections: TranscriptSection[]): string {
@@ -172,20 +72,6 @@ function buildUserMessage(sections: TranscriptSection[]): string {
   }
 
   return parts.join("\n");
-}
-
-function extractJson(text: string): unknown {
-  // Try direct parse first
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Try to extract JSON from markdown code block or surrounding text
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? text.match(/(\{[\s\S]*\})/);
-    if (jsonMatch?.[1]) {
-      return JSON.parse(jsonMatch[1].trim());
-    }
-    throw new Error("Failed to extract JSON from response");
-  }
 }
 
 async function generateSummaryFromTranscript(sessionId: string): Promise<StoredConsultationSummary> {
@@ -210,7 +96,10 @@ async function generateSummaryFromTranscript(sessionId: string): Promise<StoredC
   }
 
   const languageName = getLanguageName(session.language ?? "es");
-  const systemPrompt = buildPrompt(languageName);
+  const systemPrompt = buildSummaryPrompt(
+    "the raw transcript of a medical consultation (with speaker roles and section types)",
+    `Generate ALL text in ${languageName}`,
+  );
   const userMessage = buildUserMessage(sections);
 
   logger.info({ sessionId, model: config.openWebUi.model }, "Generating consultation summary");
@@ -227,21 +116,7 @@ async function generateSummaryFromTranscript(sessionId: string): Promise<StoredC
     }
   );
 
-  const raw = extractJson(content);
-  const parsed = raw && typeof raw === "object" && !Array.isArray(raw)
-    ? normalizeKeys(raw as Record<string, unknown>)
-    : raw;
-  const validationResult = consultationSummarySchema.safeParse(parsed);
-
-  if (!validationResult.success) {
-    logger.error(
-      { errors: validationResult.error.issues, content },
-      "Invalid consultation summary response structure"
-    );
-    throw new Error("Invalid consultation summary response structure from LLM");
-  }
-
-  const summary = validationResult.data;
+  const summary = validateAndParseSummary(content);
   const id = uuidv4();
 
   // Upsert: preserve share_token/share_expires_at on regeneration
@@ -309,61 +184,23 @@ export function getConsultationSummary(sessionId: string): StoredConsultationSum
 }
 
 export function createShareToken(sessionId: string): { token: string; expiresAt: string } {
-  const db = getDb();
-
-  const token = crypto.randomBytes(32).toString("hex");
-  const expiresAt = new Date(
-    Date.now() + config.consultationSummary.shareExpiryHours * 60 * 60 * 1000
-  ).toISOString();
-
-  const result = db.prepare(
-    "UPDATE consultation_summaries SET share_token = ?, share_expires_at = ?, updated_at = datetime('now') WHERE session_id = ?"
-  ).run(token, expiresAt, sessionId);
-
-  if (result.changes === 0) {
-    throw new AppError(404, "Consultation summary not found. Generate one first.");
-  }
-
-  logger.info({ sessionId }, "Share token created for consultation summary");
-
-  return { token, expiresAt };
+  return createShareTokenUtil(TABLE_CFG, sessionId);
 }
 
 export function revokeShareToken(sessionId: string): void {
-  const db = getDb();
-
-  db.prepare(
-    "UPDATE consultation_summaries SET share_token = NULL, share_expires_at = NULL, updated_at = datetime('now') WHERE session_id = ?"
-  ).run(sessionId);
-
-  logger.info({ sessionId }, "Share token revoked for consultation summary");
+  revokeShareTokenUtil(TABLE_CFG, sessionId);
 }
 
 export function getByShareToken(token: string): ConsultationSummaryPublic | null {
-  const db = getDb();
-
-  const row = db
-    .prepare(
-      `SELECT cs.*, ms.title AS session_title, ms.created_at AS session_date
-       FROM consultation_summaries cs
-       JOIN medical_sessions ms ON ms.id = cs.session_id
-       WHERE cs.share_token = ? AND cs.share_expires_at > datetime('now')`
-    )
-    .get(token) as PublicSummaryRow | undefined;
-
-  if (!row) return null;
-
-  return {
-    summary: {
-      whatHappened: row.what_happened,
-      diagnosis: row.diagnosis,
-      treatmentPlan: row.treatment_plan,
-      followUp: row.follow_up,
-      warningSigns: JSON.parse(row.warning_signs),
-      additionalNotes: row.additional_notes,
+  return getByShareTokenUtil(
+    {
+      query: `SELECT cs.*, ms.title AS session_title, ms.created_at AS session_date
+              FROM consultation_summaries cs
+              JOIN medical_sessions ms ON ms.id = cs.session_id
+              WHERE cs.share_token = ? AND cs.share_expires_at > datetime('now')`,
+      titleColumn: "session_title",
+      dateColumn: "session_date",
     },
-    sessionTitle: row.session_title,
-    sessionDate: row.session_date,
-    expiresAt: row.share_expires_at!,
-  };
+    token,
+  );
 }

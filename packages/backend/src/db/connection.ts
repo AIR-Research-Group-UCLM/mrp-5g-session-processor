@@ -90,6 +90,38 @@ function runMigrations(database: Database.Database): void {
     `);
     logger.info("Migration completed: consultation_summaries table created");
   }
+
+  // Migration: Add report_summaries table
+  const hasReportSummariesTable = database
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='report_summaries'"
+    )
+    .get();
+
+  if (!hasReportSummariesTable) {
+    logger.info("Running migration: Creating report_summaries table...");
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS report_summaries (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        title TEXT,
+        what_happened TEXT NOT NULL,
+        diagnosis TEXT NOT NULL,
+        treatment_plan TEXT NOT NULL,
+        follow_up TEXT NOT NULL,
+        warning_signs TEXT NOT NULL,
+        additional_notes TEXT,
+        share_token TEXT UNIQUE,
+        share_expires_at TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_report_summaries_user_id ON report_summaries(user_id);
+      CREATE INDEX IF NOT EXISTS idx_report_summaries_share_token ON report_summaries(share_token);
+    `);
+    logger.info("Migration completed: report_summaries table created");
+  }
 }
 
 export async function initializeDatabase(): Promise<void> {

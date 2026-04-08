@@ -7,3 +7,4 @@ export * from "./simulator.js";
 export * from "./accuracy.js";
 export * from "./assignment.js";
 export * from "./consultation-summary.js";
+export * from "./report-summary.js";

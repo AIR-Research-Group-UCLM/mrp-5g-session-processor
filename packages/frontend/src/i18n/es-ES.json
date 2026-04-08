@@ -33,7 +33,8 @@
     "users": "Usuarios",
     "newSession": "Nueva Sesion",
     "simulator": "Simulador",
-    "mySessions": "Mis Sesiones"
+    "mySessions": "Mis Sesiones",
+    "reportSummary": "Resumen de Informe"
   },
   "dashboard": {
     "title": "Panel de control",
@@ -358,6 +359,29 @@
       "notFoundDescription": "Este enlace no es valido o no se pudo encontrar el resumen de la consulta.",
       "expiresOn": "El enlace expira el {{date}}",
       "disclaimer": "Este resumen fue generado por IA y tiene unicamente fines informativos. No sustituye el consejo medico profesional. Consulte siempre a su profesional sanitario ante cualquier duda sobre su salud."
+    }
+  },
+  "reportSummary": {
+    "title": "Resumen de Informe",
+    "description": "Pega un informe medico para generar un resumen comprensible para el paciente",
+    "reportLabel": "Informe medico",
+    "reportPlaceholder": "Pega el informe medico del doctor aqui...",
+    "titleLabel": "Titulo (opcional)",
+    "titlePlaceholder": "Ej: Revision anual, Visita de seguimiento...",
+    "charCount": "{{count}} caracteres",
+    "minChars": "Minimo 50 caracteres requeridos",
+    "generate": "Generar Resumen",
+    "generating": "Generando resumen...",
+    "errorGenerating": "Error al generar el resumen. Intentalo de nuevo.",
+    "generateNew": "Generar Otro",
+    "list": {
+      "title": "Informes Anteriores",
+      "empty": "No hay resumenes de informes",
+      "emptyDescription": "Genera tu primer resumen de informe arriba",
+      "untitled": "Informe sin titulo",
+      "deleteConfirm": "Estas seguro de eliminar este resumen de informe?",
+      "deleteSuccess": "Resumen de informe eliminado",
+      "deleteError": "Error al eliminar el resumen de informe"
     }
   },
   "assignments": {
