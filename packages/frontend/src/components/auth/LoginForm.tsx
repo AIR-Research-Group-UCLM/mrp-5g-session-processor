@@ -21,7 +21,7 @@ export function LoginForm() {
     try {
       await login({ email, password });
       navigate("/");
-    } catch (error) {
+    } catch {
       toast.error(t("auth.invalidCredentials"));
     } finally {
       setIsLoading(false);
