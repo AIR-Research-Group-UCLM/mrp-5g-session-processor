@@ -163,8 +163,8 @@ export function deleteReportSummary(id: string, userId: string): boolean {
   return true;
 }
 
-export function createShareToken(summaryId: string, userId: string): { token: string; expiresAt: string } {
-  return createShareTokenUtil(TABLE_CFG, summaryId, userId);
+export function createShareToken(summaryId: string, userId: string, expiryHours?: number | null): { token: string; expiresAt: string | null } {
+  return createShareTokenUtil(TABLE_CFG, summaryId, userId, expiryHours);
 }
 
 export function revokeShareToken(summaryId: string, userId: string): void {
@@ -175,7 +175,7 @@ export function getByShareToken(token: string): ConsultationSummaryPublic | null
   return getByShareTokenUtil(
     {
       query: `SELECT * FROM report_summaries
-              WHERE share_token = ? AND share_expires_at > datetime('now')`,
+              WHERE share_token = ? AND (share_expires_at IS NULL OR share_expires_at > datetime('now'))`,
       titleColumn: "title",
       dateColumn: "created_at",
     },

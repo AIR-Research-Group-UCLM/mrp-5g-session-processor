@@ -57,9 +57,11 @@ export async function deleteReportSummary(id: string): Promise<void> {
 
 export async function createReportShareToken(
   summaryId: string,
-): Promise<{ token: string; expiresAt: string }> {
-  const response = await apiClient.post<ApiResponse<{ token: string; expiresAt: string }>>(
+  expiryHours?: number | null,
+): Promise<{ token: string; expiresAt: string | null }> {
+  const response = await apiClient.post<ApiResponse<{ token: string; expiresAt: string | null }>>(
     `/report-summaries/${summaryId}/share`,
+    { expiryHours },
   );
   if (!response.data.data) {
     throw new Error(response.data.error ?? "Failed to create share link");

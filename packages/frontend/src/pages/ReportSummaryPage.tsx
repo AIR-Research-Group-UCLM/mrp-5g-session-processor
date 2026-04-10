@@ -166,7 +166,7 @@ export function ReportSummaryPage() {
               <ShareSection
                 shareToken={generatedSummary.shareToken ?? null}
                 shareExpiresAt={generatedSummary.shareExpiresAt ?? null}
-                onCreateShare={() => createShare.mutate(generatedSummary.id, {
+                onCreateShare={(expiryHours) => createShare.mutate({ summaryId: generatedSummary.id, expiryHours }, {
                   onSuccess: (data) => {
                     setGeneratedSummary({
                       ...generatedSummary,
@@ -272,8 +272,7 @@ function ReportSummaryListRow({
 
   const isShared =
     item.shareToken &&
-    item.shareExpiresAt &&
-    new Date(item.shareExpiresAt) > new Date();
+    (!item.shareExpiresAt || new Date(item.shareExpiresAt) > new Date());
 
   return (
     <div className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3">

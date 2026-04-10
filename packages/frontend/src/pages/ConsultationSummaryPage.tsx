@@ -1,5 +1,6 @@
 import { getConsultationSummaryByToken } from "@/api/consultation-summary.api";
 import { SummaryContent } from "@/components/sessions/ConsultationSummaryPanel";
+import { LanguageSelector } from "@/components/ui/LanguageSelector";
 import { Spinner } from "@/components/ui/Spinner";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, Calendar, Clock, HeartPulse } from "lucide-react";
@@ -25,6 +26,9 @@ export function ConsultationSummaryPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
+      <div className="absolute right-4 top-4">
+        <LanguageSelector />
+      </div>
       <div className="w-full max-w-2xl">
         <div className="mb-6 flex items-center justify-center gap-2 text-rose-600">
           <HeartPulse className="h-8 w-8" />
@@ -66,12 +70,14 @@ export function ConsultationSummaryPage() {
                 <Calendar className="h-4 w-4" />
                 {new Date(data.sessionDate).toLocaleDateString()}
               </span>
-              <span className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                {t("consultationSummary.patientPage.expiresOn", {
-                  date: new Date(data.expiresAt).toLocaleDateString(),
-                })}
-              </span>
+              {data.expiresAt && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  {t("consultationSummary.patientPage.expiresOn", {
+                    date: new Date(data.expiresAt).toLocaleDateString(),
+                  })}
+                </span>
+              )}
             </div>
 
             <SummaryContent

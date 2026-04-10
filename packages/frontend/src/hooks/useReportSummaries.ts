@@ -57,8 +57,9 @@ export function useCreateReportShareToken() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (summaryId: string) => reportSummaryApi.createReportShareToken(summaryId),
-    onSuccess: (_, summaryId) => {
+    mutationFn: ({ summaryId, expiryHours }: { summaryId: string; expiryHours?: number | null }) =>
+      reportSummaryApi.createReportShareToken(summaryId, expiryHours),
+    onSuccess: (_, { summaryId }) => {
       queryClient.invalidateQueries({ queryKey: ["report-summary", summaryId] });
       queryClient.invalidateQueries({ queryKey: ["report-summaries"] });
     },

@@ -20,13 +20,17 @@ export function createShareToken(
   cfg: ShareTokenTableConfig,
   id: string,
   ownerId?: string,
-): { token: string; expiresAt: string } {
+  expiryHours?: number | null,
+): { token: string; expiresAt: string | null } {
   const db = getDb();
 
   const token = crypto.randomBytes(32).toString("hex");
-  const expiresAt = new Date(
-    Date.now() + config.consultationSummary.shareExpiryHours * 60 * 60 * 1000
-  ).toISOString();
+  const expiresAt =
+    expiryHours === null
+      ? null
+      : new Date(
+          Date.now() + (expiryHours ?? config.consultationSummary.shareExpiryHours) * 60 * 60 * 1000
+        ).toISOString();
 
   const where = cfg.ownerColumn
     ? `${cfg.idColumn} = ? AND ${cfg.ownerColumn} = ?`
@@ -127,6 +131,6 @@ export function getByShareToken(
     summary: parseSummaryFields(row),
     sessionTitle: (row[cfg.titleColumn] as string | null) ?? null,
     sessionDate: row[cfg.dateColumn] as string,
-    expiresAt: row.share_expires_at!,
+    expiresAt: row.share_expires_at ?? null,
   };
 }

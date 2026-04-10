@@ -284,7 +284,7 @@ export function ConsultationSummaryPanel({ sessionId }: ConsultationSummaryPanel
             <ShareSection
               shareToken={summary.shareToken ?? null}
               shareExpiresAt={summary.shareExpiresAt ?? null}
-              onCreateShare={() => createShare.mutate(sessionId)}
+              onCreateShare={(expiryHours) => createShare.mutate({ sessionId, expiryHours })}
               onRevokeShare={() => revokeShare.mutate(sessionId)}
               isCreating={createShare.isPending}
               isRevoking={revokeShare.isPending}

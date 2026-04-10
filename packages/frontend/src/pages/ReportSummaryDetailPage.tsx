@@ -101,7 +101,7 @@ export function ReportSummaryDetailPage() {
               <ShareSection
                 shareToken={summary.shareToken ?? null}
                 shareExpiresAt={summary.shareExpiresAt ?? null}
-                onCreateShare={() => createShare.mutate(id!)}
+                onCreateShare={(expiryHours) => createShare.mutate({ summaryId: id!, expiryHours })}
                 onRevokeShare={() => revokeShare.mutate(id!)}
                 isCreating={createShare.isPending}
                 isRevoking={revokeShare.isPending}

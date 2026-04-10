@@ -187,8 +187,8 @@ export function getConsultationSummary(sessionId: string): StoredConsultationSum
   return rowToStoredSummary(row);
 }
 
-export function createShareToken(sessionId: string): { token: string; expiresAt: string } {
-  return createShareTokenUtil(TABLE_CFG, sessionId);
+export function createShareToken(sessionId: string, expiryHours?: number | null): { token: string; expiresAt: string | null } {
+  return createShareTokenUtil(TABLE_CFG, sessionId, undefined, expiryHours);
 }
 
 export function revokeShareToken(sessionId: string): void {
@@ -201,7 +201,7 @@ export function getByShareToken(token: string): ConsultationSummaryPublic | null
       query: `SELECT cs.*, ms.title AS session_title, ms.created_at AS session_date
               FROM consultation_summaries cs
               JOIN medical_sessions ms ON ms.id = cs.session_id
-              WHERE cs.share_token = ? AND cs.share_expires_at > datetime('now')`,
+              WHERE cs.share_token = ? AND (cs.share_expires_at IS NULL OR cs.share_expires_at > datetime('now'))`,
       titleColumn: "session_title",
       dateColumn: "session_date",
     },

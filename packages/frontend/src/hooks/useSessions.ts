@@ -124,8 +124,9 @@ export function useCreateShareToken() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (sessionId: string) => sessionsApi.createShareToken(sessionId),
-    onSuccess: (_, sessionId) => {
+    mutationFn: ({ sessionId, expiryHours }: { sessionId: string; expiryHours?: number | null }) =>
+      sessionsApi.createShareToken(sessionId, expiryHours),
+    onSuccess: (_, { sessionId }) => {
       queryClient.invalidateQueries({ queryKey: ["consultation-summary", sessionId] });
     },
     onError: (error: Error) => {

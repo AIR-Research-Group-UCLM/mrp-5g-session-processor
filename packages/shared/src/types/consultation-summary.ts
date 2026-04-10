@@ -21,5 +21,5 @@ export interface ConsultationSummaryPublic {
   summary: ConsultationSummary;
   sessionTitle: string | null;
   sessionDate: string;
-  expiresAt: string;
+  expiresAt: string | null;
 }

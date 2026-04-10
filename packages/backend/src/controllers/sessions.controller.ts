@@ -303,10 +303,15 @@ const generateConsultationSummary: RequestHandler = async (req, res, next) => {
   }
 };
 
+const shareBodySchema = z.object({
+  expiryHours: z.number().positive().nullable().optional(),
+});
+
 const createShareToken: RequestHandler = async (req, res, next) => {
   try {
     const sessionId = req.params.id!;
-    const result = createShareTokenService(sessionId);
+    const body = shareBodySchema.parse(req.body);
+    const result = createShareTokenService(sessionId, body.expiryHours);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);

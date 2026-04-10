@@ -144,11 +144,12 @@ export async function generateConsultationSummary(
 }
 
 export async function createShareToken(
-  sessionId: string
-): Promise<{ token: string; expiresAt: string }> {
+  sessionId: string,
+  expiryHours?: number | null,
+): Promise<{ token: string; expiresAt: string | null }> {
   const response = await apiClient.post<
-    ApiResponse<{ token: string; expiresAt: string }>
-  >(`/sessions/${sessionId}/consultation-summary/share`);
+    ApiResponse<{ token: string; expiresAt: string | null }>
+  >(`/sessions/${sessionId}/consultation-summary/share`, { expiryHours });
   if (!response.data.data) {
     throw new Error(response.data.error ?? "Failed to create share link");
   }
