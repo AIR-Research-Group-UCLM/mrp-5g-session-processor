@@ -32,9 +32,6 @@ const envSchema = z.object({
   OPEN_WEBUI_API_KEY: z.string().optional(),
   OPEN_WEBUI_MODEL: z.string().default("gemma3:12b"),
 
-  // Consultation Summary
-  CONSULTATION_SUMMARY_SHARE_EXPIRY_HOURS: z.coerce.number().default(168),
-
   // ElevenLabs
   ELEVENLABS_API_KEY: z.string(),
 
@@ -119,7 +116,7 @@ export const config = {
   },
 
   consultationSummary: {
-    shareExpiryHours: env.CONSULTATION_SUMMARY_SHARE_EXPIRY_HOURS,
+    shareExpiryHours: 168,
   },
 
   elevenlabs: {
