@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Spinner } from "@/components/ui/Spinner";
 import { Badge } from "@/components/ui/Badge";
+import { FileTextDropzone } from "@/components/shared/FileTextDropzone";
 import { ShareSection } from "@/components/shared/ShareSection";
 import { SummaryContent } from "@/components/sessions/ConsultationSummaryPanel";
 import {
@@ -94,6 +95,11 @@ export function ReportSummaryPage() {
                 placeholder={t("reportSummary.titlePlaceholder")}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+              />
+
+              <FileTextDropzone
+                onTextExtracted={setReportText}
+                disabled={generateMutation.isPending}
               />
 
               <div>

@@ -385,6 +385,13 @@
     "generating": "Generando resumen...",
     "errorGenerating": "Error al generar el resumen. Inténtalo de nuevo.",
     "generateNew": "Generar Otro",
+    "file": {
+      "dropzone": "Arrastra un archivo de texto aquí, o haz clic para seleccionar",
+      "dropzoneActive": "Suelta el archivo aquí",
+      "acceptedFormats": "Archivos de texto (.txt, .md, .csv, .log) hasta 2 MB",
+      "readError": "No se pudo leer el archivo",
+      "reading": "Leyendo archivo..."
+    },
     "list": {
       "title": "Informes Anteriores",
       "empty": "No hay resúmenes de informes",

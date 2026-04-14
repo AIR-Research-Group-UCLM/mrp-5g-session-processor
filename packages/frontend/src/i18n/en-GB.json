@@ -385,6 +385,13 @@
     "generating": "Generating summary...",
     "errorGenerating": "Error generating summary. Please try again.",
     "generateNew": "Generate Another",
+    "file": {
+      "dropzone": "Drag a text file here, or click to select",
+      "dropzoneActive": "Drop the file here",
+      "acceptedFormats": "Text files (.txt, .md, .csv, .log) up to 2 MB",
+      "readError": "Could not read the file",
+      "reading": "Reading file..."
+    },
     "list": {
       "title": "Previous Reports",
       "empty": "No report summaries yet",
