@@ -14,11 +14,10 @@
     "db:seed": "pnpm --filter backend run seed:users"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "8.49.0",
-    "@typescript-eslint/parser": "8.49.0",
     "eslint": "9.39.2",
     "prettier": "3.7.4",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "typescript-eslint": "^8.58.1"
   },
   "engines": {
     "node": ">=22.0.0",

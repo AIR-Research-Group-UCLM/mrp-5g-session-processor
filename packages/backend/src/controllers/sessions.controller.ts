@@ -3,6 +3,12 @@ import { z } from "zod";
 import { sessionService } from "../services/session.service.js";
 import { s3Service } from "../services/s3.service.js";
 import { accuracyService } from "../services/accuracy.service.js";
+import {
+  generateConsultationSummary as generateConsultationSummaryService,
+  getConsultationSummary as getConsultationSummaryService,
+  createShareToken as createShareTokenService,
+  revokeShareToken as revokeShareTokenService,
+} from "../services/consultation-summary.service.js";
 import { AppError } from "../middleware/error.middleware.js";
 import { logger } from "../config/logger.js";
 
@@ -277,6 +283,51 @@ const getAccuracy: RequestHandler = async (req, res, next) => {
   }
 };
 
+const getConsultationSummary: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    const summary = getConsultationSummaryService(sessionId);
+    res.json({ success: true, data: { summary } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const generateConsultationSummary: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    const summary = await generateConsultationSummaryService(sessionId);
+    res.json({ success: true, data: { summary } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const shareBodySchema = z.object({
+  expiryHours: z.number().positive().nullable().optional(),
+});
+
+const createShareToken: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    const body = shareBodySchema.parse(req.body);
+    const result = createShareTokenService(sessionId, body.expiryHours);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const revokeShareToken: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    revokeShareTokenService(sessionId);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const sessionsController = {
   list,
   create,
@@ -287,4 +338,8 @@ export const sessionsController = {
   getVideoUrl,
   streamVideo,
   getAccuracy,
+  getConsultationSummary,
+  generateConsultationSummary,
+  createShareToken,
+  revokeShareToken,
 };

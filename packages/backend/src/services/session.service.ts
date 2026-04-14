@@ -198,7 +198,7 @@ function calculateDurationMs(startedAt: string | null, completedAt: string | nul
 function buildProcessingTimeline(jobs: DbProcessingJob[]): ProcessingTimeline | null {
   if (jobs.length === 0) return null;
 
-  const jobTypes: JobType[] = ["transcribe", "segment", "generate-metadata", "complete"];
+  const jobTypes: JobType[] = ["transcribe", "segment", "generate-metadata", "generate-consultation-summary", "complete"];
   const steps: ProcessingStepTiming[] = jobTypes.map((type) => {
     const job = jobs.find((j) => j.job_type === type);
     const startedAt = job?.started_at ?? null;
@@ -549,7 +549,7 @@ async function getProcessingStatus(
     )
     .all(sessionId) as DbProcessingJob[];
 
-  const jobTypes: JobType[] = ["transcribe", "segment", "generate-metadata", "complete"];
+  const jobTypes: JobType[] = ["transcribe", "segment", "generate-metadata", "generate-consultation-summary", "complete"];
   const steps: ProcessingStepTiming[] = jobTypes.map((type) => {
     const job = jobs.find((j) => j.job_type === type);
     const startedAt = job?.started_at ?? null;

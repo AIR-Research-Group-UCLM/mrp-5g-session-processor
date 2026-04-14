@@ -174,6 +174,49 @@ CREATE TABLE IF NOT EXISTS session_assignments (
 CREATE INDEX IF NOT EXISTS idx_session_assignments_session_id ON session_assignments(session_id);
 CREATE INDEX IF NOT EXISTS idx_session_assignments_user_id ON session_assignments(user_id);
 
+-- Consultation summaries table (one per session, stores AI-generated patient-friendly summaries)
+CREATE TABLE IF NOT EXISTS consultation_summaries (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL UNIQUE,
+    what_happened TEXT NOT NULL,
+    diagnosis TEXT NOT NULL,
+    treatment_plan TEXT NOT NULL,
+    follow_up TEXT NOT NULL,
+    warning_signs TEXT NOT NULL,
+    additional_notes TEXT,
+    tooltips TEXT,
+    share_token TEXT UNIQUE,
+    share_expires_at TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_consultation_summaries_session_id ON consultation_summaries(session_id);
+CREATE INDEX IF NOT EXISTS idx_consultation_summaries_share_token ON consultation_summaries(share_token);
+
+-- Report summaries table (standalone doctor report → AI patient-friendly summary)
+CREATE TABLE IF NOT EXISTS report_summaries (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    title TEXT,
+    what_happened TEXT NOT NULL,
+    diagnosis TEXT NOT NULL,
+    treatment_plan TEXT NOT NULL,
+    follow_up TEXT NOT NULL,
+    warning_signs TEXT NOT NULL,
+    additional_notes TEXT,
+    tooltips TEXT,
+    share_token TEXT UNIQUE,
+    share_expires_at TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_report_summaries_user_id ON report_summaries(user_id);
+CREATE INDEX IF NOT EXISTS idx_report_summaries_share_token ON report_summaries(share_token);
+
 -- FTS5 virtual table for full-text search on transcripts
 CREATE VIRTUAL TABLE IF NOT EXISTS transcript_fts USING fts5(
     session_id,

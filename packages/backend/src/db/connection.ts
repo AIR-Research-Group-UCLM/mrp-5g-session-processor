@@ -59,6 +59,90 @@ function runMigrations(database: Database.Database): void {
     `);
     logger.info("Migration completed: session_assignments table created");
   }
+
+  // Migration: Add consultation_summaries table
+  const hasConsultationSummariesTable = database
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='consultation_summaries'"
+    )
+    .get();
+
+  if (!hasConsultationSummariesTable) {
+    logger.info("Running migration: Creating consultation_summaries table...");
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS consultation_summaries (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL UNIQUE,
+        what_happened TEXT NOT NULL,
+        diagnosis TEXT NOT NULL,
+        treatment_plan TEXT NOT NULL,
+        follow_up TEXT NOT NULL,
+        warning_signs TEXT NOT NULL,
+        additional_notes TEXT,
+        share_token TEXT UNIQUE,
+        share_expires_at TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_consultation_summaries_session_id ON consultation_summaries(session_id);
+      CREATE INDEX IF NOT EXISTS idx_consultation_summaries_share_token ON consultation_summaries(share_token);
+    `);
+    logger.info("Migration completed: consultation_summaries table created");
+  }
+
+  // Migration: Add report_summaries table
+  const hasReportSummariesTable = database
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='report_summaries'"
+    )
+    .get();
+
+  if (!hasReportSummariesTable) {
+    logger.info("Running migration: Creating report_summaries table...");
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS report_summaries (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        title TEXT,
+        what_happened TEXT NOT NULL,
+        diagnosis TEXT NOT NULL,
+        treatment_plan TEXT NOT NULL,
+        follow_up TEXT NOT NULL,
+        warning_signs TEXT NOT NULL,
+        additional_notes TEXT,
+        share_token TEXT UNIQUE,
+        share_expires_at TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      );
+      CREATE INDEX IF NOT EXISTS idx_report_summaries_user_id ON report_summaries(user_id);
+      CREATE INDEX IF NOT EXISTS idx_report_summaries_share_token ON report_summaries(share_token);
+    `);
+    logger.info("Migration completed: report_summaries table created");
+  }
+
+  // Migration: Add tooltips column to consultation_summaries and report_summaries
+  const csColumns = database
+    .prepare("PRAGMA table_info(consultation_summaries)")
+    .all() as Array<{ name: string }>;
+
+  if (!csColumns.some((col) => col.name === "tooltips")) {
+    logger.info("Running migration: Adding tooltips column to consultation_summaries...");
+    database.exec("ALTER TABLE consultation_summaries ADD COLUMN tooltips TEXT");
+    logger.info("Migration completed: tooltips column added to consultation_summaries");
+  }
+
+  const rsColumns = database
+    .prepare("PRAGMA table_info(report_summaries)")
+    .all() as Array<{ name: string }>;
+
+  if (!rsColumns.some((col) => col.name === "tooltips")) {
+    logger.info("Running migration: Adding tooltips column to report_summaries...");
+    database.exec("ALTER TABLE report_summaries ADD COLUMN tooltips TEXT");
+    logger.info("Migration completed: tooltips column added to report_summaries");
+  }
 }
 
 export async function initializeDatabase(): Promise<void> {

@@ -123,9 +123,9 @@ export async function processSegmentation(sessionId: string): Promise<Segmentati
   logger.info({ sessionId, model: config.openai.models.segmentation, outputLanguage }, "Segmenting transcript");
 
   // Timeout: 10 minutes, retries: 3 attempts
-  const completion = await withRetry(
+  const { result, completion } = await withRetry(
     async () => {
-      return openai.chat.completions.create({
+      const completion = await openai.chat.completions.create({
         model: config.openai.models.segmentation,
         messages: [
           {
@@ -140,37 +140,37 @@ export async function processSegmentation(sessionId: string): Promise<Segmentati
         response_format: { type: "json_object" },
         temperature: 0.3,
       });
+
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error("No response from GPT");
+      }
+
+      // Security: Validate OpenAI response structure with Zod
+      let parsedContent: unknown;
+      try {
+        parsedContent = JSON.parse(content);
+      } catch {
+        logger.error({ content }, "Failed to parse segmentation JSON");
+        throw new Error("Failed to parse segmentation response as JSON");
+      }
+
+      const validationResult = segmentationResponseSchema.safeParse(parsedContent);
+      if (!validationResult.success) {
+        logger.error(
+          { errors: validationResult.error.issues, content },
+          "Invalid segmentation response structure"
+        );
+        throw new Error("Invalid segmentation response structure from OpenAI");
+      }
+
+      return { result: validationResult.data, completion };
     },
     {
       operationName: "segmentation",
       sessionId,
     }
   );
-
-  const content = completion.choices[0]?.message?.content;
-  if (!content) {
-    throw new Error("No response from GPT");
-  }
-
-  // Security: Validate OpenAI response structure with Zod
-  let parsedContent: unknown;
-  try {
-    parsedContent = JSON.parse(content);
-  } catch {
-    logger.error({ content }, "Failed to parse segmentation JSON");
-    throw new Error("Failed to parse segmentation response as JSON");
-  }
-
-  const validationResult = segmentationResponseSchema.safeParse(parsedContent);
-  if (!validationResult.success) {
-    logger.error(
-      { errors: validationResult.error.issues, content },
-      "Invalid segmentation response structure"
-    );
-    throw new Error("Invalid segmentation response structure from OpenAI");
-  }
-
-  const result = validationResult.data;
 
   const insertSectionStmt = db.prepare(`
     INSERT INTO transcript_sections (

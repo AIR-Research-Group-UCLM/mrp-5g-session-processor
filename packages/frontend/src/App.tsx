@@ -7,6 +7,9 @@ import { SessionDetailPage } from "@/pages/SessionDetailPage";
 import { SessionsPage } from "@/pages/SessionsPage";
 import { SimulatorPage } from "@/pages/SimulatorPage";
 import { UsersPage } from "@/pages/UsersPage";
+import { ConsultationSummaryPage } from "@/pages/ConsultationSummaryPage";
+import { ReportSummaryPage } from "@/pages/ReportSummaryPage";
+import { ReportSummaryDetailPage } from "@/pages/ReportSummaryDetailPage";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 const ADMIN_EMAIL = "admin@user.com";
@@ -51,6 +54,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/p/:token" element={<ConsultationSummaryPage />} />
       <Route
         path="/"
         element={
@@ -72,6 +76,8 @@ export default function App() {
         <Route path="simulator" element={<SimulatorPage />} />
         <Route path="sessions" element={<SessionsPage />} />
         <Route path="sessions/:id" element={<SessionDetailPage />} />
+        <Route path="report-summary" element={<ReportSummaryPage />} />
+        <Route path="report-summaries/:id" element={<ReportSummaryDetailPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

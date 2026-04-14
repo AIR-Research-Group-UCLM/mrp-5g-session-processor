@@ -22,6 +22,10 @@ sessionsRoutes.get("/:id/status", requireSessionReadAccess, sessionsController.g
 sessionsRoutes.get("/:id/accuracy", requireSessionReadAccess, sessionsController.getAccuracy);
 sessionsRoutes.get("/:id/video", requireSessionReadAccess, sessionsController.getVideoUrl);
 sessionsRoutes.get("/:id/video/stream", requireSessionReadAccess, sessionsController.streamVideo);
+sessionsRoutes.get("/:id/consultation-summary", requireSessionReadAccess, sessionsController.getConsultationSummary);
+sessionsRoutes.post("/:id/consultation-summary", requireSessionReadAccess, sessionsController.generateConsultationSummary);
+sessionsRoutes.post("/:id/consultation-summary/share", requireSessionReadAccess, sessionsController.createShareToken);
+sessionsRoutes.delete("/:id/consultation-summary/share", requireSessionReadAccess, sessionsController.revokeShareToken);
 
 // Create session - only requires general write access (no session yet)
 // Security: Rate limit uploads to prevent abuse, validate magic bytes

@@ -2,6 +2,7 @@ export type JobType =
   | "transcribe"
   | "segment"
   | "generate-metadata"
+  | "generate-consultation-summary"
   | "complete";
 
 export type JobStatus = "pending" | "processing" | "completed" | "failed";

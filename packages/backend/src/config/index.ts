@@ -27,6 +27,11 @@ const envSchema = z.object({
   OPENAI_MODEL_SEGMENTATION: z.string().default("gpt-5.1"),
   OPENAI_MODEL_METADATA: z.string().default("gpt-5.1"),
 
+  // Open WebUI (optional - consultation summary feature)
+  OPEN_WEBUI_BASE_URL: z.string().optional(),
+  OPEN_WEBUI_API_KEY: z.string().optional(),
+  OPEN_WEBUI_MODEL: z.string().default("gemma3:12b"),
+
   // ElevenLabs
   ELEVENLABS_API_KEY: z.string(),
 
@@ -102,6 +107,16 @@ export const config = {
       segmentation: env.OPENAI_MODEL_SEGMENTATION,
       metadata: env.OPENAI_MODEL_METADATA,
     },
+  },
+
+  openWebUi: {
+    baseUrl: env.OPEN_WEBUI_BASE_URL ?? null,
+    apiKey: env.OPEN_WEBUI_API_KEY ?? null,
+    model: env.OPEN_WEBUI_MODEL,
+  },
+
+  consultationSummary: {
+    shareExpiryHours: 168,
   },
 
   elevenlabs: {
