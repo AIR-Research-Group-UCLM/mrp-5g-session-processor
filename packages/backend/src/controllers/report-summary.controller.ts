@@ -9,6 +9,7 @@ import {
   revokeShareToken as revokeShareTokenService,
 } from "../services/report-summary.service.js";
 import { AppError } from "../middleware/error.middleware.js";
+import { extractText, isSupportedMimeType } from "../utils/text-extraction.js";
 
 const generateBodySchema = z.object({
   reportText: z.string().min(50).max(50000),
@@ -123,6 +124,32 @@ const revokeShareToken: RequestHandler = async (req, res, next) => {
   }
 };
 
+const extractTextFromFile: RequestHandler = async (req, res, next) => {
+  try {
+    const file = req.file;
+    if (!file) {
+      throw new AppError(400, "No file provided");
+    }
+
+    if (!isSupportedMimeType(file.mimetype)) {
+      throw new AppError(400, `Unsupported file type: ${file.mimetype}`);
+    }
+
+    const text = await extractText(file.buffer, file.mimetype);
+
+    if (!text) {
+      throw new AppError(422, "Could not extract text from the file");
+    }
+
+    res.json({
+      success: true,
+      data: { text, filename: file.originalname },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const reportSummaryController = {
   generate,
   list,
@@ -130,4 +157,5 @@ export const reportSummaryController = {
   remove,
   createShareToken,
   revokeShareToken,
+  extractTextFromFile,
 };

@@ -386,11 +386,14 @@
     "errorGenerating": "Error al generar el resumen. Inténtalo de nuevo.",
     "generateNew": "Generar Otro",
     "file": {
-      "dropzone": "Arrastra un archivo de texto aquí, o haz clic para seleccionar",
+      "dropzone": "Arrastra un archivo aquí, o haz clic para seleccionar",
       "dropzoneActive": "Suelta el archivo aquí",
-      "acceptedFormats": "Archivos de texto (.txt, .md, .csv, .log) hasta 2 MB",
+      "acceptedFormats": "PDF, DOCX, ODT, TXT, MD, CSV y otros archivos de texto (hasta 10 MB)",
       "readError": "No se pudo leer el archivo",
-      "reading": "Leyendo archivo..."
+      "reading": "Leyendo archivo...",
+      "fileTypeError": "Tipo de archivo no soportado. Usa PDF, DOCX, ODT o un archivo de texto.",
+      "fileTooLarge": "El archivo es demasiado grande. El tamaño máximo es 10 MB.",
+      "extracting": "Extrayendo texto del documento..."
     },
     "list": {
       "title": "Informes Anteriores",

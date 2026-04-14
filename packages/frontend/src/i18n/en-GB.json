@@ -386,11 +386,14 @@
     "errorGenerating": "Error generating summary. Please try again.",
     "generateNew": "Generate Another",
     "file": {
-      "dropzone": "Drag a text file here, or click to select",
+      "dropzone": "Drag a file here, or click to select",
       "dropzoneActive": "Drop the file here",
-      "acceptedFormats": "Text files (.txt, .md, .csv, .log) up to 2 MB",
+      "acceptedFormats": "PDF, DOCX, ODT, TXT, MD, CSV and other text files (up to 10 MB)",
       "readError": "Could not read the file",
-      "reading": "Reading file..."
+      "reading": "Reading file...",
+      "fileTypeError": "Unsupported file type. Please use PDF, DOCX, ODT or a text file.",
+      "fileTooLarge": "File is too large. Maximum size is 10 MB.",
+      "extracting": "Extracting text from document..."
     },
     "list": {
       "title": "Previous Reports",

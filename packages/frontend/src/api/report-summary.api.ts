@@ -72,3 +72,19 @@ export async function createReportShareToken(
 export async function revokeReportShareToken(summaryId: string): Promise<void> {
   await apiClient.delete(`/report-summaries/${summaryId}/share`);
 }
+
+export async function extractTextFromFile(
+  file: File,
+): Promise<{ text: string; filename: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await apiClient.post<
+    ApiResponse<{ text: string; filename: string }>
+  >("/report-summaries/extract-text", formData);
+
+  if (!response.data.data) {
+    throw new Error(response.data.error ?? "Failed to extract text from file");
+  }
+  return response.data.data;
+}
