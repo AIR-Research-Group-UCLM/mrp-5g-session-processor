@@ -8,4 +8,4 @@ export const authRoutes = Router();
 // Security: Rate limit login attempts to prevent brute force attacks
 authRoutes.post("/login", authLimiter, authController.login);
 authRoutes.post("/logout", requireAuth, authController.logout);
-authRoutes.get("/me", requireAuth, authController.me);
+authRoutes.get("/me", authController.me);
