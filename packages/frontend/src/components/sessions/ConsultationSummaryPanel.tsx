@@ -134,25 +134,25 @@ export function SummaryContent({ summary, title, date }: SummaryContentProps) {
       </div>
 
       <Section icon={MessageCircle} title={t("consultationSummary.whatHappened")}>
-        <p className="text-sm text-gray-700">
+        <p className="whitespace-pre-line text-sm text-gray-700">
           <TextWithTooltips text={summary.whatHappened} tooltips={tooltips} />
         </p>
       </Section>
 
       <Section icon={Stethoscope} title={t("consultationSummary.diagnosis")}>
-        <p className="text-sm text-gray-700">
+        <p className="whitespace-pre-line text-sm text-gray-700">
           <TextWithTooltips text={summary.diagnosis} tooltips={tooltips} />
         </p>
       </Section>
 
       <Section icon={Pill} title={t("consultationSummary.treatmentPlan")}>
-        <p className="text-sm text-gray-700">
+        <p className="whitespace-pre-line text-sm text-gray-700">
           <TextWithTooltips text={summary.treatmentPlan} tooltips={tooltips} />
         </p>
       </Section>
 
       <Section icon={Calendar} title={t("consultationSummary.followUp")}>
-        <p className="text-sm text-gray-700">
+        <p className="whitespace-pre-line text-sm text-gray-700">
           <TextWithTooltips text={summary.followUp} tooltips={tooltips} />
         </p>
       </Section>
@@ -173,17 +173,17 @@ export function SummaryContent({ summary, title, date }: SummaryContentProps) {
         </div>
       )}
 
-      {summary.additionalNotes && (
+      {summary.additionalNotes?.trim() && (
         <Section icon={FileText} title={t("consultationSummary.additionalNotes")}>
-          <p className="text-sm text-gray-700">
+          <p className="whitespace-pre-line text-sm text-gray-700">
             <TextWithTooltips text={summary.additionalNotes} tooltips={tooltips} />
           </p>
         </Section>
       )}
 
-      <p className="text-xs italic text-gray-400">
+      <div className="rounded-lg bg-blue-50 p-4 text-xs text-blue-700">
         {t("consultationSummary.disclaimer")}
-      </p>
+      </div>
     </div>
   );
 }

@@ -85,10 +85,6 @@ export function ConsultationSummaryPage() {
               title={data.sessionTitle}
               date={new Date(data.sessionDate).toLocaleDateString()}
             />
-
-            <div className="mt-6 rounded-lg bg-blue-50 p-4 text-xs text-blue-700">
-              {t("consultationSummary.patientPage.disclaimer")}
-            </div>
           </div>
         )}
       </div>
