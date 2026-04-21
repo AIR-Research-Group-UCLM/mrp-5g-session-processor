@@ -1,0 +1,31 @@
+condition,language,run,total_claims,hallucinated_claims,notes
+gpt-4o,EN,1,,,
+gpt-4o,EN,2,,,
+gpt-4o,EN,3,,,
+gpt-4o,EN,4,,,
+gpt-4o,EN,5,,,
+gpt-4o,ES,1,,,
+gpt-4o,ES,2,,,
+gpt-4o,ES,3,,,
+gpt-4o,ES,4,,,
+gpt-4o,ES,5,,,
+local,EN,1,,,
+local,EN,2,,,
+local,EN,3,,,
+local,EN,4,,,
+local,EN,5,,,
+local,ES,1,,,
+local,ES,2,,,
+local,ES,3,,,
+local,ES,4,,,
+local,ES,5,,,
+naive,EN,1,1,0,auto: naive copies transcript verbatim
+naive,EN,2,1,0,auto: naive copies transcript verbatim
+naive,EN,3,1,0,auto: naive copies transcript verbatim
+naive,EN,4,1,0,auto: naive copies transcript verbatim
+naive,EN,5,1,0,auto: naive copies transcript verbatim
+naive,ES,1,1,0,auto: naive copies transcript verbatim
+naive,ES,2,1,0,auto: naive copies transcript verbatim
+naive,ES,3,1,0,auto: naive copies transcript verbatim
+naive,ES,4,1,0,auto: naive copies transcript verbatim
+naive,ES,5,1,0,auto: naive copies transcript verbatim

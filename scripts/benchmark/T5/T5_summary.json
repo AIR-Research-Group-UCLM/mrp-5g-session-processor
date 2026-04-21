@@ -1,0 +1,125 @@
+{
+  "hallucination_csv": "/home/sermartcid/Desktop/mrp-5g-session-processor/.claude/worktrees/feature/t4-t5-baseline-and-comparison/scripts/benchmark/T5/hallucinations.csv",
+  "conditions": [
+    {
+      "condition": "gpt-4o",
+      "language": "EN",
+      "n": 5,
+      "readability": {
+        "mean": 8.476605518697827,
+        "stdev": 0.9167368171429504,
+        "ci_halfwidth_95": 1.138096618705801,
+        "metric": "flesch_kincaid_grade"
+      },
+      "diagnosis_pct": 100.0,
+      "medication_with_dose_pct": 100.0,
+      "followup_pct": 100.0,
+      "hallucinations": {
+        "n_reviewed": 0,
+        "mean_pct": null,
+        "stdev_pct": null,
+        "ci_halfwidth_95_pct": null
+      }
+    },
+    {
+      "condition": "gpt-4o",
+      "language": "ES",
+      "n": 5,
+      "readability": {
+        "mean": 70.22955696528392,
+        "stdev": 1.7272323145495694,
+        "ci_halfwidth_95": 2.1442983636619135,
+        "metric": "inflesz_szigriszt_pazos"
+      },
+      "diagnosis_pct": 100.0,
+      "medication_with_dose_pct": 100.0,
+      "followup_pct": 100.0,
+      "hallucinations": {
+        "n_reviewed": 0,
+        "mean_pct": null,
+        "stdev_pct": null,
+        "ci_halfwidth_95_pct": null
+      }
+    },
+    {
+      "condition": "local",
+      "language": "EN",
+      "n": 5,
+      "readability": {
+        "mean": 7.586517717792511,
+        "stdev": 0.4057537393510017,
+        "ci_halfwidth_95": 0.5037290421276946,
+        "metric": "flesch_kincaid_grade"
+      },
+      "diagnosis_pct": 100.0,
+      "medication_with_dose_pct": 100.0,
+      "followup_pct": 40.0,
+      "hallucinations": {
+        "n_reviewed": 0,
+        "mean_pct": null,
+        "stdev_pct": null,
+        "ci_halfwidth_95_pct": null
+      }
+    },
+    {
+      "condition": "local",
+      "language": "ES",
+      "n": 5,
+      "readability": {
+        "mean": 71.55029922619109,
+        "stdev": 1.6160802816384914,
+        "ci_halfwidth_95": 2.0063070116699406,
+        "metric": "inflesz_szigriszt_pazos"
+      },
+      "diagnosis_pct": 100.0,
+      "medication_with_dose_pct": 100.0,
+      "followup_pct": 100.0,
+      "hallucinations": {
+        "n_reviewed": 0,
+        "mean_pct": null,
+        "stdev_pct": null,
+        "ci_halfwidth_95_pct": null
+      }
+    },
+    {
+      "condition": "naive",
+      "language": "EN",
+      "n": 5,
+      "readability": {
+        "mean": 9.172077861952864,
+        "stdev": 0.0,
+        "ci_halfwidth_95": 0.0,
+        "metric": "flesch_kincaid_grade"
+      },
+      "diagnosis_pct": 100.0,
+      "medication_with_dose_pct": 100.0,
+      "followup_pct": 100.0,
+      "hallucinations": {
+        "n_reviewed": 5,
+        "mean_pct": 0.0,
+        "stdev_pct": 0.0,
+        "ci_halfwidth_95_pct": 0.0
+      }
+    },
+    {
+      "condition": "naive",
+      "language": "ES",
+      "n": 5,
+      "readability": {
+        "mean": 85.01342819499341,
+        "stdev": 0.0,
+        "ci_halfwidth_95": 0.0,
+        "metric": "inflesz_szigriszt_pazos"
+      },
+      "diagnosis_pct": 100.0,
+      "medication_with_dose_pct": 100.0,
+      "followup_pct": 100.0,
+      "hallucinations": {
+        "n_reviewed": 5,
+        "mean_pct": 0.0,
+        "stdev_pct": 0.0,
+        "ci_halfwidth_95_pct": 0.0
+      }
+    }
+  ]
+}
