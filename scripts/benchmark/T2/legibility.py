@@ -10,7 +10,9 @@ fields of the consultation summary and computes a readability score:
 Reports per-run scores plus mean and standard deviation by language.
 
 Usage:
-    python legibility.py [--results-dir ./results] [--model gpt-oss:20b]
+    python legibility.py [--results-dir ../results] [--model gpt-oss:20b]
+
+The report is printed to stdout and mirrored to T2.log (alongside the script).
 
 Requires: pip install textstat
 """
@@ -22,6 +24,23 @@ import json
 import statistics
 import sys
 from pathlib import Path
+from typing import IO
+
+
+class _Tee:
+    """Duplicate writes to multiple streams (used to mirror stdout to a file)."""
+
+    def __init__(self, *streams: IO[str]) -> None:
+        self._streams = streams
+
+    def write(self, data: str) -> int:
+        for stream in self._streams:
+            stream.write(data)
+        return len(data)
+
+    def flush(self) -> None:
+        for stream in self._streams:
+            stream.flush()
 
 try:
     import textstat
@@ -182,8 +201,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--results-dir",
-        default="./results",
-        help="Directory with benchmark results (default: ./results relative to script)",
+        default="../results",
+        help="Directory with benchmark results (default: ../results relative to script)",
     )
     parser.add_argument(
         "--model",
@@ -195,49 +214,66 @@ def main() -> None:
         action="store_true",
         help="Emit results as JSON on stdout instead of the human report",
     )
+    parser.add_argument(
+        "--log-file",
+        default="T2.log",
+        help="Path to mirror output to (default: T2.log next to the script)",
+    )
     args = parser.parse_args()
 
     results_dir = Path(args.results_dir)
     if not results_dir.is_absolute():
         results_dir = Path(__file__).parent / results_dir
 
+    log_path = Path(args.log_file)
+    if not log_path.is_absolute():
+        log_path = Path(__file__).parent / log_path
+
     model_dir_name = args.model.replace(":", "_").replace("/", "_")
     model_dir = results_dir / model_dir_name
 
-    if not model_dir.exists():
-        print(f"ERROR: model directory not found: {model_dir}")
-        sys.exit(1)
+    with log_path.open("w", encoding="utf-8") as log_f:
+        original_stdout = sys.stdout
+        sys.stdout = _Tee(original_stdout, log_f)
+        try:
+            if not model_dir.exists():
+                print(f"ERROR: model directory not found: {model_dir}")
+                sys.exit(1)
 
-    en_scores, en_mean, en_stdev = analyse_language("EN", model_dir / "EN")
-    es_scores, es_mean, es_stdev = analyse_language("ES", model_dir / "ES")
+            en_scores, en_mean, en_stdev = analyse_language("EN", model_dir / "EN")
+            es_scores, es_mean, es_stdev = analyse_language("ES", model_dir / "ES")
 
-    if args.json:
-        output = {
-            "model": args.model,
-            "EN": {
-                "metric": "flesch_kincaid_grade",
-                "target": {"min": FK_GRADE_TARGET[0], "max": FK_GRADE_TARGET[1]},
-                "runs": [{"run": r, "score": s} for r, s in en_scores],
-                "mean": en_mean,
-                "stdev": en_stdev,
-                "n": len(en_scores),
-            },
-            "ES": {
-                "metric": "inflesz_szigriszt_pazos",
-                "target": {"min": INFLESZ_TARGET_MIN},
-                "runs": [{"run": r, "score": s} for r, s in es_scores],
-                "mean": es_mean,
-                "stdev": es_stdev,
-                "n": len(es_scores),
-                "band": inflesz_band(es_mean) if es_mean is not None else None,
-            },
-        }
-        print(json.dumps(output, indent=2, ensure_ascii=False))
-        return
-
-    print_report(
-        args.model, en_scores, en_mean, en_stdev, es_scores, es_mean, es_stdev
-    )
+            if args.json:
+                output = {
+                    "model": args.model,
+                    "EN": {
+                        "metric": "flesch_kincaid_grade",
+                        "target": {"min": FK_GRADE_TARGET[0], "max": FK_GRADE_TARGET[1]},
+                        "runs": [{"run": r, "score": s} for r, s in en_scores],
+                        "mean": en_mean,
+                        "stdev": en_stdev,
+                        "n": len(en_scores),
+                    },
+                    "ES": {
+                        "metric": "inflesz_szigriszt_pazos",
+                        "target": {"min": INFLESZ_TARGET_MIN},
+                        "runs": [{"run": r, "score": s} for r, s in es_scores],
+                        "mean": es_mean,
+                        "stdev": es_stdev,
+                        "n": len(es_scores),
+                        "band": inflesz_band(es_mean) if es_mean is not None else None,
+                    },
+                }
+                print(json.dumps(output, indent=2, ensure_ascii=False))
+            else:
+                print_report(
+                    args.model,
+                    en_scores, en_mean, en_stdev,
+                    es_scores, es_mean, es_stdev,
+                )
+                print(f"Log written to: {log_path}")
+        finally:
+            sys.stdout = original_stdout
 
 
 if __name__ == "__main__":
