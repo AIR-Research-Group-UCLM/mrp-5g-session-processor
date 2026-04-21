@@ -1,4 +1,6 @@
 results
+results-naive
 comparisons.jsonl
 __pycache__/
 T2/T2.log
+T4/T4.log
