@@ -57,3 +57,4 @@ temp/
 .turbo/
 
 tsconfig.tsbuildinfo
+.claude/worktrees
