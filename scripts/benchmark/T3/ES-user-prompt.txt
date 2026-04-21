@@ -1,0 +1,28 @@
+## Consultation Transcript
+
+[introduction] DOCTOR: Buenos dias, senora Rodriguez. Soy el Dr. Garcia. Como se encuentra hoy?
+[introduction] PATIENT: Buenos dias, Doctor. He tenido algunos problemas ultimamente y mi medico de cabecera me derivo aqui.
+[introduction] DOCTOR: Entiendo. Tengo aqui sus notas de derivacion. Vamos a repasar sus preocupaciones juntos.
+[symptoms] DOCTOR: Puede contarme que le ha estado molestando?
+[symptoms] PATIENT: Bueno, durante las ultimas tres semanas he tenido dolores de cabeza terribles, sobre todo por la manana. Y me mareo mucho cuando me levanto. A veces tambien se me nubla la vista.
+[symptoms] DOCTOR: Con que frecuencia ocurren los dolores de cabeza? Todos los dias?
+[symptoms] PATIENT: Casi todos los dias. Normalmente empiezan al despertar y mejoran despues de unas horas. Pero los mareos ocurren durante todo el dia.
+[symptoms] DOCTOR: Esta tomando algun medicamento actualmente?
+[symptoms] PATIENT: Solo paracetamol para los dolores de cabeza, pero no me ayuda mucho. Tambien tomo un multivitaminico.
+[symptoms] DOCTOR: Ha notado cambios en su peso o apetito?
+[symptoms] PATIENT: Ahora que lo menciona, he tenido mas sed de lo normal y voy al bano con mas frecuencia.
+[diagnosis] DOCTOR: He revisado sus analisis de sangre de la semana pasada. Su presion arterial hoy es de 165 sobre 95, que es bastante elevada. Su glucosa en ayunas tambien esta por encima de lo normal, en 142 mg/dL.
+[diagnosis] SPECIALIST: Dr. Garcia, tambien he revisado los resultados. La HbA1c esta en 7.2%, lo que confirma que estamos ante una diabetes tipo 2 junto con la hipertension. Los dolores de cabeza matutinos y los mareos son consistentes con la presion arterial elevada.
+[diagnosis] DOCTOR: Senora Rodriguez, basandonos en sus sintomas y resultados, hemos identificado dos condiciones. Primero, tiene presion arterial alta, que probablemente esta causando sus dolores de cabeza y mareos. Segundo, sus niveles de azucar en sangre indican diabetes tipo 2. Ambas condiciones son muy manejables con el enfoque correcto.
+[diagnosis] PATIENT: Diabetes? Eso es hereditario en mi familia. Mi madre tambien la tenia.
+[diagnosis] DOCTOR: El historial familiar es un factor significativo. La buena noticia es que lo hemos detectado temprano.
+[treatment] DOCTOR: Esto es lo que me gustaria comenzar. Para la presion arterial, le receto Lisinopril, 10 miligramos una vez al dia por la manana. Para la diabetes, empezaremos con Metformina, 500 miligramos dos veces al dia con las comidas.
+[treatment] SPECIALIST: Tambien recomendaria algunos cambios en el estilo de vida. Reducir la ingesta de sal a menos de 6 gramos al dia, caminar al menos 30 minutos diarios y reducir los azucares refinados y los alimentos procesados.
+[treatment] DOCTOR: Exacto. Estos cambios en el estilo de vida ayudaran con ambas condiciones. Tambien me gustaria que consiga un tensiometro domestico y se tome la presion dos veces al dia, por la manana y por la noche. Lleve un registro que pueda traer a su proxima visita.
+[treatment] PATIENT: Hare lo que pueda. Deberia cambiar mi dieta completamente?
+[treatment] DOCTOR: No drasticamente. Los cambios pequenos y graduales funcionan mejor a largo plazo. Le derivaremos a un nutricionista que pueda crear un plan personalizado.
+[closing] DOCTOR: Me gustaria verla de nuevo en cuatro semanas para comprobar como funcionan los medicamentos. Haremos otro analisis de sangre antes de esa cita. La enfermera lo programara todo.
+[closing] SPECIALIST: Si la presion arterial no responde bien al Lisinopril, tenemos varias otras opciones que podemos probar.
+[closing] DOCTOR: Una cosa importante: si experimenta dolores de cabeza severos, dolor en el pecho, cambios repentinos en la vision, o si sus lecturas de presion arterial superan 180 sobre 110, acuda a urgencias inmediatamente. Tambien este atenta a senales de azucar muy bajo en sangre como temblores, sudoracion o confusion, especialmente al comenzar con la Metformina.
+[closing] PATIENT: Gracias a los dos. Me siento mejor sabiendo que esta pasando y que necesito hacer.
+[closing] DOCTOR: De nada. Estamos aqui para ayudar. La recepcionista tendra sus recetas y citas preparadas. Cuidese, senora Rodriguez.
