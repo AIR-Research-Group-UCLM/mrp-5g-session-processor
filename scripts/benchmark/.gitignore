@@ -1,3 +1,4 @@
-results/
+results
 comparisons.jsonl
 __pycache__/
+T2/T2.log
