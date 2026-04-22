@@ -556,8 +556,14 @@ def render_run_detail(scored: list[RunScore], lang: str) -> None:
 
 
 def write_json(path: Path, rows: list[AggregateRow], halluc_path: Path) -> None:
+    # Serialize the CSV path relative to this file so the summary stays
+    # portable across worktrees and checkouts.
+    try:
+        csv_ref = str(halluc_path.relative_to(path.parent))
+    except ValueError:
+        csv_ref = halluc_path.name
     payload = {
-        "hallucination_csv": str(halluc_path),
+        "hallucination_csv": csv_ref,
         "conditions": [
             {
                 "condition": r.condition,

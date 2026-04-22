@@ -1,5 +1,5 @@
 {
-  "hallucination_csv": "/home/sermartcid/Desktop/mrp-5g-session-processor/.claude/worktrees/feature/t4-t5-baseline-and-comparison/scripts/benchmark/T5/hallucinations.csv",
+  "hallucination_csv": "hallucinations.csv",
   "conditions": [
     {
       "condition": "gpt-4o",
