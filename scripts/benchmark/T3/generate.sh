@@ -12,12 +12,18 @@ set -euo pipefail
 # Usage:
 #   ./generate.sh --lang EN [--model gpt-4o] [--runs 5]
 #
+# All stdout+stderr are mirrored to T3.log (alongside this script) unless
+# --no-log is passed. The log is overwritten on each invocation — rerun
+# EN and ES separately and archive if both transcripts are needed.
+#
 # Requires OPENAI_API_KEY in the environment, or in
 # packages/backend/.env relative to the repo root.
 # ============================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RESULTS_DIR="${SCRIPT_DIR}/results"
+# Default output goes to the shared results-gpt-4o/ folder (sibling of results/),
+# which holds every model plus the gpt-4o runs for T1/T2 consumption.
+RESULTS_DIR="${SCRIPT_DIR}/../results-gpt-4o"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 # Defaults
@@ -25,6 +31,8 @@ OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://api.openai.com/v1}"
 RUNS=5
 MODEL="gpt-4o"
 LANG=""
+LOG_FILE="${SCRIPT_DIR}/T3.log"
+NO_LOG="false"
 
 usage() {
   cat <<EOF
@@ -35,6 +43,8 @@ Options:
   --model           OpenAI model name (default: gpt-4o)
   --runs            Number of runs (default: 5)
   --openai-url      OpenAI API base URL (default: https://api.openai.com/v1)
+  --log-file PATH   Mirror output to PATH (default: T3.log next to script)
+  --no-log          Disable log file mirroring
   -h, --help        Show this help
 EOF
   exit "${1:-0}"
@@ -46,6 +56,8 @@ while [[ $# -gt 0 ]]; do
     --lang)        LANG=$(echo "$2" | tr '[:lower:]' '[:upper:]'); shift 2 ;;
     --runs)        RUNS="$2"; shift 2 ;;
     --openai-url)  OPENAI_BASE_URL="$2"; shift 2 ;;
+    --log-file)    LOG_FILE="$2"; shift 2 ;;
+    --no-log)      NO_LOG="true"; shift ;;
     -h|--help)     usage 0 ;;
     *)             echo "Unknown option: $1"; usage 1 ;;
   esac
@@ -55,6 +67,24 @@ if [[ -z "$LANG" ]]; then
   echo "ERROR: --lang is required."
   usage 1
 fi
+
+# Mirror stdout+stderr to $LOG_FILE via process substitution. Must come
+# after arg parsing (so --no-log / --log-file are respected) but before
+# any real output, so the whole run ends up in the log.
+if [[ "$NO_LOG" != "true" ]]; then
+  exec > >(tee "$LOG_FILE") 2>&1
+fi
+
+# Short banner so the log is self-describing.
+echo "=== T3 - GPT-4o reference benchmark ==="
+echo "  model      : ${MODEL}"
+echo "  language   : ${LANG}"
+echo "  runs       : ${RUNS}"
+echo "  api base   : ${OPENAI_BASE_URL}"
+echo "  output dir : ${RESULTS_DIR}/$(printf '%s' "$MODEL" | tr ':/' '__')/${LANG}"
+echo "  log file   : $([[ "$NO_LOG" == "true" ]] && echo "(disabled)" || echo "$LOG_FILE")"
+echo "  timestamp  : $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo ""
 
 # --- API key discovery ---
 
@@ -136,8 +166,10 @@ for cmd in curl jq bc; do
   echo "  [ok] $cmd"
 done
 
-SYSTEM_PROMPT_FILE="${SCRIPT_DIR}/${LANG}-system-prompt.txt"
-USER_PROMPT_FILE="${SCRIPT_DIR}/${LANG}-user-prompt.txt"
+# Prompts live alongside the Ollama runner (scripts/benchmark/) so that both
+# the local and the GPT-4o benchmark use byte-identical inputs.
+SYSTEM_PROMPT_FILE="${SCRIPT_DIR}/../${LANG}-system-prompt.txt"
+USER_PROMPT_FILE="${SCRIPT_DIR}/../${LANG}-user-prompt.txt"
 
 for f in "$SYSTEM_PROMPT_FILE" "$USER_PROMPT_FILE"; do
   if [[ ! -f "$f" ]]; then

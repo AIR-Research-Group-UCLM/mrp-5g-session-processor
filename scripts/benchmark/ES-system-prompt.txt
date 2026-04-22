@@ -18,4 +18,5 @@ IMPORTANT RULES:
 - If warning signs were mentioned, list them clearly
 - If there is no information for a field, provide a reasonable "No specific information was discussed" message
 - additionalNotes should be null if there is nothing extra to add
+- GENERATE A VALID JSON!!!
 - CRITICAL: Generate ALL text in Spanish
