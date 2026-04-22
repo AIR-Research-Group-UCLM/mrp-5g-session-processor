@@ -106,7 +106,7 @@
       "language": "ES",
       "n": 5,
       "readability": {
-        "mean": 85.01342819499341,
+        "mean": 68.81629503633835,
         "stdev": 0.0,
         "ci_halfwidth_95": 0.0,
         "metric": "inflesz_szigriszt_pazos"

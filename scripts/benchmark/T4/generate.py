@@ -126,9 +126,14 @@ def main() -> None:
     print(f"  runs / lang : {args.runs}")
     print()
 
+    # A T4-local transcript (e.g. T4/ES-transcript.txt) takes priority over the
+    # shared benchmark prompt. This lets the naive baseline swap in a
+    # Spanish-translated transcript for ES while EN keeps reading the canonical
+    # EN-user-prompt.txt — needed because INFLESZ is meaningless on English text.
     total = 0
     for lang in LANGS:
-        prompt_path = prompt_dir / f"{lang}-user-prompt.txt"
+        override = script_dir / f"{lang}-transcript.txt"
+        prompt_path = override if override.is_file() else prompt_dir / f"{lang}-user-prompt.txt"
         if not prompt_path.is_file():
             print(f"ERROR: {prompt_path} not found", file=sys.stderr)
             sys.exit(1)
