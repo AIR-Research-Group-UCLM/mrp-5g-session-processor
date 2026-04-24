@@ -438,11 +438,15 @@ def _readability_label(lang: str) -> str:
     return "FK grade" if lang == "EN" else "INFLESZ"
 
 
+def _readability_direction(lang: str) -> str:
+    return "lower=simpler" if lang == "EN" else "higher=simpler"
+
+
 def _readability_target_note(lang: str) -> str:
     lo, hi = FK_GRADE_TARGET
     if lang == "EN":
-        return f"target {lo:g}-{hi:g}, lower = simpler"
-    return f"target > {INFLESZ_TARGET_MIN:g}, higher = simpler"
+        return f"target {lo:g}-{hi:g}, {_readability_direction(lang)}"
+    return f"target > {INFLESZ_TARGET_MIN:g}, {_readability_direction(lang)}"
 
 
 def print_preamble(
@@ -503,7 +507,10 @@ def render_language(rows: list[AggregateRow], lang: str) -> None:
     table = Table(show_lines=False)
     table.add_column("Condition", style="cyan")
     table.add_column("n", justify="right", width=4)
-    table.add_column(f"Readability ({_readability_label(lang)})", justify="right")
+    table.add_column(
+        f"Readability ({_readability_label(lang)}, {_readability_direction(lang)})",
+        justify="right",
+    )
     table.add_column("Diagnosis", justify="right")
     table.add_column("Meds+dose", justify="right")
     table.add_column("Follow-up", justify="right")
@@ -539,7 +546,10 @@ def render_run_detail(scored: list[RunScore], lang: str) -> None:
     table = Table(show_lines=False, box=None, pad_edge=False)
     table.add_column("Cond", style="cyan")
     table.add_column("Run", justify="right", width=4)
-    table.add_column(f"Readability", justify="right")
+    table.add_column(
+        f"Readability ({_readability_label(lang)}, {_readability_direction(lang)})",
+        justify="right",
+    )
     table.add_column("Dx", justify="center", width=4)
     table.add_column("Rx+dose", justify="center", width=8)
     table.add_column("FU", justify="center", width=4)
