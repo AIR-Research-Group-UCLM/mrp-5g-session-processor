@@ -2,16 +2,20 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Spinner } from "@/components/ui/Spinner";
 import { ShareSection } from "@/components/shared/ShareSection";
+import { ValidatorPanel } from "@/components/shared/ValidatorPanel";
 import { SummaryContent } from "@/components/sessions/ConsultationSummaryPanel";
 import {
   useReportSummary,
   useDeleteReportSummary,
   useCreateReportShareToken,
   useRevokeReportShareToken,
+  useConfirmReportSummary,
+  useUnconfirmReportSummary,
+  useRevalidateReportSummary,
 } from "@/hooks/useReportSummaries";
-import { ArrowLeft, ClipboardList, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ClipboardList, Eye, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 export function ReportSummaryDetailPage() {
   const { t } = useTranslation();
@@ -22,11 +26,16 @@ export function ReportSummaryDetailPage() {
   const deleteMutation = useDeleteReportSummary();
   const createShare = useCreateReportShareToken();
   const revokeShare = useRevokeReportShareToken();
+  const confirmMutation = useConfirmReportSummary();
+  const unconfirmMutation = useUnconfirmReportSummary();
+  const revalidateMutation = useRevalidateReportSummary();
 
   // Access signals come from the summary payload itself (owner OR assigned).
   // Delete is owner-only; other writes (share tokens) need canWrite.
   const isOwner = summary?.isOwner ?? false;
   const canWrite = summary?.canWrite ?? false;
+  const isConfirmed = !!summary?.confirmation.confirmedAt;
+  const validationFailed = summary?.validator.status === "failed";
 
   const handleDelete = () => {
     if (!id) return;
@@ -96,10 +105,35 @@ export function ReportSummaryDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <SummaryContent
-                summary={summary}
-                title={summary.title}
-                date={new Date(summary.createdAt).toLocaleDateString()}
+              {validationFailed ? (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+                  <div className="flex items-start gap-2 text-sm text-amber-800">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div>
+                      <p className="font-medium">{t("validator.sheetHidden")}</p>
+                      <p className="mt-1 text-amber-700">
+                        {t("validator.sheetHiddenDescription")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <SummaryContent
+                  summary={summary}
+                  title={summary.title}
+                  date={new Date(summary.createdAt).toLocaleDateString()}
+                />
+              )}
+              <ValidatorPanel
+                validator={summary.validator}
+                confirmation={summary.confirmation}
+                canWrite={canWrite}
+                onConfirm={() => confirmMutation.mutate(id!)}
+                onUnconfirm={() => unconfirmMutation.mutate(id!)}
+                isConfirming={confirmMutation.isPending}
+                isUnconfirming={unconfirmMutation.isPending}
+                onRevalidate={() => revalidateMutation.mutate(id!)}
+                isRevalidating={revalidateMutation.isPending}
               />
               {canWrite && (
                 <ShareSection
@@ -109,7 +143,18 @@ export function ReportSummaryDetailPage() {
                   onRevokeShare={() => revokeShare.mutate(id!)}
                   isCreating={createShare.isPending}
                   isRevoking={revokeShare.isPending}
+                  disabled={!isConfirmed}
+                  disabledReason={!isConfirmed ? t("validator.shareGated") : undefined}
                 />
+              )}
+              {isConfirmed && (
+                <Link
+                  to={`/report-summaries/${id}/patient-view`}
+                  className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700"
+                >
+                  <Eye className="h-4 w-4" />
+                  {t("validator.openPatientView")}
+                </Link>
               )}
             </div>
           </CardContent>

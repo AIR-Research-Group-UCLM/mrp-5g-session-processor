@@ -1,4 +1,5 @@
 import type { ConsultationSummary } from "./consultation-summary.js";
+import type { ValidatorState, ConfirmationState } from "./safety-validator.js";
 
 export interface StoredReportSummary extends ConsultationSummary {
   id: string;
@@ -10,6 +11,8 @@ export interface StoredReportSummary extends ConsultationSummary {
   shareExpiresAt: string | null;
   isOwner: boolean;
   canWrite: boolean;
+  validator: ValidatorState;
+  confirmation: ConfirmationState;
 }
 
 export interface ReportSummaryListItem {

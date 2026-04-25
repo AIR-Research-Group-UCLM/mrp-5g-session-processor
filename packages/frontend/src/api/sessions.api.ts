@@ -8,6 +8,7 @@ import type {
   SearchResult,
   TranscriptionAccuracy,
   StoredConsultationSummary,
+  ConsultationSummaryPublic,
 } from "@mrp/shared";
 
 interface ApiResponse<T> {
@@ -158,6 +159,54 @@ export async function createShareToken(
 
 export async function revokeShareToken(sessionId: string): Promise<void> {
   await apiClient.delete(`/sessions/${sessionId}/consultation-summary/share`);
+}
+
+export async function confirmConsultationSummary(
+  sessionId: string,
+): Promise<StoredConsultationSummary> {
+  const response = await apiClient.post<
+    ApiResponse<{ summary: StoredConsultationSummary }>
+  >(`/sessions/${sessionId}/consultation-summary/confirm`);
+  if (!response.data.data) {
+    throw new Error(response.data.error ?? "Failed to confirm consultation summary");
+  }
+  return response.data.data.summary;
+}
+
+export async function unconfirmConsultationSummary(
+  sessionId: string,
+): Promise<StoredConsultationSummary> {
+  const response = await apiClient.delete<
+    ApiResponse<{ summary: StoredConsultationSummary }>
+  >(`/sessions/${sessionId}/consultation-summary/confirm`);
+  if (!response.data.data) {
+    throw new Error(response.data.error ?? "Failed to unconfirm consultation summary");
+  }
+  return response.data.data.summary;
+}
+
+export async function revalidateConsultationSummary(
+  sessionId: string,
+): Promise<StoredConsultationSummary> {
+  const response = await apiClient.post<
+    ApiResponse<{ summary: StoredConsultationSummary }>
+  >(`/sessions/${sessionId}/consultation-summary/revalidate`);
+  if (!response.data.data) {
+    throw new Error(response.data.error ?? "Failed to revalidate consultation summary");
+  }
+  return response.data.data.summary;
+}
+
+export async function getConsultationPatientView(
+  sessionId: string,
+): Promise<ConsultationSummaryPublic> {
+  const response = await apiClient.get<
+    ApiResponse<ConsultationSummaryPublic>
+  >(`/sessions/${sessionId}/consultation-summary/patient-view`);
+  if (!response.data.data) {
+    throw new Error(response.data.error ?? "Failed to fetch patient view");
+  }
+  return response.data.data;
 }
 
 export async function getSessionAccuracy(

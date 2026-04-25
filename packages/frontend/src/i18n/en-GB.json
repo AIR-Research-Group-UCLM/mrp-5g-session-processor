@@ -405,6 +405,43 @@
       "deleteError": "Error deleting report summary"
     }
   },
+  "validator": {
+    "title": "Safety validation",
+    "model": "model",
+    "confirmed": "Confirmed",
+    "pending": "Pending review",
+    "notRun": "Validation has not been run yet.",
+    "failed": "The safety validator could not produce a usable result. The sheet is hidden until validation succeeds — retry validation, or regenerate the sheet.",
+    "noIssues": "No issues found.",
+    "expand": "Expand details",
+    "collapse": "Hide details",
+    "runAt": "Last validated: {{date}}",
+    "confirm": "Confirm and release",
+    "unconfirm": "Withdraw confirmation",
+    "retry": "Retry validation",
+    "sheetHidden": "Sheet hidden until validation succeeds",
+    "sheetHiddenDescription": "The safety validator did not complete successfully on this sheet. The patient-facing content is hidden until you retry validation. If this persists, regenerate the sheet.",
+    "gateNotice": "The patient cannot view this sheet until you confirm it. Confirmation also enables sharing.",
+    "shareGated": "Confirm the sheet to enable share-link issuance.",
+    "openPatientView": "Open patient view",
+    "patientViewBadge": "Patient view (preview)",
+    "patientViewUnavailable": "Patient view unavailable",
+    "patientViewUnavailableDescription": "This sheet has not been confirmed yet, or you do not have access.",
+    "backToReview": "Back to review",
+    "severity": {
+      "ok": "OK",
+      "minor": "Minor",
+      "major": "Major",
+      "critical": "Critical"
+    },
+    "axis": {
+      "medication": "Medication concordance",
+      "diagnostic": "Diagnostic concordance",
+      "hallucination": "Hallucination detection",
+      "warningSign": "Warning-sign appropriateness",
+      "glossary": "Glossary coverage"
+    }
+  },
   "assignments": {
     "assignedSessions": "Assigned Sessions",
     "assignedSessionsDescription": "Select sessions this user should have access to",

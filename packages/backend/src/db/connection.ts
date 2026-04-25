@@ -144,6 +144,38 @@ function runMigrations(database: Database.Database): void {
     logger.info("Migration completed: tooltips column added to report_summaries");
   }
 
+  // Migration: Add validator + confirmation columns to consultation_summaries and report_summaries
+  const validatorColumns: Array<{ name: string; ddl: string }> = [
+    { name: "validator_model", ddl: "TEXT" },
+    { name: "validator_status", ddl: "TEXT" },
+    { name: "validator_report", ddl: "TEXT" },
+    { name: "validator_run_at", ddl: "TEXT" },
+    { name: "confirmed_at", ddl: "TEXT" },
+    { name: "confirmed_by", ddl: "TEXT" },
+  ];
+
+  for (const tableName of ["consultation_summaries", "report_summaries"] as const) {
+    const cols = database
+      .prepare(`PRAGMA table_info(${tableName})`)
+      .all() as Array<{ name: string }>;
+    const present = new Set(cols.map((c) => c.name));
+    for (const col of validatorColumns) {
+      if (!present.has(col.name)) {
+        logger.info(`Running migration: Adding ${col.name} column to ${tableName}...`);
+        database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${col.name} ${col.ddl}`);
+      }
+    }
+  }
+
+  // Migration: Add source_text column to report_summaries (used for safety-validator retries)
+  const rsCols2 = database
+    .prepare("PRAGMA table_info(report_summaries)")
+    .all() as Array<{ name: string }>;
+  if (!rsCols2.some((c) => c.name === "source_text")) {
+    logger.info("Running migration: Adding source_text column to report_summaries...");
+    database.exec("ALTER TABLE report_summaries ADD COLUMN source_text TEXT");
+  }
+
   // Migration: Add report_summary_assignments table
   const hasReportSummaryAssignmentsTable = database
     .prepare(

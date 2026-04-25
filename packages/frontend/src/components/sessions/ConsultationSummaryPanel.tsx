@@ -3,14 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Spinner } from "@/components/ui/Spinner";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { ShareSection } from "@/components/shared/ShareSection";
+import { ValidatorPanel } from "@/components/shared/ValidatorPanel";
 import {
   useCreateShareToken,
   useGenerateConsultationSummary,
   useConsultationSummary,
   useRevokeShareToken,
+  useConfirmConsultationSummary,
+  useUnconfirmConsultationSummary,
+  useRevalidateConsultationSummary,
 } from "@/hooks/useSessions";
 import { useAuth } from "@/hooks/useAuth";
 import type { ConsultationSummary } from "@mrp/shared";
+import { Eye } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   AlertCircle,
   AlertTriangle,
@@ -220,9 +226,14 @@ export function ConsultationSummaryPanel({ sessionId }: ConsultationSummaryPanel
   const mutation = useGenerateConsultationSummary();
   const createShare = useCreateShareToken();
   const revokeShare = useRevokeShareToken();
+  const confirmMutation = useConfirmConsultationSummary();
+  const unconfirmMutation = useUnconfirmConsultationSummary();
+  const revalidateMutation = useRevalidateConsultationSummary();
 
   const summary = storedSummary;
   const hasSummary = !!summary;
+  const isConfirmed = !!summary?.confirmation.confirmedAt;
+  const validationFailed = summary?.validator.status === "failed";
 
   return (
     <Card>
@@ -286,7 +297,34 @@ export function ConsultationSummaryPanel({ sessionId }: ConsultationSummaryPanel
 
         {hasSummary && !mutation.isPending && (
           <div className="space-y-4">
-            <SummaryContent summary={summary} />
+            {validationFailed ? (
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+                <div className="flex items-start gap-2 text-sm text-amber-800">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="font-medium">{t("validator.sheetHidden")}</p>
+                    <p className="mt-1 text-amber-700">
+                      {t("validator.sheetHiddenDescription")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <SummaryContent summary={summary} />
+            )}
+            <ValidatorPanel
+              validator={summary.validator}
+              confirmation={summary.confirmation}
+              canWrite={canWrite}
+              onConfirm={() => confirmMutation.mutate(sessionId)}
+              onUnconfirm={() => unconfirmMutation.mutate(sessionId)}
+              isConfirming={confirmMutation.isPending}
+              isUnconfirming={unconfirmMutation.isPending}
+              onRevalidate={() => revalidateMutation.mutate(sessionId)}
+              isRevalidating={revalidateMutation.isPending}
+              onRegenerate={() => mutation.mutate(sessionId)}
+              isRegenerating={mutation.isPending}
+            />
             {canWrite && (
               <ShareSection
                 shareToken={summary.shareToken ?? null}
@@ -295,7 +333,18 @@ export function ConsultationSummaryPanel({ sessionId }: ConsultationSummaryPanel
                 onRevokeShare={() => revokeShare.mutate(sessionId)}
                 isCreating={createShare.isPending}
                 isRevoking={revokeShare.isPending}
+                disabled={!isConfirmed}
+                disabledReason={!isConfirmed ? t("validator.shareGated") : undefined}
               />
+            )}
+            {isConfirmed && (
+              <Link
+                to={`/sessions/${sessionId}/patient-view`}
+                className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700"
+              >
+                <Eye className="h-4 w-4" />
+                {t("validator.openPatientView")}
+              </Link>
             )}
           </div>
         )}

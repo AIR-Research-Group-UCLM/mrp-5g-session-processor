@@ -1,5 +1,12 @@
 import crypto from "node:crypto";
-import type { ConsultationSummary, ConsultationSummaryPublic } from "@mrp/shared";
+import type {
+  ConsultationSummary,
+  ConsultationSummaryPublic,
+  ValidatorState,
+  ConfirmationState,
+  ValidatorReport,
+  ValidatorStatus,
+} from "@mrp/shared";
 import { config } from "../config/index.js";
 import { getDb } from "../db/connection.js";
 import { logger } from "../config/logger.js";
@@ -23,6 +30,27 @@ export function createShareToken(
   expiryHours?: number | null,
 ): { token: string; expiresAt: string | null } {
   const db = getDb();
+
+  // Step 3 gate: refuse to issue a share token until the GP has confirmed.
+  // The paper guarantees that no sheet reaches the patient without GP review.
+  const idCheckWhere = cfg.ownerColumn
+    ? `${cfg.idColumn} = ? AND ${cfg.ownerColumn} = ?`
+    : `${cfg.idColumn} = ?`;
+  const checkParams = cfg.ownerColumn ? [id, ownerId] : [id];
+  const row = db
+    .prepare(
+      `SELECT confirmed_at FROM ${cfg.table} WHERE ${idCheckWhere}`,
+    )
+    .get(...checkParams) as { confirmed_at: string | null } | undefined;
+  if (!row) {
+    throw new AppError(404, `${cfg.label} not found`);
+  }
+  if (!row.confirmed_at) {
+    throw new AppError(
+      409,
+      `${cfg.label} must be confirmed before a share link can be issued`,
+    );
+  }
 
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt =
@@ -95,6 +123,39 @@ export function parseSummaryFields(row: {
     warningSigns: JSON.parse(row.warning_signs),
     additionalNotes: row.additional_notes,
     tooltips: row.tooltips ? JSON.parse(row.tooltips) : null,
+  };
+}
+
+/** Parse the validator + confirmation columns from a DB row. */
+export function parseValidatorState(row: {
+  validator_status: string | null;
+  validator_model: string | null;
+  validator_report: string | null;
+  validator_run_at: string | null;
+}): ValidatorState {
+  let report: ValidatorReport | null = null;
+  if (row.validator_report) {
+    try {
+      report = JSON.parse(row.validator_report) as ValidatorReport;
+    } catch {
+      report = null;
+    }
+  }
+  return {
+    status: (row.validator_status as ValidatorStatus | null) ?? null,
+    model: row.validator_model,
+    report,
+    runAt: row.validator_run_at,
+  };
+}
+
+export function parseConfirmationState(row: {
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+}): ConfirmationState {
+  return {
+    confirmedAt: row.confirmed_at,
+    confirmedBy: row.confirmed_by,
   };
 }
 

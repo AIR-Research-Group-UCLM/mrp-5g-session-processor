@@ -26,6 +26,10 @@ sessionsRoutes.get("/:id/consultation-summary", requireSessionReadAccess, sessio
 sessionsRoutes.post("/:id/consultation-summary", requireSessionWriteAccess, sessionsController.generateConsultationSummary);
 sessionsRoutes.post("/:id/consultation-summary/share", requireSessionWriteAccess, sessionsController.createShareToken);
 sessionsRoutes.delete("/:id/consultation-summary/share", requireSessionWriteAccess, sessionsController.revokeShareToken);
+sessionsRoutes.post("/:id/consultation-summary/confirm", requireSessionWriteAccess, sessionsController.confirmConsultationSummary);
+sessionsRoutes.delete("/:id/consultation-summary/confirm", requireSessionWriteAccess, sessionsController.unconfirmConsultationSummary);
+sessionsRoutes.get("/:id/consultation-summary/patient-view", requireSessionReadAccess, sessionsController.getConsultationPatientView);
+sessionsRoutes.post("/:id/consultation-summary/revalidate", requireSessionWriteAccess, sessionsController.revalidateConsultationSummary);
 
 // Create session - only requires general write access (no session yet)
 // Security: Rate limit uploads to prevent abuse, validate magic bytes

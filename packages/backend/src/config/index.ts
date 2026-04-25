@@ -30,7 +30,8 @@ const envSchema = z.object({
   // Open WebUI (optional - consultation summary feature)
   OPEN_WEBUI_BASE_URL: z.string().optional(),
   OPEN_WEBUI_API_KEY: z.string().optional(),
-  OPEN_WEBUI_MODEL: z.string().default("gemma3:12b"),
+  OPEN_WEBUI_MODEL: z.string().default("gpt-oss:20b"),
+  OPEN_WEBUI_VALIDATOR_MODEL: z.string().optional(),
 
   // ElevenLabs
   ELEVENLABS_API_KEY: z.string(),
@@ -113,6 +114,7 @@ export const config = {
     baseUrl: env.OPEN_WEBUI_BASE_URL ?? null,
     apiKey: env.OPEN_WEBUI_API_KEY ?? null,
     model: env.OPEN_WEBUI_MODEL,
+    validatorModel: env.OPEN_WEBUI_VALIDATOR_MODEL ?? env.OPEN_WEBUI_MODEL,
   },
 
   consultationSummary: {

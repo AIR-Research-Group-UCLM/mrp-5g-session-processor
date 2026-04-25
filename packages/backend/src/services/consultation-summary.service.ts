@@ -12,7 +12,10 @@ import {
   revokeShareToken as revokeShareTokenUtil,
   getByShareToken as getByShareTokenUtil,
   parseSummaryFields,
+  parseValidatorState,
+  parseConfirmationState,
 } from "../utils/share-token.js";
+import { runSafetyValidation } from "./safety-validator.service.js";
 
 const TABLE_CFG = {
   table: "consultation_summaries",
@@ -43,6 +46,12 @@ interface ConsultationSummaryRow {
   warning_signs: string;
   additional_notes: string | null;
   tooltips: string | null;
+  validator_model: string | null;
+  validator_status: string | null;
+  validator_report: string | null;
+  validator_run_at: string | null;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
   share_token: string | null;
   share_expires_at: string | null;
   created_at: string;
@@ -58,6 +67,8 @@ function rowToStoredSummary(row: ConsultationSummaryRow): StoredConsultationSumm
     shareExpiresAt: row.share_expires_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    validator: parseValidatorState(row),
+    confirmation: parseConfirmationState(row),
   };
 }
 
@@ -119,12 +130,19 @@ async function generateSummaryFromTranscript(sessionId: string): Promise<StoredC
 
   const summary = validateAndParseSummary(content);
   const tooltips = await generateTooltips(summary);
+  const summaryWithTooltips = { ...summary, warningSigns: summary.warningSigns, tooltips: tooltips ?? null };
+  const validation = await runSafetyValidation(summaryWithTooltips, userMessage, { sessionId });
   const id = uuidv4();
 
-  // Upsert: preserve share_token/share_expires_at on regeneration
+  // Upsert: preserve share_token/share_expires_at on regeneration, but RESET
+  // confirmation state — the GP must re-confirm a regenerated sheet.
   db.prepare(
-    `INSERT INTO consultation_summaries (id, session_id, what_happened, diagnosis, treatment_plan, follow_up, warning_signs, additional_notes, tooltips)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO consultation_summaries (
+       id, session_id, what_happened, diagnosis, treatment_plan, follow_up, warning_signs, additional_notes, tooltips,
+       validator_model, validator_status, validator_report, validator_run_at,
+       confirmed_at, confirmed_by
+     )
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)
      ON CONFLICT(session_id) DO UPDATE SET
        what_happened = excluded.what_happened,
        diagnosis = excluded.diagnosis,
@@ -133,6 +151,12 @@ async function generateSummaryFromTranscript(sessionId: string): Promise<StoredC
        warning_signs = excluded.warning_signs,
        additional_notes = excluded.additional_notes,
        tooltips = excluded.tooltips,
+       validator_model = excluded.validator_model,
+       validator_status = excluded.validator_status,
+       validator_report = excluded.validator_report,
+       validator_run_at = excluded.validator_run_at,
+       confirmed_at = NULL,
+       confirmed_by = NULL,
        updated_at = datetime('now')`
   ).run(
     id,
@@ -144,6 +168,10 @@ async function generateSummaryFromTranscript(sessionId: string): Promise<StoredC
     JSON.stringify(summary.warningSigns),
     summary.additionalNotes,
     tooltips ? JSON.stringify(tooltips) : null,
+    validation.model,
+    validation.status,
+    validation.report ? JSON.stringify(validation.report) : null,
+    validation.runAt,
   );
 
   logger.info({ sessionId }, "Consultation summary generated successfully");
@@ -201,10 +229,166 @@ export function getByShareToken(token: string): ConsultationSummaryPublic | null
       query: `SELECT cs.*, ms.title AS session_title, ms.created_at AS session_date
               FROM consultation_summaries cs
               JOIN medical_sessions ms ON ms.id = cs.session_id
-              WHERE cs.share_token = ? AND (cs.share_expires_at IS NULL OR cs.share_expires_at > datetime('now'))`,
+              WHERE cs.share_token = ?
+                AND cs.confirmed_at IS NOT NULL
+                AND (cs.share_expires_at IS NULL OR cs.share_expires_at > datetime('now'))`,
       titleColumn: "session_title",
       dateColumn: "session_date",
     },
     token,
   );
+}
+
+export function confirmConsultationSummary(
+  sessionId: string,
+  userId: string,
+): StoredConsultationSummary {
+  const db = getDb();
+  // Server-side gate: confirmation requires the safety validator to have
+  // completed successfully. Mirrors the paper's release condition.
+  const status = db
+    .prepare(
+      `SELECT validator_status, confirmed_at FROM consultation_summaries WHERE session_id = ?`,
+    )
+    .get(sessionId) as { validator_status: string | null; confirmed_at: string | null } | undefined;
+  if (!status) throw new AppError(404, "Consultation summary not found");
+  if (!status.confirmed_at && status.validator_status !== "completed") {
+    throw new AppError(
+      409,
+      "Cannot confirm: safety validation has not completed successfully. Retry validation first.",
+    );
+  }
+
+  const result = db
+    .prepare(
+      `UPDATE consultation_summaries
+       SET confirmed_at = datetime('now'), confirmed_by = ?, updated_at = datetime('now')
+       WHERE session_id = ? AND confirmed_at IS NULL`,
+    )
+    .run(userId, sessionId);
+
+  if (result.changes === 0 && !status.confirmed_at) {
+    throw new AppError(404, "Consultation summary not found");
+  }
+  logger.info({ sessionId, userId }, "Consultation summary confirmed");
+  const summary = getConsultationSummary(sessionId);
+  if (!summary) throw new AppError(404, "Consultation summary not found");
+  return summary;
+}
+
+export async function revalidateConsultationSummary(
+  sessionId: string,
+): Promise<StoredConsultationSummary> {
+  const db = getDb();
+  const existing = db
+    .prepare(
+      `SELECT cs.what_happened, cs.diagnosis, cs.treatment_plan, cs.follow_up,
+              cs.warning_signs, cs.additional_notes, cs.tooltips
+       FROM consultation_summaries cs
+       WHERE cs.session_id = ?`,
+    )
+    .get(sessionId) as
+    | {
+        what_happened: string;
+        diagnosis: string;
+        treatment_plan: string;
+        follow_up: string;
+        warning_signs: string;
+        additional_notes: string | null;
+        tooltips: string | null;
+      }
+    | undefined;
+
+  if (!existing) throw new AppError(404, "Consultation summary not found");
+
+  const sections = db
+    .prepare(
+      "SELECT section_type, speaker, content, start_time_seconds, end_time_seconds FROM transcript_sections WHERE session_id = ? ORDER BY section_order",
+    )
+    .all(sessionId) as TranscriptSection[];
+
+  if (sections.length === 0) {
+    throw new AppError(409, "Transcript sections are missing — cannot revalidate.");
+  }
+
+  const summaryFields = {
+    whatHappened: existing.what_happened,
+    diagnosis: existing.diagnosis,
+    treatmentPlan: existing.treatment_plan,
+    followUp: existing.follow_up,
+    warningSigns: JSON.parse(existing.warning_signs) as string[],
+    additionalNotes: existing.additional_notes,
+    tooltips: existing.tooltips ? (JSON.parse(existing.tooltips) as Record<string, string>) : null,
+  };
+
+  const sourceText = buildUserMessage(sections);
+  const validation = await runSafetyValidation(summaryFields, sourceText, { sessionId });
+
+  // Revalidation invalidates prior GP confirmation: the new validator output
+  // must be reviewed before the sheet is released again.
+  db.prepare(
+    `UPDATE consultation_summaries
+     SET validator_model = ?, validator_status = ?, validator_report = ?, validator_run_at = ?,
+         confirmed_at = NULL, confirmed_by = NULL,
+         share_token = NULL, share_expires_at = NULL,
+         updated_at = datetime('now')
+     WHERE session_id = ?`,
+  ).run(
+    validation.model,
+    validation.status,
+    validation.report ? JSON.stringify(validation.report) : null,
+    validation.runAt,
+    sessionId,
+  );
+
+  const summary = getConsultationSummary(sessionId);
+  if (!summary) throw new AppError(404, "Consultation summary not found");
+  return summary;
+}
+
+export function unconfirmConsultationSummary(
+  sessionId: string,
+): StoredConsultationSummary {
+  const db = getDb();
+  // Clearing confirmation also revokes any active share — the patient view
+  // must close the moment the GP withdraws confirmation.
+  const result = db
+    .prepare(
+      `UPDATE consultation_summaries
+       SET confirmed_at = NULL, confirmed_by = NULL,
+           share_token = NULL, share_expires_at = NULL,
+           updated_at = datetime('now')
+       WHERE session_id = ?`,
+    )
+    .run(sessionId);
+
+  if (result.changes === 0) {
+    throw new AppError(404, "Consultation summary not found");
+  }
+  logger.info({ sessionId }, "Consultation summary unconfirmed");
+  const summary = getConsultationSummary(sessionId);
+  if (!summary) throw new AppError(404, "Consultation summary not found");
+  return summary;
+}
+
+export function getPatientView(sessionId: string): ConsultationSummaryPublic | null {
+  const db = getDb();
+  const row = db
+    .prepare(
+      `SELECT cs.*, ms.title AS session_title, ms.created_at AS session_date
+       FROM consultation_summaries cs
+       JOIN medical_sessions ms ON ms.id = cs.session_id
+       WHERE cs.session_id = ? AND cs.confirmed_at IS NOT NULL`,
+    )
+    .get(sessionId) as
+    | (ConsultationSummaryRow & { session_title: string | null; session_date: string })
+    | undefined;
+
+  if (!row) return null;
+  return {
+    summary: parseSummaryFields(row),
+    sessionTitle: row.session_title,
+    sessionDate: row.session_date,
+    expiresAt: row.share_expires_at,
+  };
 }

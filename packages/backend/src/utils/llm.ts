@@ -43,6 +43,7 @@ export function normalizeKeys(obj: Record<string, unknown>): Record<string, unkn
 export async function callOpenWebUi(
   systemPrompt: string,
   userMessage: string,
+  options?: { model?: string },
 ): Promise<string> {
   if (!config.openWebUi.baseUrl || !config.openWebUi.apiKey) {
     throw new AppError(503, "Summary generation feature is not configured");
@@ -56,7 +57,7 @@ export async function callOpenWebUi(
       Authorization: `Bearer ${config.openWebUi.apiKey}`,
     },
     body: JSON.stringify({
-      model: config.openWebUi.model,
+      model: options?.model ?? config.openWebUi.model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },
@@ -81,17 +82,59 @@ export async function callOpenWebUi(
 }
 
 export function extractJson(text: string): unknown {
-  // Try direct parse first
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Try to extract JSON from markdown code block or surrounding text
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? text.match(/(\{[\s\S]*\})/);
-    if (jsonMatch?.[1]) {
-      return JSON.parse(jsonMatch[1].trim());
+  // Strip reasoning blocks (<think>...</think>, <reasoning>...</reasoning>)
+  // emitted by some models before the JSON payload.
+  const cleaned = text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
+    .trim();
+
+  const candidates: string[] = [cleaned];
+
+  // Markdown code block (```json ... ``` or just ``` ... ```)
+  const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fence?.[1]) candidates.push(fence[1].trim());
+
+  // Balanced-brace slice from the first `{` to the matching `}`.
+  const firstBrace = cleaned.indexOf("{");
+  if (firstBrace !== -1) {
+    let depth = 0;
+    let end = -1;
+    let inString = false;
+    let escape = false;
+    for (let i = firstBrace; i < cleaned.length; i++) {
+      const ch = cleaned[i]!;
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (inString) {
+        if (ch === "\\") escape = true;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') inString = true;
+      else if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
     }
-    throw new Error("Failed to extract JSON from response");
+    if (end !== -1) candidates.push(cleaned.slice(firstBrace, end + 1));
   }
+
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // try the next candidate
+    }
+  }
+
+  throw new Error("Failed to extract JSON from response");
 }
 
 export function validateAndParseSummary(content: string): z.infer<typeof consultationSummarySchema> {

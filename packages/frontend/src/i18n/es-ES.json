@@ -405,6 +405,43 @@
       "deleteError": "Error al eliminar el resumen de informe"
     }
   },
+  "validator": {
+    "title": "Validación de seguridad",
+    "model": "modelo",
+    "confirmed": "Confirmado",
+    "pending": "Pendiente de revisión",
+    "notRun": "La validación aún no se ha ejecutado.",
+    "failed": "El validador de seguridad no produjo un resultado utilizable. La ficha permanece oculta hasta que la validación sea correcta — reintenta la validación o regenera la ficha.",
+    "noIssues": "Sin incidencias.",
+    "expand": "Mostrar detalles",
+    "collapse": "Ocultar detalles",
+    "runAt": "Última validación: {{date}}",
+    "confirm": "Confirmar y liberar",
+    "unconfirm": "Retirar confirmación",
+    "retry": "Reintentar validación",
+    "sheetHidden": "Ficha oculta hasta que la validación tenga éxito",
+    "sheetHiddenDescription": "La validación de seguridad no se completó correctamente. El contenido para el paciente permanece oculto hasta que reintentes la validación. Si el problema persiste, regenera la ficha.",
+    "gateNotice": "El paciente no podrá ver esta ficha hasta que la confirmes. La confirmación también habilita el enlace para compartir.",
+    "shareGated": "Confirma la ficha para poder generar el enlace para compartir.",
+    "openPatientView": "Abrir vista del paciente",
+    "patientViewBadge": "Vista del paciente (previsualización)",
+    "patientViewUnavailable": "Vista del paciente no disponible",
+    "patientViewUnavailableDescription": "Esta ficha aún no ha sido confirmada o no tienes permiso de acceso.",
+    "backToReview": "Volver a la revisión",
+    "severity": {
+      "ok": "OK",
+      "minor": "Leve",
+      "major": "Importante",
+      "critical": "Crítico"
+    },
+    "axis": {
+      "medication": "Concordancia de medicación",
+      "diagnostic": "Concordancia diagnóstica",
+      "hallucination": "Detección de alucinaciones",
+      "warningSign": "Adecuación de signos de alarma",
+      "glossary": "Cobertura del glosario"
+    }
+  },
   "assignments": {
     "assignedSessions": "Sesiones Asignadas",
     "assignedSessionsDescription": "Selecciona las sesiones a las que este usuario debe tener acceso",

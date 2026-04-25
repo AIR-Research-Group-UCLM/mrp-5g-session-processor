@@ -1,3 +1,5 @@
+import type { ValidatorState, ConfirmationState } from "./safety-validator.js";
+
 export interface ConsultationSummary {
   whatHappened: string;
   diagnosis: string;
@@ -15,6 +17,8 @@ export interface StoredConsultationSummary extends ConsultationSummary {
   updatedAt: string;
   shareToken: string | null;
   shareExpiresAt: string | null;
+  validator: ValidatorState;
+  confirmation: ConfirmationState;
 }
 
 export interface ConsultationSummaryPublic {

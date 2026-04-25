@@ -185,11 +185,18 @@ CREATE TABLE IF NOT EXISTS consultation_summaries (
     warning_signs TEXT NOT NULL,
     additional_notes TEXT,
     tooltips TEXT,
+    validator_model TEXT,
+    validator_status TEXT,                -- 'completed' | 'failed' | NULL (not yet run)
+    validator_report TEXT,                -- JSON: { medication, diagnostic, hallucination, warningSign, glossary }
+    validator_run_at TEXT,
+    confirmed_at TEXT,                    -- NULL until GP confirms
+    confirmed_by TEXT,                    -- user_id of GP who confirmed
     share_token TEXT UNIQUE,
     share_expires_at TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE
+    FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE,
+    FOREIGN KEY (confirmed_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_consultation_summaries_session_id ON consultation_summaries(session_id);
@@ -200,6 +207,7 @@ CREATE TABLE IF NOT EXISTS report_summaries (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     title TEXT,
+    source_text TEXT,                     -- original report text, retained for revalidation
     what_happened TEXT NOT NULL,
     diagnosis TEXT NOT NULL,
     treatment_plan TEXT NOT NULL,
@@ -207,11 +215,18 @@ CREATE TABLE IF NOT EXISTS report_summaries (
     warning_signs TEXT NOT NULL,
     additional_notes TEXT,
     tooltips TEXT,
+    validator_model TEXT,
+    validator_status TEXT,                -- 'completed' | 'failed' | NULL (not yet run)
+    validator_report TEXT,                -- JSON: { medication, diagnostic, hallucination, warningSign, glossary }
+    validator_run_at TEXT,
+    confirmed_at TEXT,                    -- NULL until GP confirms
+    confirmed_by TEXT,                    -- user_id of GP who confirmed
     share_token TEXT UNIQUE,
     share_expires_at TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (confirmed_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_report_summaries_user_id ON report_summaries(user_id);

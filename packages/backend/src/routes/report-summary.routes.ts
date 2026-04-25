@@ -37,3 +37,7 @@ reportSummaryRoutes.get("/:id", requireReportSummaryReadAccess, reportSummaryCon
 reportSummaryRoutes.delete("/:id", requireReportSummaryWriteAccess, reportSummaryController.remove);
 reportSummaryRoutes.post("/:id/share", requireReportSummaryWriteAccess, reportSummaryController.createShareToken);
 reportSummaryRoutes.delete("/:id/share", requireReportSummaryWriteAccess, reportSummaryController.revokeShareToken);
+reportSummaryRoutes.post("/:id/confirm", requireReportSummaryWriteAccess, reportSummaryController.confirm);
+reportSummaryRoutes.delete("/:id/confirm", requireReportSummaryWriteAccess, reportSummaryController.unconfirm);
+reportSummaryRoutes.get("/:id/patient-view", requireReportSummaryReadAccess, reportSummaryController.getPatientView);
+reportSummaryRoutes.post("/:id/revalidate", requireReportSummaryWriteAccess, reportSummaryController.revalidate);
