@@ -4,6 +4,7 @@ import { Search, Check, User, Calendar } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Spinner } from "@/components/ui/Spinner";
 import { useAvailableReportSummaries } from "@/hooks/useAssignments";
+import { cn } from "@/utils/cn";
 import type {
   ReportSummaryForAssignment,
   ReportSummaryAssignmentInput,
@@ -170,16 +171,20 @@ function ReportSummaryAssignmentRow({
 
   return (
     <div
-      className={`flex items-start gap-3 p-3 ${isSelected ? "bg-blue-50" : "hover:bg-gray-50"}`}
+      className={cn(
+        "flex items-start gap-3 p-3",
+        isSelected ? "bg-blue-50" : "hover:bg-gray-50"
+      )}
     >
       <button
         type="button"
         onClick={onToggle}
-        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
+        className={cn(
+          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border",
           isSelected
             ? "border-blue-600 bg-blue-600"
             : "border-gray-300 hover:border-gray-400"
-        }`}
+        )}
       >
         {isSelected && <Check className="h-3 w-3 text-white" />}
       </button>
@@ -205,11 +210,12 @@ function ReportSummaryAssignmentRow({
           <button
             type="button"
             onClick={onToggleCanWrite}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
               canWrite
                 ? "bg-green-100 text-green-700 hover:bg-green-200"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
+            )}
           >
             {canWrite ? t("assignments.canWrite") : t("assignments.readOnly")}
           </button>

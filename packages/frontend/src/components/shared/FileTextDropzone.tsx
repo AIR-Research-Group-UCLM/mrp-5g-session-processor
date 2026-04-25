@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { formatFileSize } from "@/utils/format";
 import { extractTextFromFile } from "@/api/report-summary.api";
+import { DOCUMENT_MIME_TYPES, DOCUMENT_MIME_TYPE_LIST } from "@mrp/shared";
 
 interface FileTextDropzoneProps {
   onTextExtracted: (text: string) => void;
@@ -19,16 +20,12 @@ const ACCEPTED_TYPES = {
   "text/xml": [".xml"],
   "text/html": [".html"],
   "text/rtf": [".rtf"],
-  "application/pdf": [".pdf"],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
-  "application/vnd.oasis.opendocument.text": [".odt"],
+  [DOCUMENT_MIME_TYPES.pdf]: [".pdf"],
+  [DOCUMENT_MIME_TYPES.docx]: [".docx"],
+  [DOCUMENT_MIME_TYPES.odt]: [".odt"],
 };
 
-const BINARY_TYPES = new Set([
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.oasis.opendocument.text",
-]);
+const BINARY_TYPES = new Set<string>(DOCUMENT_MIME_TYPE_LIST);
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 

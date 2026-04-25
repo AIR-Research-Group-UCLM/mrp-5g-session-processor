@@ -1,16 +1,7 @@
 import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import { createInflateRaw } from "node:zlib";
-
-const SUPPORTED_MIME_TYPES = new Set([
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.oasis.opendocument.text",
-]);
-
-export function isSupportedMimeType(mimeType: string): boolean {
-  return SUPPORTED_MIME_TYPES.has(mimeType);
-}
+import { DOCUMENT_MIME_TYPES } from "@mrp/shared";
 
 async function extractTextFromPdf(buffer: Buffer): Promise<string> {
   const pdf = new PDFParse({ data: new Uint8Array(buffer) });
@@ -96,11 +87,11 @@ function extractFileFromZip(zipBuffer: Buffer, targetFile: string): Promise<stri
 
 export async function extractText(buffer: Buffer, mimeType: string): Promise<string> {
   switch (mimeType) {
-    case "application/pdf":
+    case DOCUMENT_MIME_TYPES.pdf:
       return extractTextFromPdf(buffer);
-    case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+    case DOCUMENT_MIME_TYPES.docx:
       return extractTextFromDocx(buffer);
-    case "application/vnd.oasis.opendocument.text":
+    case DOCUMENT_MIME_TYPES.odt:
       return extractTextFromOdt(buffer);
     default:
       throw new Error(`Unsupported MIME type: ${mimeType}`);

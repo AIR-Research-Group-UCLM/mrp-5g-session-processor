@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
@@ -21,6 +21,20 @@ import type {
 } from "@mrp/shared";
 
 const PROTECTED_EMAIL = "admin@user.com";
+
+function assignmentsChanged<T>(
+  current: T[] | undefined,
+  pending: T[],
+  key: (item: T) => string
+): boolean {
+  const currentKeys = new Set(current?.map(key) ?? []);
+  const pendingKeys = new Set(pending.map(key));
+  if (currentKeys.size !== pendingKeys.size) return true;
+  for (const k of currentKeys) {
+    if (!pendingKeys.has(k)) return true;
+  }
+  return false;
+}
 
 interface UserFormModalProps {
   isOpen: boolean;
@@ -47,12 +61,10 @@ export function UserFormModal({
   const [role, setRole] = useState<UserRole>("user");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Assignment state (sessions)
   const [pendingAssignments, setPendingAssignments] = useState<AssignmentInput[]>([]);
   const { data: currentAssignments } = useUserAssignments(isEditMode && isOpen ? user?.id ?? null : null);
   const setUserAssignments = useSetUserAssignments();
 
-  // Assignment state (report summaries)
   const [pendingReportAssignments, setPendingReportAssignments] = useState<
     ReportSummaryAssignmentInput[]
   >([]);
@@ -60,6 +72,11 @@ export function UserFormModal({
     isEditMode && isOpen ? user?.id ?? null : null
   );
   const setUserReportAssignments = useSetUserReportSummaryAssignments();
+
+  // Track whether pending state has been seeded for this modal-open session.
+  // Prevents React Query refetches (e.g., on window focus) from clobbering edits.
+  const sessionsSeededRef = useRef(false);
+  const reportsSeededRef = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -70,31 +87,34 @@ export function UserFormModal({
       setErrors({});
       setPendingAssignments([]);
       setPendingReportAssignments([]);
+      sessionsSeededRef.current = false;
+      reportsSeededRef.current = false;
     }
   }, [isOpen, user]);
 
-  // Initialize pendingAssignments from currentAssignments when loaded
   useEffect(() => {
-    if (currentAssignments) {
+    if (isOpen && !sessionsSeededRef.current && currentAssignments) {
       setPendingAssignments(
         currentAssignments.map((a) => ({
           sessionId: a.sessionId,
           canWrite: a.canWrite,
         }))
       );
+      sessionsSeededRef.current = true;
     }
-  }, [currentAssignments]);
+  }, [isOpen, currentAssignments]);
 
   useEffect(() => {
-    if (currentReportAssignments) {
+    if (isOpen && !reportsSeededRef.current && currentReportAssignments) {
       setPendingReportAssignments(
         currentReportAssignments.map((a) => ({
           reportSummaryId: a.reportSummaryId,
           canWrite: a.canWrite,
         }))
       );
+      reportsSeededRef.current = true;
     }
-  }, [currentReportAssignments]);
+  }, [isOpen, currentReportAssignments]);
 
   const handleAssignmentsChange = useCallback((assignments: AssignmentInput[]) => {
     setPendingAssignments(assignments);
@@ -144,41 +164,25 @@ export function UserFormModal({
       if (role !== user?.role && !isProtectedUser) data.role = role;
       await onSubmit(data);
 
-      // Update session assignments if changed
       if (user) {
-        const currentIds = new Set(
-          currentAssignments?.map((a) => `${a.sessionId}:${a.canWrite}`) ?? []
+        const sessionsChanged = assignmentsChanged(
+          currentAssignments,
+          pendingAssignments,
+          (a) => `${a.sessionId}:${a.canWrite}`
         );
-        const pendingIds = new Set(
-          pendingAssignments.map((a) => `${a.sessionId}:${a.canWrite}`)
-        );
-        const hasChanges =
-          currentIds.size !== pendingIds.size ||
-          ![...currentIds].every((id) => pendingIds.has(id));
-
-        if (hasChanges) {
+        if (sessionsChanged) {
           await setUserAssignments.mutateAsync({
             userId: user.id,
             assignments: pendingAssignments,
           });
         }
 
-        // Update report-summary assignments if changed
-        const currentReportIds = new Set(
-          currentReportAssignments?.map(
-            (a) => `${a.reportSummaryId}:${a.canWrite}`
-          ) ?? []
+        const reportsChanged = assignmentsChanged(
+          currentReportAssignments,
+          pendingReportAssignments,
+          (a) => `${a.reportSummaryId}:${a.canWrite}`
         );
-        const pendingReportIds = new Set(
-          pendingReportAssignments.map(
-            (a) => `${a.reportSummaryId}:${a.canWrite}`
-          )
-        );
-        const hasReportChanges =
-          currentReportIds.size !== pendingReportIds.size ||
-          ![...currentReportIds].every((id) => pendingReportIds.has(id));
-
-        if (hasReportChanges) {
+        if (reportsChanged) {
           await setUserReportAssignments.mutateAsync({
             userId: user.id,
             assignments: pendingReportAssignments,
@@ -256,8 +260,6 @@ export function UserFormModal({
           )}
         </div>
 
-        {/* Assignment sections (only in edit mode). Side-by-side at md+ to keep
-            the modal wide rather than tall. */}
         {isEditMode && user && (
           <div className="mt-4 grid gap-6 border-t pt-4 md:grid-cols-2">
             <SessionAssignmentSection

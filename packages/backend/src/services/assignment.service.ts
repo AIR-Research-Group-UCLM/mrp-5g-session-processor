@@ -9,70 +9,136 @@ import type {
   ReportSummaryAssignmentListItem,
 } from "@mrp/shared";
 
-interface DbUser {
-  id: string;
-  role: string;
-}
-
 interface AccessCheckResult {
   canAccess: boolean;
   isOwner: boolean;
   canWrite: boolean;
 }
 
-/**
- * Check if a user can access a specific session.
- * Returns access info including ownership and write permissions.
- */
-async function canUserAccessSession(
+interface ResourceConfig {
+  resourceTable: string;
+  assignmentTable: string;
+  fkColumn: string;
+}
+
+const SESSION_CFG: ResourceConfig = {
+  resourceTable: "medical_sessions",
+  assignmentTable: "session_assignments",
+  fkColumn: "session_id",
+};
+
+const REPORT_CFG: ResourceConfig = {
+  resourceTable: "report_summaries",
+  assignmentTable: "report_summary_assignments",
+  fkColumn: "report_summary_id",
+};
+
+async function checkAccess(
+  cfg: ResourceConfig,
   userId: string,
-  sessionId: string
+  resourceId: string
 ): Promise<AccessCheckResult> {
   const db = getDb();
 
-  // Check if session exists and get owner
-  const session = db
-    .prepare("SELECT user_id FROM medical_sessions WHERE id = ?")
-    .get(sessionId) as { user_id: string } | undefined;
+  const row = db
+    .prepare(
+      `SELECT
+         r.user_id AS owner_id,
+         a.can_write AS assignment_can_write,
+         u.role AS user_role
+       FROM ${cfg.resourceTable} r
+       LEFT JOIN ${cfg.assignmentTable} a
+         ON a.${cfg.fkColumn} = r.id AND a.user_id = ?
+       LEFT JOIN users u ON u.id = ?
+       WHERE r.id = ?`
+    )
+    .get(userId, userId, resourceId) as
+    | {
+        owner_id: string;
+        assignment_can_write: number | null;
+        user_role: string | null;
+      }
+    | undefined;
 
-  if (!session) {
+  if (!row) {
     return { canAccess: false, isOwner: false, canWrite: false };
   }
 
-  // Check if user is owner
-  if (session.user_id === userId) {
+  if (row.owner_id === userId) {
     return { canAccess: true, isOwner: true, canWrite: true };
   }
 
-  // Check if user is assigned
-  const assignment = db
-    .prepare(
-      "SELECT can_write FROM session_assignments WHERE session_id = ? AND user_id = ?"
-    )
-    .get(sessionId, userId) as { can_write: number } | undefined;
-
-  if (!assignment) {
+  if (row.assignment_can_write === null) {
     return { canAccess: false, isOwner: false, canWrite: false };
   }
 
-  // User is assigned - check if they can write
-  // canWrite requires: assignment.can_write = 1 AND user.role != 'readonly'
-  const user = db
-    .prepare("SELECT role FROM users WHERE id = ?")
-    .get(userId) as DbUser | undefined;
-
-  if (!user) {
-    return { canAccess: false, isOwner: false, canWrite: false };
-  }
-
-  const canWrite = assignment.can_write === 1 && user.role !== "readonly";
+  const canWrite =
+    row.assignment_can_write === 1 && row.user_role !== "readonly";
 
   return { canAccess: true, isOwner: false, canWrite };
 }
 
-/**
- * Get all sessions assigned to a user (not owned, just assigned).
- */
+function setAssignmentsGeneric(
+  cfg: ResourceConfig,
+  targetUserId: string,
+  resourceIds: { id: string; canWrite: boolean }[],
+  assignedBy: string
+): void {
+  const db = getDb();
+
+  const ownedRows = db
+    .prepare(`SELECT id FROM ${cfg.resourceTable} WHERE user_id = ?`)
+    .all(targetUserId) as { id: string }[];
+  const ownedIds = new Set(ownedRows.map((r) => r.id));
+
+  const validAssignments = resourceIds.filter((a) => !ownedIds.has(a.id));
+
+  const transaction = db.transaction(() => {
+    db.prepare(
+      `DELETE FROM ${cfg.assignmentTable} WHERE user_id = ?`
+    ).run(targetUserId);
+
+    const insertStmt = db.prepare(
+      `INSERT INTO ${cfg.assignmentTable} (id, ${cfg.fkColumn}, user_id, can_write, assigned_by)
+       VALUES (?, ?, ?, ?, ?)`
+    );
+
+    for (const a of validAssignments) {
+      insertStmt.run(
+        uuidv4(),
+        a.id,
+        targetUserId,
+        a.canWrite ? 1 : 0,
+        assignedBy
+      );
+    }
+  });
+
+  transaction();
+}
+
+function getAssignedIdsGeneric(
+  cfg: ResourceConfig,
+  userId: string
+): string[] {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT ${cfg.fkColumn} AS resource_id FROM ${cfg.assignmentTable} WHERE user_id = ?`
+    )
+    .all(userId) as { resource_id: string }[];
+  return rows.map((r) => r.resource_id);
+}
+
+// --- Session-specific public API ---
+
+async function canUserAccessSession(
+  userId: string,
+  sessionId: string
+): Promise<AccessCheckResult> {
+  return checkAccess(SESSION_CFG, userId, sessionId);
+}
+
 async function getAssignmentsForUser(
   userId: string
 ): Promise<SessionAssignmentListItem[]> {
@@ -117,16 +183,11 @@ async function getAssignmentsForUser(
   }));
 }
 
-/**
- * Get all sessions available for assignment to a user.
- * Returns sessions NOT owned by the target user, with current assignment status.
- */
 async function getAllSessionsForAssignment(
   targetUserId: string
 ): Promise<SessionForAssignment[]> {
   const db = getDb();
 
-  // Get sessions that are NOT owned by the target user
   const rows = db
     .prepare(
       `
@@ -169,116 +230,32 @@ async function getAllSessionsForAssignment(
   }));
 }
 
-/**
- * Set assignments for a user (replaces all existing assignments).
- * Uses a transaction to ensure atomicity.
- */
 async function setAssignmentsForUser(
   targetUserId: string,
   assignments: AssignmentInput[],
   assignedBy: string
 ): Promise<void> {
-  const db = getDb();
-
-  // Get sessions owned by the target user (can't assign to owner)
-  const ownedSessions = db
-    .prepare("SELECT id FROM medical_sessions WHERE user_id = ?")
-    .all(targetUserId) as { id: string }[];
-  const ownedIds = new Set(ownedSessions.map((s) => s.id));
-
-  // Filter out sessions that the user owns
-  const validAssignments = assignments.filter((a) => !ownedIds.has(a.sessionId));
-
-  // Use transaction for atomicity
-  const transaction = db.transaction(() => {
-    // Remove all existing assignments for this user
-    db.prepare("DELETE FROM session_assignments WHERE user_id = ?").run(
-      targetUserId
-    );
-
-    // Add new assignments
-    const insertStmt = db.prepare(`
-      INSERT INTO session_assignments (id, session_id, user_id, can_write, assigned_by)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-
-    for (const assignment of validAssignments) {
-      insertStmt.run(
-        uuidv4(),
-        assignment.sessionId,
-        targetUserId,
-        assignment.canWrite ? 1 : 0,
-        assignedBy
-      );
-    }
-  });
-
-  transaction();
+  setAssignmentsGeneric(
+    SESSION_CFG,
+    targetUserId,
+    assignments.map((a) => ({ id: a.sessionId, canWrite: a.canWrite })),
+    assignedBy
+  );
 }
 
-/**
- * Get assignment IDs for a user (for quick lookup).
- */
 async function getAssignedSessionIds(userId: string): Promise<string[]> {
-  const db = getDb();
-
-  const rows = db
-    .prepare("SELECT session_id FROM session_assignments WHERE user_id = ?")
-    .all(userId) as { session_id: string }[];
-
-  return rows.map((r) => r.session_id);
+  return getAssignedIdsGeneric(SESSION_CFG, userId);
 }
 
-// --- Report-summary assignments (parallel to sessions above) ---
+// --- Report-summary-specific public API ---
 
-/**
- * Check if a user can access a specific report summary.
- * Returns access info including ownership and write permissions.
- */
 async function canUserAccessReportSummary(
   userId: string,
   reportSummaryId: string
 ): Promise<AccessCheckResult> {
-  const db = getDb();
-
-  const report = db
-    .prepare("SELECT user_id FROM report_summaries WHERE id = ?")
-    .get(reportSummaryId) as { user_id: string } | undefined;
-
-  if (!report) {
-    return { canAccess: false, isOwner: false, canWrite: false };
-  }
-
-  if (report.user_id === userId) {
-    return { canAccess: true, isOwner: true, canWrite: true };
-  }
-
-  const assignment = db
-    .prepare(
-      "SELECT can_write FROM report_summary_assignments WHERE report_summary_id = ? AND user_id = ?"
-    )
-    .get(reportSummaryId, userId) as { can_write: number } | undefined;
-
-  if (!assignment) {
-    return { canAccess: false, isOwner: false, canWrite: false };
-  }
-
-  const user = db
-    .prepare("SELECT role FROM users WHERE id = ?")
-    .get(userId) as DbUser | undefined;
-
-  if (!user) {
-    return { canAccess: false, isOwner: false, canWrite: false };
-  }
-
-  const canWrite = assignment.can_write === 1 && user.role !== "readonly";
-
-  return { canAccess: true, isOwner: false, canWrite };
+  return checkAccess(REPORT_CFG, userId, reportSummaryId);
 }
 
-/**
- * Get all report summaries assigned to a user (not owned, just assigned).
- */
 async function getReportSummaryAssignmentsForUser(
   userId: string
 ): Promise<ReportSummaryAssignmentListItem[]> {
@@ -320,10 +297,6 @@ async function getReportSummaryAssignmentsForUser(
   }));
 }
 
-/**
- * Get all report summaries available for assignment to a user.
- * Returns report summaries NOT owned by the target user, with current assignment status.
- */
 async function getAllReportSummariesForAssignment(
   targetUserId: string
 ): Promise<ReportSummaryForAssignment[]> {
@@ -368,65 +341,23 @@ async function getAllReportSummariesForAssignment(
   }));
 }
 
-/**
- * Set report-summary assignments for a user (replaces all existing assignments).
- */
 async function setReportSummaryAssignmentsForUser(
   targetUserId: string,
   assignments: ReportSummaryAssignmentInput[],
   assignedBy: string
 ): Promise<void> {
-  const db = getDb();
-
-  // Exclude summaries the target user already owns
-  const ownedReports = db
-    .prepare("SELECT id FROM report_summaries WHERE user_id = ?")
-    .all(targetUserId) as { id: string }[];
-  const ownedIds = new Set(ownedReports.map((r) => r.id));
-
-  const validAssignments = assignments.filter(
-    (a) => !ownedIds.has(a.reportSummaryId)
+  setAssignmentsGeneric(
+    REPORT_CFG,
+    targetUserId,
+    assignments.map((a) => ({ id: a.reportSummaryId, canWrite: a.canWrite })),
+    assignedBy
   );
-
-  const transaction = db.transaction(() => {
-    db.prepare(
-      "DELETE FROM report_summary_assignments WHERE user_id = ?"
-    ).run(targetUserId);
-
-    const insertStmt = db.prepare(`
-      INSERT INTO report_summary_assignments (id, report_summary_id, user_id, can_write, assigned_by)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-
-    for (const assignment of validAssignments) {
-      insertStmt.run(
-        uuidv4(),
-        assignment.reportSummaryId,
-        targetUserId,
-        assignment.canWrite ? 1 : 0,
-        assignedBy
-      );
-    }
-  });
-
-  transaction();
 }
 
-/**
- * Get report summary IDs assigned to a user (for quick lookup).
- */
 async function getAssignedReportSummaryIds(
   userId: string
 ): Promise<string[]> {
-  const db = getDb();
-
-  const rows = db
-    .prepare(
-      "SELECT report_summary_id FROM report_summary_assignments WHERE user_id = ?"
-    )
-    .all(userId) as { report_summary_id: string }[];
-
-  return rows.map((r) => r.report_summary_id);
+  return getAssignedIdsGeneric(REPORT_CFG, userId);
 }
 
 export const assignmentService = {

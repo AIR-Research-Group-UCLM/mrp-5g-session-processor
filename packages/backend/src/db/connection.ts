@@ -175,10 +175,7 @@ function runMigrations(database: Database.Database): void {
 
 export async function initializeDatabase(): Promise<void> {
   const dbDir = path.dirname(config.databasePath);
-
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
+  fs.mkdirSync(dbDir, { recursive: true });
 
   db = new Database(config.databasePath);
 
