@@ -4,8 +4,21 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { SessionAssignmentSection } from "./SessionAssignmentSection";
-import { useUserAssignments, useSetUserAssignments } from "@/hooks/useAssignments";
-import type { UserListItem, CreateUserInput, UpdateUserInput, UserRole, AssignmentInput } from "@mrp/shared";
+import { ReportSummaryAssignmentSection } from "./ReportSummaryAssignmentSection";
+import {
+  useUserAssignments,
+  useSetUserAssignments,
+  useUserReportSummaryAssignments,
+  useSetUserReportSummaryAssignments,
+} from "@/hooks/useAssignments";
+import type {
+  UserListItem,
+  CreateUserInput,
+  UpdateUserInput,
+  UserRole,
+  AssignmentInput,
+  ReportSummaryAssignmentInput,
+} from "@mrp/shared";
 
 const PROTECTED_EMAIL = "admin@user.com";
 
@@ -34,10 +47,19 @@ export function UserFormModal({
   const [role, setRole] = useState<UserRole>("user");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Assignment state
+  // Assignment state (sessions)
   const [pendingAssignments, setPendingAssignments] = useState<AssignmentInput[]>([]);
   const { data: currentAssignments } = useUserAssignments(isEditMode && isOpen ? user?.id ?? null : null);
   const setUserAssignments = useSetUserAssignments();
+
+  // Assignment state (report summaries)
+  const [pendingReportAssignments, setPendingReportAssignments] = useState<
+    ReportSummaryAssignmentInput[]
+  >([]);
+  const { data: currentReportAssignments } = useUserReportSummaryAssignments(
+    isEditMode && isOpen ? user?.id ?? null : null
+  );
+  const setUserReportAssignments = useSetUserReportSummaryAssignments();
 
   useEffect(() => {
     if (isOpen) {
@@ -47,6 +69,7 @@ export function UserFormModal({
       setRole(user?.role ?? "user");
       setErrors({});
       setPendingAssignments([]);
+      setPendingReportAssignments([]);
     }
   }, [isOpen, user]);
 
@@ -62,9 +85,27 @@ export function UserFormModal({
     }
   }, [currentAssignments]);
 
+  useEffect(() => {
+    if (currentReportAssignments) {
+      setPendingReportAssignments(
+        currentReportAssignments.map((a) => ({
+          reportSummaryId: a.reportSummaryId,
+          canWrite: a.canWrite,
+        }))
+      );
+    }
+  }, [currentReportAssignments]);
+
   const handleAssignmentsChange = useCallback((assignments: AssignmentInput[]) => {
     setPendingAssignments(assignments);
   }, []);
+
+  const handleReportAssignmentsChange = useCallback(
+    (assignments: ReportSummaryAssignmentInput[]) => {
+      setPendingReportAssignments(assignments);
+    },
+    []
+  );
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -103,7 +144,7 @@ export function UserFormModal({
       if (role !== user?.role && !isProtectedUser) data.role = role;
       await onSubmit(data);
 
-      // Update assignments if changed
+      // Update session assignments if changed
       if (user) {
         const currentIds = new Set(
           currentAssignments?.map((a) => `${a.sessionId}:${a.canWrite}`) ?? []
@@ -121,6 +162,28 @@ export function UserFormModal({
             assignments: pendingAssignments,
           });
         }
+
+        // Update report-summary assignments if changed
+        const currentReportIds = new Set(
+          currentReportAssignments?.map(
+            (a) => `${a.reportSummaryId}:${a.canWrite}`
+          ) ?? []
+        );
+        const pendingReportIds = new Set(
+          pendingReportAssignments.map(
+            (a) => `${a.reportSummaryId}:${a.canWrite}`
+          )
+        );
+        const hasReportChanges =
+          currentReportIds.size !== pendingReportIds.size ||
+          ![...currentReportIds].every((id) => pendingReportIds.has(id));
+
+        if (hasReportChanges) {
+          await setUserReportAssignments.mutateAsync({
+            userId: user.id,
+            assignments: pendingReportAssignments,
+          });
+        }
       }
     } else {
       await onSubmit({ name, email, password, role });
@@ -132,6 +195,7 @@ export function UserFormModal({
       isOpen={isOpen}
       onClose={onClose}
       title={isEditMode ? t("users.editUser") : t("users.createUser")}
+      className={isEditMode ? "max-w-4xl" : "max-w-md"}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
@@ -192,9 +256,10 @@ export function UserFormModal({
           )}
         </div>
 
-        {/* Session assignments section (only in edit mode) */}
+        {/* Assignment sections (only in edit mode). Side-by-side at md+ to keep
+            the modal wide rather than tall. */}
         {isEditMode && user && (
-          <div className="mt-4 border-t pt-4">
+          <div className="mt-4 grid gap-6 border-t pt-4 md:grid-cols-2">
             <SessionAssignmentSection
               userId={user.id}
               initialAssignments={
@@ -205,6 +270,16 @@ export function UserFormModal({
               }
               onAssignmentsChange={handleAssignmentsChange}
             />
+            <ReportSummaryAssignmentSection
+              userId={user.id}
+              initialAssignments={
+                currentReportAssignments?.map((a) => ({
+                  reportSummaryId: a.reportSummaryId,
+                  canWrite: a.canWrite,
+                })) ?? []
+              }
+              onAssignmentsChange={handleReportAssignmentsChange}
+            />
           </div>
         )}
 
@@ -213,11 +288,22 @@ export function UserFormModal({
             type="button"
             variant="secondary"
             onClick={onClose}
-            disabled={isLoading || setUserAssignments.isPending}
+            disabled={
+              isLoading ||
+              setUserAssignments.isPending ||
+              setUserReportAssignments.isPending
+            }
           >
             {t("common.cancel")}
           </Button>
-          <Button type="submit" isLoading={isLoading || setUserAssignments.isPending}>
+          <Button
+            type="submit"
+            isLoading={
+              isLoading ||
+              setUserAssignments.isPending ||
+              setUserReportAssignments.isPending
+            }
+          >
             {isEditMode ? t("common.save") : t("users.create")}
           </Button>
         </div>

@@ -3,6 +3,10 @@ import multer from "multer";
 import { reportSummaryController } from "../controllers/report-summary.controller.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { requireWriteAccess } from "../middleware/write-access.middleware.js";
+import {
+  requireReportSummaryReadAccess,
+  requireReportSummaryWriteAccess,
+} from "../middleware/report-summary-access.middleware.js";
 
 const documentUpload = multer({
   storage: multer.memoryStorage(),
@@ -33,7 +37,7 @@ reportSummaryRoutes.post(
   documentUpload.single("file"),
   reportSummaryController.extractTextFromFile
 );
-reportSummaryRoutes.get("/:id", reportSummaryController.getById);
-reportSummaryRoutes.delete("/:id", requireWriteAccess, reportSummaryController.remove);
-reportSummaryRoutes.post("/:id/share", reportSummaryController.createShareToken);
-reportSummaryRoutes.delete("/:id/share", reportSummaryController.revokeShareToken);
+reportSummaryRoutes.get("/:id", requireReportSummaryReadAccess, reportSummaryController.getById);
+reportSummaryRoutes.delete("/:id", requireReportSummaryWriteAccess, reportSummaryController.remove);
+reportSummaryRoutes.post("/:id/share", requireReportSummaryWriteAccess, reportSummaryController.createShareToken);
+reportSummaryRoutes.delete("/:id/share", requireReportSummaryWriteAccess, reportSummaryController.revokeShareToken);

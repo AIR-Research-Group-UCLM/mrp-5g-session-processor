@@ -270,10 +270,17 @@ export function ReportSummaryPage() {
 function ReportSummaryListRow({
   item,
 }: {
-  item: { id: string; title: string | null; createdAt: string; shareToken: string | null; shareExpiresAt: string | null };
+  item: {
+    id: string;
+    title: string | null;
+    createdAt: string;
+    shareToken: string | null;
+    shareExpiresAt: string | null;
+    isOwner: boolean;
+    canWrite: boolean;
+  };
 }) {
   const { t } = useTranslation();
-  const { canWrite } = useAuth();
   const deleteMutation = useDeleteReportSummary();
 
   const isShared =
@@ -303,7 +310,7 @@ function ReportSummaryListRow({
             {t("consultationSummary.linkActive")}
           </Badge>
         )}
-        {canWrite && (
+        {item.isOwner && (
           <Button
             variant="danger"
             size="sm"

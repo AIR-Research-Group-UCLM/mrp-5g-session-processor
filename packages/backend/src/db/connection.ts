@@ -143,6 +143,34 @@ function runMigrations(database: Database.Database): void {
     database.exec("ALTER TABLE report_summaries ADD COLUMN tooltips TEXT");
     logger.info("Migration completed: tooltips column added to report_summaries");
   }
+
+  // Migration: Add report_summary_assignments table
+  const hasReportSummaryAssignmentsTable = database
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='report_summary_assignments'"
+    )
+    .get();
+
+  if (!hasReportSummaryAssignmentsTable) {
+    logger.info("Running migration: Creating report_summary_assignments table...");
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS report_summary_assignments (
+        id TEXT PRIMARY KEY,
+        report_summary_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        can_write INTEGER NOT NULL DEFAULT 0,
+        assigned_by TEXT NOT NULL,
+        assigned_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (report_summary_id) REFERENCES report_summaries(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL,
+        UNIQUE(report_summary_id, user_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_report_summary_assignments_report_summary_id ON report_summary_assignments(report_summary_id);
+      CREATE INDEX IF NOT EXISTS idx_report_summary_assignments_user_id ON report_summary_assignments(user_id);
+    `);
+    logger.info("Migration completed: report_summary_assignments table created");
+  }
 }
 
 export async function initializeDatabase(): Promise<void> {

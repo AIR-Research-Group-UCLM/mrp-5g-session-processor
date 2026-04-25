@@ -9,7 +9,6 @@ import {
   useCreateReportShareToken,
   useRevokeReportShareToken,
 } from "@/hooks/useReportSummaries";
-import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, ClipboardList, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
@@ -18,12 +17,16 @@ export function ReportSummaryDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { canWrite } = useAuth();
 
   const { data: summary, isLoading } = useReportSummary(id!);
   const deleteMutation = useDeleteReportSummary();
   const createShare = useCreateReportShareToken();
   const revokeShare = useRevokeReportShareToken();
+
+  // Access signals come from the summary payload itself (owner OR assigned).
+  // Delete is owner-only; other writes (share tokens) need canWrite.
+  const isOwner = summary?.isOwner ?? false;
+  const canWrite = summary?.canWrite ?? false;
 
   const handleDelete = () => {
     if (!id) return;
@@ -50,7 +53,7 @@ export function ReportSummaryDetailPage() {
             {summary?.title || t("reportSummary.list.untitled")}
           </h1>
         </div>
-        {canWrite && summary && (
+        {isOwner && summary && (
           <Button
             variant="danger"
             size="sm"
@@ -98,14 +101,16 @@ export function ReportSummaryDetailPage() {
                 title={summary.title}
                 date={new Date(summary.createdAt).toLocaleDateString()}
               />
-              <ShareSection
-                shareToken={summary.shareToken ?? null}
-                shareExpiresAt={summary.shareExpiresAt ?? null}
-                onCreateShare={(expiryHours) => createShare.mutate({ summaryId: id!, expiryHours })}
-                onRevokeShare={() => revokeShare.mutate(id!)}
-                isCreating={createShare.isPending}
-                isRevoking={revokeShare.isPending}
-              />
+              {canWrite && (
+                <ShareSection
+                  shareToken={summary.shareToken ?? null}
+                  shareExpiresAt={summary.shareExpiresAt ?? null}
+                  onCreateShare={(expiryHours) => createShare.mutate({ summaryId: id!, expiryHours })}
+                  onRevokeShare={() => revokeShare.mutate(id!)}
+                  isCreating={createShare.isPending}
+                  isRevoking={revokeShare.isPending}
+                />
+              )}
             </div>
           </CardContent>
         </Card>

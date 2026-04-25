@@ -8,6 +8,8 @@ export interface StoredReportSummary extends ConsultationSummary {
   updatedAt: string;
   shareToken: string | null;
   shareExpiresAt: string | null;
+  isOwner: boolean;
+  canWrite: boolean;
 }
 
 export interface ReportSummaryListItem {
@@ -16,4 +18,6 @@ export interface ReportSummaryListItem {
   createdAt: string;
   shareToken: string | null;
   shareExpiresAt: string | null;
+  isOwner: boolean;
+  canWrite: boolean;
 }

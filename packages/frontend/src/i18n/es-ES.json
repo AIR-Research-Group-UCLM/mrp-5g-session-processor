@@ -411,11 +411,16 @@
     "searchSessions": "Buscar sesiones...",
     "noSessionsFound": "No se encontraron sesiones",
     "noSessionsAvailable": "No hay sesiones disponibles para asignar",
-    "selectedCount": "{{count}} sesión(es) seleccionada(s)",
+    "selectedCount": "{{count}} seleccionado(s)",
     "updateSuccess": "Asignaciones actualizadas correctamente",
     "updateError": "Error al actualizar asignaciones",
     "assignedBadge": "Asignada",
     "canWrite": "Puede modificar",
-    "readOnly": "Solo lectura"
+    "readOnly": "Solo lectura",
+    "assignedReportSummaries": "Informes Asignados",
+    "assignedReportSummariesDescription": "Selecciona los informes a los que este usuario debe tener acceso",
+    "searchReportSummaries": "Buscar informes...",
+    "noReportSummariesFound": "No se encontraron informes",
+    "noReportSummariesAvailable": "No hay informes disponibles para asignar"
   }
 }

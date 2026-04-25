@@ -411,11 +411,16 @@
     "searchSessions": "Search sessions...",
     "noSessionsFound": "No sessions found",
     "noSessionsAvailable": "No sessions available for assignment",
-    "selectedCount": "{{count}} session(s) selected",
+    "selectedCount": "{{count}} selected",
     "updateSuccess": "Assignments updated successfully",
     "updateError": "Error updating assignments",
     "assignedBadge": "Assigned",
     "canWrite": "Can modify",
-    "readOnly": "Read only"
+    "readOnly": "Read only",
+    "assignedReportSummaries": "Assigned Report Summaries",
+    "assignedReportSummariesDescription": "Select report summaries this user should have access to",
+    "searchReportSummaries": "Search report summaries...",
+    "noReportSummariesFound": "No report summaries found",
+    "noReportSummariesAvailable": "No report summaries available for assignment"
   }
 }

@@ -217,6 +217,23 @@ CREATE TABLE IF NOT EXISTS report_summaries (
 CREATE INDEX IF NOT EXISTS idx_report_summaries_user_id ON report_summaries(user_id);
 CREATE INDEX IF NOT EXISTS idx_report_summaries_share_token ON report_summaries(share_token);
 
+-- Assignments of report summaries to non-owner users (parallel to session_assignments)
+CREATE TABLE IF NOT EXISTS report_summary_assignments (
+    id TEXT PRIMARY KEY,
+    report_summary_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    can_write INTEGER NOT NULL DEFAULT 0,  -- 0 = read-only, 1 = can modify
+    assigned_by TEXT NOT NULL,
+    assigned_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (report_summary_id) REFERENCES report_summaries(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL,
+    UNIQUE(report_summary_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_report_summary_assignments_report_summary_id ON report_summary_assignments(report_summary_id);
+CREATE INDEX IF NOT EXISTS idx_report_summary_assignments_user_id ON report_summary_assignments(user_id);
+
 -- FTS5 virtual table for full-text search on transcripts
 CREATE VIRTUAL TABLE IF NOT EXISTS transcript_fts USING fts5(
     session_id,

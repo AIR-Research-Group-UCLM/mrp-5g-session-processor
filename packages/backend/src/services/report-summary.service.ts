@@ -40,7 +40,24 @@ interface ReportSummaryRow {
   updated_at: string;
 }
 
-function rowToStoredSummary(row: ReportSummaryRow): StoredReportSummary {
+interface ReportSummaryRowWithAccess extends ReportSummaryRow {
+  is_owner: number;
+  assignment_can_write: number | null;
+}
+
+function computeCanWrite(
+  row: ReportSummaryRowWithAccess,
+  userRole: string
+): boolean {
+  if (row.is_owner === 1) return true;
+  if (userRole === "readonly") return false;
+  return row.assignment_can_write === 1;
+}
+
+function rowToStoredSummary(
+  row: ReportSummaryRowWithAccess,
+  userRole: string
+): StoredReportSummary {
   return {
     id: row.id,
     userId: row.user_id,
@@ -50,17 +67,32 @@ function rowToStoredSummary(row: ReportSummaryRow): StoredReportSummary {
     shareExpiresAt: row.share_expires_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    isOwner: row.is_owner === 1,
+    canWrite: computeCanWrite(row, userRole),
   };
 }
 
-function rowToListItem(row: ReportSummaryRow): ReportSummaryListItem {
+function rowToListItem(
+  row: ReportSummaryRowWithAccess,
+  userRole: string
+): ReportSummaryListItem {
   return {
     id: row.id,
     title: row.title,
     createdAt: row.created_at,
     shareToken: row.share_token,
     shareExpiresAt: row.share_expires_at,
+    isOwner: row.is_owner === 1,
+    canWrite: computeCanWrite(row, userRole),
   };
+}
+
+function getUserRole(userId: string): string {
+  const db = getDb();
+  const user = db
+    .prepare("SELECT role FROM users WHERE id = ?")
+    .get(userId) as { role: string } | undefined;
+  return user?.role ?? "readonly";
 }
 
 export async function generateReportSummary(
@@ -109,11 +141,37 @@ export async function generateReportSummary(
   logger.info({ userId, summaryId: id }, "Report summary generated successfully");
 
   const row = db
-    .prepare("SELECT * FROM report_summaries WHERE id = ?")
-    .get(id) as ReportSummaryRow;
+    .prepare(
+      `SELECT rs.*,
+              1 AS is_owner,
+              NULL AS assignment_can_write
+       FROM report_summaries rs
+       WHERE rs.id = ?`
+    )
+    .get(id) as ReportSummaryRowWithAccess;
 
-  return rowToStoredSummary(row);
+  return rowToStoredSummary(row, getUserRole(userId));
 }
+
+const LIST_SELECT_SQL = `
+  SELECT rs.*,
+         CASE WHEN rs.user_id = ? THEN 1 ELSE 0 END AS is_owner,
+         rsa.can_write AS assignment_can_write
+  FROM report_summaries rs
+  LEFT JOIN report_summary_assignments rsa
+    ON rsa.report_summary_id = rs.id AND rsa.user_id = ?
+  WHERE rs.user_id = ? OR rsa.user_id = ?
+  ORDER BY rs.created_at DESC
+  LIMIT ? OFFSET ?
+`;
+
+const LIST_COUNT_SQL = `
+  SELECT COUNT(*) AS count
+  FROM report_summaries rs
+  LEFT JOIN report_summary_assignments rsa
+    ON rsa.report_summary_id = rs.id AND rsa.user_id = ?
+  WHERE rs.user_id = ? OR rsa.user_id = ?
+`;
 
 export function listReportSummaries(
   userId: string,
@@ -122,36 +180,49 @@ export function listReportSummaries(
 ): { summaries: ReportSummaryListItem[]; total: number } {
   const db = getDb();
   const offset = (page - 1) * pageSize;
+  const userRole = getUserRole(userId);
 
   const rows = db
-    .prepare(
-      "SELECT * FROM report_summaries WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
-    )
-    .all(userId, pageSize, offset) as ReportSummaryRow[];
+    .prepare(LIST_SELECT_SQL)
+    .all(userId, userId, userId, userId, pageSize, offset) as ReportSummaryRowWithAccess[];
 
   const total = (
     db
-      .prepare("SELECT COUNT(*) AS count FROM report_summaries WHERE user_id = ?")
-      .get(userId) as { count: number }
+      .prepare(LIST_COUNT_SQL)
+      .get(userId, userId, userId) as { count: number }
   ).count;
 
   return {
-    summaries: rows.map(rowToListItem),
+    summaries: rows.map((r) => rowToListItem(r, userRole)),
     total,
   };
 }
 
-export function getReportSummary(id: string, userId: string): StoredReportSummary | null {
+export function getReportSummary(
+  id: string,
+  userId: string
+): StoredReportSummary | null {
   const db = getDb();
   const row = db
-    .prepare("SELECT * FROM report_summaries WHERE id = ? AND user_id = ?")
-    .get(id, userId) as ReportSummaryRow | undefined;
+    .prepare(
+      `SELECT rs.*,
+              CASE WHEN rs.user_id = ? THEN 1 ELSE 0 END AS is_owner,
+              rsa.can_write AS assignment_can_write
+       FROM report_summaries rs
+       LEFT JOIN report_summary_assignments rsa
+         ON rsa.report_summary_id = rs.id AND rsa.user_id = ?
+       WHERE rs.id = ? AND (rs.user_id = ? OR rsa.user_id = ?)`
+    )
+    .get(userId, userId, id, userId, userId) as
+    | ReportSummaryRowWithAccess
+    | undefined;
 
   if (!row) return null;
-  return rowToStoredSummary(row);
+  return rowToStoredSummary(row, getUserRole(userId));
 }
 
 export function deleteReportSummary(id: string, userId: string): boolean {
+  // Owner-only delete, matching session delete semantics.
   const db = getDb();
   const result = db
     .prepare("DELETE FROM report_summaries WHERE id = ? AND user_id = ?")

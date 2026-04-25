@@ -9,6 +9,7 @@ import {
   useConsultationSummary,
   useRevokeShareToken,
 } from "@/hooks/useSessions";
+import { useAuth } from "@/hooks/useAuth";
 import type { ConsultationSummary } from "@mrp/shared";
 import {
   AlertCircle,
@@ -214,6 +215,7 @@ interface ConsultationSummaryPanelProps {
 
 export function ConsultationSummaryPanel({ sessionId }: ConsultationSummaryPanelProps) {
   const { t } = useTranslation();
+  const { canWrite } = useAuth();
   const { data: storedSummary, isLoading: isLoadingSummary } = useConsultationSummary(sessionId);
   const mutation = useGenerateConsultationSummary();
   const createShare = useCreateShareToken();
@@ -243,13 +245,15 @@ export function ConsultationSummaryPanel({ sessionId }: ConsultationSummaryPanel
             <p className="text-sm text-gray-500">
               {t("consultationSummary.notGenerated")}
             </p>
-            <Button
-              variant="secondary"
-              onClick={() => mutation.mutate(sessionId)}
-            >
-              <RefreshCw className="h-4 w-4" />
-              {t("consultationSummary.regenerate")}
-            </Button>
+            {canWrite && (
+              <Button
+                variant="secondary"
+                onClick={() => mutation.mutate(sessionId)}
+              >
+                <RefreshCw className="h-4 w-4" />
+                {t("consultationSummary.regenerate")}
+              </Button>
+            )}
           </div>
         )}
 
@@ -268,27 +272,31 @@ export function ConsultationSummaryPanel({ sessionId }: ConsultationSummaryPanel
               <AlertCircle className="h-4 w-4" />
               {t("consultationSummary.errorGenerating")}
             </div>
-            <Button
-              variant="secondary"
-              onClick={() => mutation.mutate(sessionId)}
-            >
-              <RefreshCw className="h-4 w-4" />
-              {t("consultationSummary.regenerate")}
-            </Button>
+            {canWrite && (
+              <Button
+                variant="secondary"
+                onClick={() => mutation.mutate(sessionId)}
+              >
+                <RefreshCw className="h-4 w-4" />
+                {t("consultationSummary.regenerate")}
+              </Button>
+            )}
           </div>
         )}
 
         {hasSummary && !mutation.isPending && (
           <div className="space-y-4">
             <SummaryContent summary={summary} />
-            <ShareSection
-              shareToken={summary.shareToken ?? null}
-              shareExpiresAt={summary.shareExpiresAt ?? null}
-              onCreateShare={(expiryHours) => createShare.mutate({ sessionId, expiryHours })}
-              onRevokeShare={() => revokeShare.mutate(sessionId)}
-              isCreating={createShare.isPending}
-              isRevoking={revokeShare.isPending}
-            />
+            {canWrite && (
+              <ShareSection
+                shareToken={summary.shareToken ?? null}
+                shareExpiresAt={summary.shareExpiresAt ?? null}
+                onCreateShare={(expiryHours) => createShare.mutate({ sessionId, expiryHours })}
+                onRevokeShare={() => revokeShare.mutate(sessionId)}
+                isCreating={createShare.isPending}
+                isRevoking={revokeShare.isPending}
+              />
+            )}
           </div>
         )}
       </CardContent>

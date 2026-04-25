@@ -4,6 +4,9 @@ import type {
   SessionForAssignment,
   AssignmentInput,
   SessionAssignmentListItem,
+  ReportSummaryForAssignment,
+  ReportSummaryAssignmentInput,
+  ReportSummaryAssignmentListItem,
 } from "@mrp/shared";
 
 interface DbUser {
@@ -226,10 +229,215 @@ async function getAssignedSessionIds(userId: string): Promise<string[]> {
   return rows.map((r) => r.session_id);
 }
 
+// --- Report-summary assignments (parallel to sessions above) ---
+
+/**
+ * Check if a user can access a specific report summary.
+ * Returns access info including ownership and write permissions.
+ */
+async function canUserAccessReportSummary(
+  userId: string,
+  reportSummaryId: string
+): Promise<AccessCheckResult> {
+  const db = getDb();
+
+  const report = db
+    .prepare("SELECT user_id FROM report_summaries WHERE id = ?")
+    .get(reportSummaryId) as { user_id: string } | undefined;
+
+  if (!report) {
+    return { canAccess: false, isOwner: false, canWrite: false };
+  }
+
+  if (report.user_id === userId) {
+    return { canAccess: true, isOwner: true, canWrite: true };
+  }
+
+  const assignment = db
+    .prepare(
+      "SELECT can_write FROM report_summary_assignments WHERE report_summary_id = ? AND user_id = ?"
+    )
+    .get(reportSummaryId, userId) as { can_write: number } | undefined;
+
+  if (!assignment) {
+    return { canAccess: false, isOwner: false, canWrite: false };
+  }
+
+  const user = db
+    .prepare("SELECT role FROM users WHERE id = ?")
+    .get(userId) as DbUser | undefined;
+
+  if (!user) {
+    return { canAccess: false, isOwner: false, canWrite: false };
+  }
+
+  const canWrite = assignment.can_write === 1 && user.role !== "readonly";
+
+  return { canAccess: true, isOwner: false, canWrite };
+}
+
+/**
+ * Get all report summaries assigned to a user (not owned, just assigned).
+ */
+async function getReportSummaryAssignmentsForUser(
+  userId: string
+): Promise<ReportSummaryAssignmentListItem[]> {
+  const db = getDb();
+
+  const rows = db
+    .prepare(
+      `
+    SELECT
+      rs.id as report_summary_id,
+      rs.title as report_summary_title,
+      rs.created_at as report_summary_created_at,
+      u.name as owner_name,
+      u.id as owner_id,
+      rsa.can_write
+    FROM report_summary_assignments rsa
+    JOIN report_summaries rs ON rs.id = rsa.report_summary_id
+    JOIN users u ON u.id = rs.user_id
+    WHERE rsa.user_id = ?
+    ORDER BY rs.created_at DESC
+  `
+    )
+    .all(userId) as Array<{
+    report_summary_id: string;
+    report_summary_title: string | null;
+    report_summary_created_at: string;
+    owner_name: string;
+    owner_id: string;
+    can_write: number;
+  }>;
+
+  return rows.map((row) => ({
+    reportSummaryId: row.report_summary_id,
+    reportSummaryTitle: row.report_summary_title,
+    reportSummaryCreatedAt: row.report_summary_created_at,
+    ownerName: row.owner_name,
+    ownerId: row.owner_id,
+    canWrite: row.can_write === 1,
+  }));
+}
+
+/**
+ * Get all report summaries available for assignment to a user.
+ * Returns report summaries NOT owned by the target user, with current assignment status.
+ */
+async function getAllReportSummariesForAssignment(
+  targetUserId: string
+): Promise<ReportSummaryForAssignment[]> {
+  const db = getDb();
+
+  const rows = db
+    .prepare(
+      `
+    SELECT
+      rs.id,
+      rs.title,
+      rs.created_at,
+      u.name as owner_name,
+      u.id as owner_id,
+      rsa.id as assignment_id,
+      rsa.can_write
+    FROM report_summaries rs
+    JOIN users u ON u.id = rs.user_id
+    LEFT JOIN report_summary_assignments rsa ON rsa.report_summary_id = rs.id AND rsa.user_id = ?
+    WHERE rs.user_id != ?
+    ORDER BY rs.created_at DESC
+  `
+    )
+    .all(targetUserId, targetUserId) as Array<{
+    id: string;
+    title: string | null;
+    created_at: string;
+    owner_name: string;
+    owner_id: string;
+    assignment_id: string | null;
+    can_write: number | null;
+  }>;
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    ownerName: row.owner_name,
+    ownerId: row.owner_id,
+    createdAt: row.created_at,
+    isAssigned: row.assignment_id !== null,
+    canWrite: row.can_write === 1,
+  }));
+}
+
+/**
+ * Set report-summary assignments for a user (replaces all existing assignments).
+ */
+async function setReportSummaryAssignmentsForUser(
+  targetUserId: string,
+  assignments: ReportSummaryAssignmentInput[],
+  assignedBy: string
+): Promise<void> {
+  const db = getDb();
+
+  // Exclude summaries the target user already owns
+  const ownedReports = db
+    .prepare("SELECT id FROM report_summaries WHERE user_id = ?")
+    .all(targetUserId) as { id: string }[];
+  const ownedIds = new Set(ownedReports.map((r) => r.id));
+
+  const validAssignments = assignments.filter(
+    (a) => !ownedIds.has(a.reportSummaryId)
+  );
+
+  const transaction = db.transaction(() => {
+    db.prepare(
+      "DELETE FROM report_summary_assignments WHERE user_id = ?"
+    ).run(targetUserId);
+
+    const insertStmt = db.prepare(`
+      INSERT INTO report_summary_assignments (id, report_summary_id, user_id, can_write, assigned_by)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+
+    for (const assignment of validAssignments) {
+      insertStmt.run(
+        uuidv4(),
+        assignment.reportSummaryId,
+        targetUserId,
+        assignment.canWrite ? 1 : 0,
+        assignedBy
+      );
+    }
+  });
+
+  transaction();
+}
+
+/**
+ * Get report summary IDs assigned to a user (for quick lookup).
+ */
+async function getAssignedReportSummaryIds(
+  userId: string
+): Promise<string[]> {
+  const db = getDb();
+
+  const rows = db
+    .prepare(
+      "SELECT report_summary_id FROM report_summary_assignments WHERE user_id = ?"
+    )
+    .all(userId) as { report_summary_id: string }[];
+
+  return rows.map((r) => r.report_summary_id);
+}
+
 export const assignmentService = {
   canUserAccessSession,
   getAssignmentsForUser,
   getAllSessionsForAssignment,
   setAssignmentsForUser,
   getAssignedSessionIds,
+  canUserAccessReportSummary,
+  getReportSummaryAssignmentsForUser,
+  getAllReportSummariesForAssignment,
+  setReportSummaryAssignmentsForUser,
+  getAssignedReportSummaryIds,
 };
