@@ -124,6 +124,10 @@ export async function generateReportSummary(
   const id = uuidv4();
   const db = getDb();
 
+  // Only retain the source text when validation did not succeed, so the user
+  // can revalidate later. A successful first run carries no retry need.
+  const persistedSourceText = validation.status === "completed" ? null : reportText;
+
   db.prepare(
     `INSERT INTO report_summaries (
        id, user_id, title, source_text, what_happened, diagnosis, treatment_plan, follow_up, warning_signs, additional_notes, tooltips,
@@ -134,7 +138,7 @@ export async function generateReportSummary(
     id,
     userId,
     title,
-    reportText,
+    persistedSourceText,
     summary.whatHappened,
     summary.diagnosis,
     summary.treatmentPlan,
@@ -357,17 +361,23 @@ export async function revalidateReportSummary(
     reportSummaryId: id,
   });
 
+  // Drop the retained source text once validation succeeds — it was only
+  // retained to enable retries. A failure leaves it in place for another try.
+  const newSourceText = validation.status === "completed" ? null : row.source_text;
+
   // A revalidation must invalidate any pre-existing confirmation: the GP must
   // re-review fresh validator output. Share token also clears, mirroring the
   // unconfirm path.
   db.prepare(
     `UPDATE report_summaries
-     SET validator_model = ?, validator_status = ?, validator_report = ?, validator_run_at = ?,
+     SET source_text = ?,
+         validator_model = ?, validator_status = ?, validator_report = ?, validator_run_at = ?,
          confirmed_at = NULL, confirmed_by = NULL,
          share_token = NULL, share_expires_at = NULL,
          updated_at = datetime('now')
      WHERE id = ? AND user_id = ?`,
   ).run(
+    newSourceText,
     validation.model,
     validation.status,
     validation.report ? JSON.stringify(validation.report) : null,

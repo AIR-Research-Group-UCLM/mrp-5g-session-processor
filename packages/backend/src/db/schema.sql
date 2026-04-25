@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS report_summaries (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     title TEXT,
-    source_text TEXT,                     -- original report text, retained for revalidation
+    source_text TEXT,                     -- original report text; retained only while validation has not succeeded, cleared on success
     what_happened TEXT NOT NULL,
     diagnosis TEXT NOT NULL,
     treatment_plan TEXT NOT NULL,

@@ -35,7 +35,7 @@ services:
       SIMULATOR_AUDIO_CONCURRENCY: ${SIMULATOR_AUDIO_CONCURRENCY:-3}
       OPEN_WEBUI_BASE_URL: ${OPEN_WEBUI_BASE_URL:-}
       OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
-      OPEN_WEBUI_MODEL: ${OPEN_WEBUI_MODEL:-gemma3:12b}
+      OPEN_WEBUI_MODEL: ${OPEN_WEBUI_MODEL:-gpt-oss:20b}
     volumes:
       - ./data/app:/app/data
     depends_on:
