@@ -40,6 +40,27 @@ export function normalizeKeys(obj: Record<string, unknown>): Record<string, unkn
   return normalized;
 }
 
+// Per-model reasoning policy:
+//   - gpt-oss → reasoning_effort: "medium" (only model in our fleet that
+//     exposes a real reasoning knob; medium balances quality vs. latency).
+//   - everything else → push every "disable thinking" toggle the upstream
+//     might honour. Models that don't recognise them ignore them silently
+//     (verified against gemma4:31b — accepts and discards).
+type ThinkingPolicy =
+  | { kind: "gpt-oss"; reasoningEffort: "medium" }
+  | { kind: "disabled"; think: false; chatTemplateKwargs: { enable_thinking: false } };
+
+function thinkingPolicyFor(model: string): ThinkingPolicy {
+  if (/gpt-oss/i.test(model)) {
+    return { kind: "gpt-oss", reasoningEffort: "medium" };
+  }
+  return {
+    kind: "disabled",
+    think: false,
+    chatTemplateKwargs: { enable_thinking: false },
+  };
+}
+
 export async function callOpenWebUi(
   systemPrompt: string,
   userMessage: string,
@@ -51,6 +72,7 @@ export async function callOpenWebUi(
 
   const url = `${config.openWebUi.baseUrl}/chat/completions`;
   const model = options?.model ?? config.openWebUi.model;
+  const policy = thinkingPolicyFor(model);
   const startedAt = Date.now();
 
   logger.info(
@@ -60,6 +82,7 @@ export async function callOpenWebUi(
       systemPromptChars: systemPrompt.length,
       userMessageChars: userMessage.length,
       maxTokens: options?.maxTokens ?? null,
+      thinkingPolicy: policy.kind,
     },
     "Open WebUI request starting",
   );
@@ -80,6 +103,9 @@ export async function callOpenWebUi(
         ],
         temperature: 0.3,
         ...(options?.maxTokens != null ? { max_tokens: options.maxTokens } : {}),
+        ...(policy.kind === "gpt-oss"
+          ? { reasoning_effort: policy.reasoningEffort }
+          : { think: policy.think, chat_template_kwargs: policy.chatTemplateKwargs }),
       }),
       signal: options?.signal,
     });
