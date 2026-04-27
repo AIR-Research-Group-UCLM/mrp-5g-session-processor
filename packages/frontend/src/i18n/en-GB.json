@@ -385,6 +385,7 @@
     "generating": "Generating summary...",
     "errorGenerating": "Error generating summary. Please try again.",
     "generateNew": "Generate Another",
+    "clearText": "Clear",
     "file": {
       "dropzone": "Drag a file here, or click to select",
       "dropzoneActive": "Drop the file here",

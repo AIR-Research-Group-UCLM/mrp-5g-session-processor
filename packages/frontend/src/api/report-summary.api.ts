@@ -133,7 +133,11 @@ export async function extractTextFromFile(
 
   const response = await apiClient.post<
     ApiResponse<{ text: string; filename: string }>
-  >("/report-summaries/extract-text", formData);
+  >("/report-summaries/extract-text", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
   if (!response.data.data) {
     throw new Error(response.data.error ?? "Failed to extract text from file");

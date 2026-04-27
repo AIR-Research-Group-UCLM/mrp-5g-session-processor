@@ -44,45 +44,80 @@ function stripOdtXml(xml: string): string {
     .trim();
 }
 
-function extractFileFromZip(zipBuffer: Buffer, targetFile: string): Promise<string | null> {
+const EOCD_SIGNATURE = 0x06054b50;
+const CENTRAL_DIR_SIGNATURE = 0x02014b50;
+
+function findEndOfCentralDirectory(zipBuffer: Buffer): number {
+  const minEocdSize = 22;
+  const maxCommentSize = 0xffff;
+  const searchStart = Math.max(0, zipBuffer.length - minEocdSize - maxCommentSize);
+
+  for (let i = zipBuffer.length - minEocdSize; i >= searchStart; i--) {
+    if (zipBuffer.readUInt32LE(i) === EOCD_SIGNATURE) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+function inflateRaw(data: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    let offset = 0;
+    const inflate = createInflateRaw();
+    const chunks: Buffer[] = [];
+    inflate.on("data", (chunk: Buffer) => chunks.push(chunk));
+    inflate.on("end", () => resolve(Buffer.concat(chunks)));
+    inflate.on("error", reject);
+    inflate.end(data);
+  });
+}
 
-    while (offset < zipBuffer.length - 4) {
-      const sig = zipBuffer.readUInt32LE(offset);
-      if (sig !== 0x04034b50) break;
+async function extractFileFromZip(
+  zipBuffer: Buffer,
+  targetFile: string,
+): Promise<string | null> {
+  const eocdOffset = findEndOfCentralDirectory(zipBuffer);
+  if (eocdOffset === -1) {
+    return null;
+  }
 
-      const compMethod = zipBuffer.readUInt16LE(offset + 8);
-      const compSize = zipBuffer.readUInt32LE(offset + 18);
-      const nameLen = zipBuffer.readUInt16LE(offset + 26);
-      const extraLen = zipBuffer.readUInt16LE(offset + 28);
-      const name = zipBuffer.subarray(offset + 30, offset + 30 + nameLen).toString("utf-8");
-      const dataStart = offset + 30 + nameLen + extraLen;
+  const cdEntries = zipBuffer.readUInt16LE(eocdOffset + 10);
+  const cdOffset = zipBuffer.readUInt32LE(eocdOffset + 16);
 
-      if (name === targetFile) {
-        const rawData = zipBuffer.subarray(dataStart, dataStart + compSize);
-
-        if (compMethod === 0) {
-          resolve(rawData.toString("utf-8"));
-          return;
-        }
-
-        if (compMethod === 8) {
-          const inflate = createInflateRaw();
-          const chunks: Buffer[] = [];
-          inflate.on("data", (chunk: Buffer) => chunks.push(chunk));
-          inflate.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
-          inflate.on("error", (err) => reject(err));
-          inflate.end(rawData);
-          return;
-        }
-      }
-
-      offset = dataStart + compSize;
+  let cdPtr = cdOffset;
+  for (let i = 0; i < cdEntries; i++) {
+    if (zipBuffer.readUInt32LE(cdPtr) !== CENTRAL_DIR_SIGNATURE) {
+      return null;
     }
 
-    resolve(null);
-  });
+    const compMethod = zipBuffer.readUInt16LE(cdPtr + 10);
+    const compSize = zipBuffer.readUInt32LE(cdPtr + 20);
+    const nameLen = zipBuffer.readUInt16LE(cdPtr + 28);
+    const extraLen = zipBuffer.readUInt16LE(cdPtr + 30);
+    const commentLen = zipBuffer.readUInt16LE(cdPtr + 32);
+    const localHeaderOffset = zipBuffer.readUInt32LE(cdPtr + 42);
+    const name = zipBuffer.subarray(cdPtr + 46, cdPtr + 46 + nameLen).toString("utf-8");
+
+    if (name === targetFile) {
+      const lfNameLen = zipBuffer.readUInt16LE(localHeaderOffset + 26);
+      const lfExtraLen = zipBuffer.readUInt16LE(localHeaderOffset + 28);
+      const dataStart = localHeaderOffset + 30 + lfNameLen + lfExtraLen;
+      const rawData = zipBuffer.subarray(dataStart, dataStart + compSize);
+
+      if (compMethod === 0) {
+        return rawData.toString("utf-8");
+      }
+      if (compMethod === 8) {
+        const inflated = await inflateRaw(rawData);
+        return inflated.toString("utf-8");
+      }
+      return null;
+    }
+
+    cdPtr += 46 + nameLen + extraLen + commentLen;
+  }
+
+  return null;
 }
 
 export async function extractText(buffer: Buffer, mimeType: string): Promise<string> {

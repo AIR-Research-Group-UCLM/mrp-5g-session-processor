@@ -385,6 +385,7 @@
     "generating": "Generando resumen...",
     "errorGenerating": "Error al generar el resumen. Inténtalo de nuevo.",
     "generateNew": "Generar Otro",
+    "clearText": "Limpiar",
     "file": {
       "dropzone": "Arrastra un archivo aquí, o haz clic para seleccionar",
       "dropzoneActive": "Suelta el archivo aquí",

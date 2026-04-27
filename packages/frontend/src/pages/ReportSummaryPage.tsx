@@ -24,6 +24,7 @@ import {
   AlertCircle,
   AlertTriangle,
   ClipboardList,
+  Eraser,
   Eye,
   FileText,
   Link2,
@@ -125,12 +126,25 @@ export function ReportSummaryPage() {
               />
 
               <div>
-                <label
-                  htmlFor="report-text"
-                  className="mb-1.5 block text-sm font-medium text-gray-700"
-                >
-                  {t("reportSummary.reportLabel")}
-                </label>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label
+                    htmlFor="report-text"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    {t("reportSummary.reportLabel")}
+                  </label>
+                  {reportText.length > 0 && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setReportText("")}
+                      disabled={generateMutation.isPending}
+                    >
+                      <Eraser className="h-4 w-4" />
+                      {t("reportSummary.clearText")}
+                    </Button>
+                  )}
+                </div>
                 <textarea
                   id="report-text"
                   className="input min-h-[200px] resize-y"
