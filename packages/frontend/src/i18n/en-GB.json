@@ -440,6 +440,9 @@
       "hallucination": "Hallucination detection",
       "warningSign": "Warning-sign appropriateness",
       "glossary": "Glossary coverage"
+    },
+    "notes": {
+      "glossaryTermMissing": "Glossary term not found in source: \"{{term}}\""
     }
   },
   "assignments": {

@@ -9,11 +9,23 @@ import { logger } from "../config/logger.js";
 import { withRetry } from "../utils/retry.js";
 import { callOpenWebUi, extractJson } from "../utils/llm.js";
 
-// LLM contract: a flat object of axis → array of issue strings.
-// Empty array (or missing key) means "no issue on this axis". The severity
-// classification is synthesized in code (empty → ok, non-empty → major).
-// Keeping the model's output shape this simple matters for smaller open-weight
-// models that struggle with nested JSON schemas.
+// One LLM call per axis. The model only has to evaluate ONE concern at a time,
+// which keeps prompts small (faster generation, far less likely to hit the
+// per-call timeout) and the expected JSON shape trivial (an array of strings,
+// or a single string, or null) — within the instruction-following budget of
+// smaller open-weight models like gpt-oss:20b.
+//
+// Default to serial execution to avoid hammering a single Open WebUI worker;
+// flip SAFETY_VALIDATOR_PARALLEL to true if the upstream can handle 5 in flight.
+const SAFETY_VALIDATOR_PARALLEL = false;
+const AXIS_TIMEOUT_MS = 120_000;
+const AXIS_MAX_RETRIES = 2;
+// Cap each axis response at ~500 tokens (≈ 1.5–2 kB). Combined with the
+// "top N most relevant issues" instruction, this prevents runaway generations
+// that previously stretched per-axis latency into the timeout window.
+const AXIS_MAX_OUTPUT_TOKENS = 500;
+const AXIS_MAX_ISSUES = 5;
+
 // Extract a string from an object-shaped issue if the model wraps each item
 // in `{issue: "..."}` / `{text: "..."}` / etc. Falls back to JSON.stringify so
 // no information is lost.
@@ -25,13 +37,9 @@ function objectItemToString(item: Record<string, unknown>): string {
   return JSON.stringify(item);
 }
 
+// Per-axis response: array of strings, a single string (one issue), or null.
 const issuesField = z
-  .union([
-    z.array(z.unknown()),
-    z.string(),
-    z.null(),
-    z.undefined(),
-  ])
+  .union([z.array(z.unknown()), z.string(), z.null(), z.undefined()])
   .transform((v) => {
     if (v === null || v === undefined) return [] as string[];
     if (typeof v === "string") {
@@ -50,71 +58,61 @@ const issuesField = z
       .filter(Boolean);
   });
 
-const flatReportSchema = z.object({
-  medication: issuesField,
-  diagnostic: issuesField,
-  hallucination: issuesField,
-  warningSign: issuesField,
-  glossary: issuesField,
-});
-
-const AXIS_KEY_ALIASES: Record<string, string> = {
-  medicationconcordance: "medication",
-  medicationissues: "medication",
-  medications: "medication",
-  medication: "medication",
-  diagnosticconcordance: "diagnostic",
-  diagnosticissues: "diagnostic",
-  diagnostics: "diagnostic",
-  diagnostic: "diagnostic",
-  hallucinationdetection: "hallucination",
-  hallucinationissues: "hallucination",
-  hallucinations: "hallucination",
-  hallucination: "hallucination",
-  warningsignappropriateness: "warningSign",
-  warningsignissues: "warningSign",
-  warningsigns: "warningSign",
-  warningsign: "warningSign",
-  glossarycoverage: "glossary",
-  glossaryissues: "glossary",
-  glossary: "glossary",
-};
-
-function normalizeAxisKeys(obj: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    const lookup = key.replace(/[_\-\s]/g, "").toLowerCase();
-    out[AXIS_KEY_ALIASES[lookup] ?? key] = value;
-  }
-  return out;
+interface AxisDefinition {
+  key: keyof ValidatorReport;
+  label: string;
+  description: string;
+  rule: string;
 }
 
-function buildValidatorPrompt(): string {
-  return `You are a clinical-safety validator reviewing a patient-facing consultation summary against the source professional content. Your job is to detect discrepancies that could mislead or harm a patient. Do not rewrite the summary — only list issues.
+const AXIS_DEFINITIONS: readonly AxisDefinition[] = [
+  {
+    key: "medication",
+    label: "medication",
+    description: "drugs, doses, and frequencies",
+    rule: "Every drug, dose, and frequency in the SUMMARY must match the SOURCE. Flag missing meds, extra meds, wrong doses, or wrong frequencies.",
+  },
+  {
+    key: "diagnostic",
+    label: "diagnostic",
+    description: "diagnostic conclusions",
+    rule: "Every diagnostic conclusion in the SUMMARY must be traceable to the SOURCE. Flag conclusions added beyond the SOURCE or omitted from it.",
+  },
+  {
+    key: "hallucination",
+    label: "hallucination",
+    description: "untraceable factual claims",
+    rule: "Flag any factual claim in the SUMMARY that cannot be traced to a turn or section of the SOURCE (excluding stylistic plain-language rewording).",
+  },
+  {
+    key: "warningSign",
+    label: "warningSign",
+    description: "red-flag advice appropriateness",
+    rule: "Red flags listed in the SUMMARY must come from what the consultant actually mentioned, not from generic medical knowledge. Flag warning signs the SOURCE did not raise.",
+  },
+  // glossary is computed deterministically (see computeGlossaryAxis) — it does
+  // not need an LLM, since the check is "tooltip key appears verbatim in SOURCE".
+] as const;
 
-You will receive two inputs:
+function buildAxisPrompt(axis: AxisDefinition): string {
+  return `You are a clinical-safety validator. Compare the patient-facing SUMMARY against the original professional SOURCE on a single axis: ${axis.label} (${axis.description}).
+
+You will receive:
 - SOURCE: the original professional content (transcript with role labels, or a doctor's clinical report).
-- SUMMARY: a patient-facing JSON summary derived from the source.
+- SUMMARY: a patient-facing JSON summary derived from the SOURCE.
 
-Check the summary on five axes:
+Rule: ${axis.rule}
 
-1. medication — every drug, dose, and frequency in the summary must match the source. Flag missing meds, extra meds, wrong doses or frequencies.
-2. diagnostic — every diagnostic conclusion in the summary must be traceable to the source. Flag conclusions added beyond the source or omitted from it.
-3. hallucination — flag any factual claim in the summary that cannot be traced to a turn or section of the source (excluding stylistic plain-language rewording).
-4. warningSign — red flags listed in the summary must come from what the consultant actually mentioned, not from your generic medical knowledge. Flag warning signs the source did not raise.
-5. glossary — auto-generated tooltips/definitions must trace to terms actually uttered in the source. Flag definitions for terms the source never used.
+Respond with EXACTLY a JSON object containing a single key "issues" — no markdown fences, no commentary, no bare strings, no bare arrays. Do NOT echo the SUMMARY back. Do NOT include keys like "whatHappened", "diagnosis", "treatmentPlan", "followUp", "warningSigns", "additionalNotes", or "tooltips" — those belong in the SUMMARY input, not in your response. The value of "issues" must be one of:
+- An empty array if there is no issue: {"issues": []}
+- An array of short strings, one issue per element: {"issues": ["issue 1", "issue 2"]}
 
-Respond with EXACTLY this JSON shape (no markdown fences, no commentary). Each value is an array of short strings, one issue per string. Use an empty array [] when no issue is found on that axis.
+EXAMPLE (medication axis):
+  SOURCE excerpt: "Patient on apixaban 2.5 mg twice daily."
+  SUMMARY excerpt: {"treatmentPlan": "Take apixaban 2.5 mg once a day."}
+  Your response: {"issues": ["Apixaban frequency mismatch: summary says once daily, source says twice daily."]}
 
-{
-  "medication": [],
-  "diagnostic": [],
-  "hallucination": [],
-  "warningSign": [],
-  "glossary": []
-}
-
-CRITICAL: write each issue in the same language as the SUMMARY. Keep each issue under 200 characters.`;
+CRITICAL: write each issue in the same language as the SUMMARY. Keep each issue under 200 characters. List AT MOST ${AXIS_MAX_ISSUES} issues — if more exist, prioritise the highest patient-safety risk first and omit the rest.`;
 }
 
 function buildValidatorUserMessage(
@@ -147,64 +145,97 @@ function notesToAxis(notes: string[]): ValidatorAxis {
     : { severity: "major", notes };
 }
 
-const EXPECTED_AXES = new Set([
-  "medication",
-  "diagnostic",
-  "hallucination",
-  "warningSign",
-  "glossary",
-]);
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
-function parseValidatorReport(raw: string): ValidatorReport {
-  const parsed = extractJson(raw);
-  const obj =
-    parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : {};
+// Whole-word, case-insensitive, Unicode-aware match. Lookbehind/lookahead with
+// \p{L} avoid both ASCII-only \b and substring false-positives like "ITU"
+// matching inside "instituto".
+function termAppearsInSource(term: string, source: string): boolean {
+  const trimmed = term.trim();
+  if (!trimmed) return true;
+  const re = new RegExp(`(?<!\\p{L})${escapeRegex(trimmed)}(?!\\p{L})`, "iu");
+  return re.test(source);
+}
 
-  const normalisedAxes = normalizeAxisKeys(obj);
-  const recognised = Object.keys(normalisedAxes).filter((k) => EXPECTED_AXES.has(k));
-  if (recognised.length === 0) {
-    // The model returned JSON, but nothing we can map to the expected axes.
-    // Treat as a validator failure rather than silently report "all clean".
-    throw new Error("Validator response does not contain any expected axis keys");
-  }
-  // Be lenient with nested shapes the LLM may emit despite our prompt:
-  // unwrap {severity, notes} / {issues} / {items} / etc. into a plain string list.
-  const INNER_LIST_KEYS = ["notes", "issues", "flags", "items", "discrepancies", "findings"] as const;
-  for (const key of Object.keys(normalisedAxes)) {
-    const v = normalisedAxes[key];
-    if (v && typeof v === "object" && !Array.isArray(v)) {
-      const inner = v as Record<string, unknown>;
-      let unwrapped: unknown = null;
-      for (const ik of INNER_LIST_KEYS) {
-        if (inner[ik] !== undefined && inner[ik] !== null) {
-          unwrapped = inner[ik];
-          break;
-        }
-      }
-      if (unwrapped !== null) {
-        normalisedAxes[key] = unwrapped;
-      } else {
-        // Last-resort: collapse the object to its string values.
-        const strings = Object.values(inner).filter((x) => typeof x === "string");
-        normalisedAxes[key] = strings;
-      }
+// Note marker the frontend translates: `__i18n__{"key":"...","values":{...}}`.
+// LLM-generated notes pass through verbatim; only deterministic notes use this
+// marker so they can be rendered in the active UI language.
+function i18nNote(key: string, values: Record<string, string | number>): string {
+  return `__i18n__${JSON.stringify({ key, values })}`;
+}
+
+function computeGlossaryAxis(
+  summary: ConsultationSummary,
+  sourceText: string,
+): ValidatorAxis {
+  const tooltips = summary.tooltips ?? {};
+  const terms = Object.keys(tooltips);
+  if (terms.length === 0) return { severity: "ok", notes: [] };
+
+  const notes: string[] = [];
+  for (const term of terms) {
+    if (!termAppearsInSource(term, sourceText)) {
+      notes.push(i18nNote("validator.notes.glossaryTermMissing", { term }));
     }
   }
+  return notesToAxis(notes);
+}
 
-  const result = flatReportSchema.safeParse(normalisedAxes);
-  if (!result.success) {
-    throw new Error("Invalid validator response structure");
+// Keys that uniquely identify a ConsultationSummary — if the model echoes the
+// SUMMARY back instead of producing {"issues": [...]}, the response will hit
+// at least two of these. Detect explicitly so the retry logs a clear cause
+// rather than an opaque zod-union error chain.
+const SUMMARY_ECHO_KEYS = [
+  "whatHappened",
+  "diagnosis",
+  "treatmentPlan",
+  "followUp",
+  "warningSigns",
+  "additionalNotes",
+  "tooltips",
+] as const;
+
+function parseAxisResponse(raw: string, axis: AxisDefinition): string[] {
+  // Strict shape: a JSON object with at least one key whose value is a string
+  // or an array of strings. Bare strings/arrays/primitives are rejected — the
+  // looser contract caused the model to emit free-form prose that polluted the
+  // notes list.
+  const parsed = extractJson(raw);
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(
+      `Expected JSON object for axis "${axis.label}", got ${
+        Array.isArray(parsed) ? "array" : parsed === null ? "null" : typeof parsed
+      }`,
+    );
   }
-  const flat = result.data;
-  return {
-    medication: notesToAxis(flat.medication),
-    diagnostic: notesToAxis(flat.diagnostic),
-    hallucination: notesToAxis(flat.hallucination),
-    warningSign: notesToAxis(flat.warningSign),
-    glossary: notesToAxis(flat.glossary),
-  };
+
+  const obj = parsed as Record<string, unknown>;
+  const keys = Object.keys(obj);
+  if (keys.length === 0) {
+    throw new Error(`Empty JSON object for axis "${axis.label}"`);
+  }
+
+  // Echo guard: ≥2 SUMMARY-shaped keys means the model regenerated the input
+  // instead of producing issues. Bail with a specific message so the retry
+  // doesn't fight a downstream zod-union error.
+  const echoHits = keys.filter((k) => (SUMMARY_ECHO_KEYS as readonly string[]).includes(k));
+  if (echoHits.length >= 2) {
+    throw new Error(
+      `Response echoes the SUMMARY shape (keys: ${echoHits.join(", ")}) instead of {"issues": [...]} for axis "${axis.label}"`,
+    );
+  }
+
+  // Prompt asks for a single key, but tolerate multiple by unioning their
+  // values. Each value must parse as string|array via issuesField; nested
+  // shapes still fall back through objectItemToString for items inside arrays.
+  const allNotes: string[] = [];
+  for (const key of keys) {
+    allNotes.push(...issuesField.parse(obj[key]));
+  }
+  return allNotes;
 }
 
 export interface ValidationOutcome {
@@ -212,6 +243,95 @@ export interface ValidationOutcome {
   model: string;
   report: ValidatorReport | null;
   runAt: string;
+}
+
+async function runValidationForAxis(
+  summary: ConsultationSummary,
+  sourceText: string,
+  model: string,
+  axis: AxisDefinition,
+  context: { sessionId?: string; reportSummaryId?: string },
+): Promise<string[] | null> {
+  const systemPrompt = buildAxisPrompt(axis);
+  const userMessage = buildValidatorUserMessage(summary, sourceText);
+
+  try {
+    return await withRetry(
+      async () => {
+        const attemptStart = Date.now();
+        // Tie the fetch lifetime to the per-attempt timeout so a hung Open WebUI
+        // request is actually cancelled instead of running on while withRetry
+        // moves on to the next attempt.
+        const controller = new AbortController();
+        const timeoutHandle = setTimeout(() => controller.abort(), AXIS_TIMEOUT_MS);
+        try {
+          const content = await callOpenWebUi(systemPrompt, userMessage, {
+            model,
+            signal: controller.signal,
+            maxTokens: AXIS_MAX_OUTPUT_TOKENS,
+          });
+          logger.info(
+            {
+              ...context,
+              model,
+              axis: axis.label,
+              durationMs: Date.now() - attemptStart,
+              contentLength: content.length,
+              content,
+            },
+            "Safety validator axis raw LLM response",
+          );
+          try {
+            return parseAxisResponse(content, axis);
+          } catch (parseError) {
+            logger.warn(
+              {
+                ...context,
+                model,
+                axis: axis.label,
+                error: parseError instanceof Error ? parseError.message : String(parseError),
+                content,
+              },
+              "Safety validator axis response failed to parse (will retry if attempts remain)",
+            );
+            throw parseError;
+          }
+        } catch (error) {
+          if (controller.signal.aborted) {
+            logger.warn(
+              {
+                ...context,
+                model,
+                axis: axis.label,
+                durationMs: Date.now() - attemptStart,
+              },
+              "Safety validator axis LLM call aborted (per-attempt timeout fired)",
+            );
+          }
+          throw error;
+        } finally {
+          clearTimeout(timeoutHandle);
+        }
+      },
+      {
+        operationName: `safety-validation[${axis.label}]`,
+        sessionId: context.sessionId,
+        timeoutMs: AXIS_TIMEOUT_MS,
+        maxRetries: AXIS_MAX_RETRIES,
+      },
+    );
+  } catch (error) {
+    logger.warn(
+      {
+        ...context,
+        model,
+        axis: axis.label,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "Safety validator axis failed after retries",
+    );
+    return null;
+  }
 }
 
 export async function runSafetyValidation(
@@ -222,40 +342,69 @@ export async function runSafetyValidation(
   const model = config.openWebUi.validatorModel;
   const runAt = new Date().toISOString();
 
-  const systemPrompt = buildValidatorPrompt();
-  const userMessage = buildValidatorUserMessage(summary, sourceText);
+  logger.info(
+    {
+      ...context,
+      model,
+      sourceTextChars: sourceText.length,
+      axisCount: AXIS_DEFINITIONS.length,
+      mode: SAFETY_VALIDATOR_PARALLEL ? "parallel" : "serial",
+      perAxisTimeoutMs: AXIS_TIMEOUT_MS,
+    },
+    "Running safety validation (Step 3)",
+  );
 
-  logger.info({ ...context, model }, "Running safety validation (Step 3)");
-
-  try {
-    // Parse inside the retry: if the model returns JSON in the wrong shape,
-    // the retry can produce a different sample at temperature 0.3.
-    const report = await withRetry(
-      async () => {
-        const content = await callOpenWebUi(systemPrompt, userMessage, { model });
-        return parseValidatorReport(content);
-      },
-      {
-        operationName: "safety-validation",
-        sessionId: context.sessionId,
-        timeoutMs: 120_000,
-        maxRetries: 2,
-      },
+  let perAxisResults: (string[] | null)[];
+  if (SAFETY_VALIDATOR_PARALLEL) {
+    perAxisResults = await Promise.all(
+      AXIS_DEFINITIONS.map((axis) =>
+        runValidationForAxis(summary, sourceText, model, axis, context),
+      ),
     );
+  } else {
+    perAxisResults = [];
+    for (const axis of AXIS_DEFINITIONS) {
+      perAxisResults.push(
+        await runValidationForAxis(summary, sourceText, model, axis, context),
+      );
+    }
+  }
 
-    logger.info({ ...context, model }, "Safety validation completed");
-    return { status: "completed", model, report, runAt };
-  } catch (error) {
+  const successfulCount = perAxisResults.filter((r) => r !== null).length;
+
+  if (successfulCount === 0) {
     logger.warn(
-      {
-        ...context,
-        model,
-        error: error instanceof Error ? error.message : String(error),
-      },
-      "Safety validation failed (non-fatal)",
+      { ...context, model, axisCount: AXIS_DEFINITIONS.length },
+      "Safety validation failed: every axis failed",
     );
     return { status: "failed", model, report: null, runAt };
   }
+
+  const report = emptyValidatorReport();
+  AXIS_DEFINITIONS.forEach((axis, idx) => {
+    const notes = perAxisResults[idx];
+    if (notes != null) {
+      report[axis.key] = notesToAxis(notes);
+    }
+    // Failed axes stay as the default "ok"/empty — partial failure is logged
+    // above; we don't have a per-axis "unknown" severity to express it cleanly.
+  });
+
+  // Glossary is deterministic — always populated alongside the LLM axes.
+  report.glossary = computeGlossaryAxis(summary, sourceText);
+
+  logger.info(
+    {
+      ...context,
+      model,
+      successfulAxes: successfulCount,
+      totalAxes: AXIS_DEFINITIONS.length,
+      glossaryNotes: report.glossary.notes.length,
+    },
+    "Safety validation completed",
+  );
+
+  return { status: "completed", model, report, runAt };
 }
 
 export function emptyValidatorReport(): ValidatorReport {

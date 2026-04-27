@@ -5,19 +5,26 @@ import { Spinner } from "@/components/ui/Spinner";
 import { Badge } from "@/components/ui/Badge";
 import { FileTextDropzone } from "@/components/shared/FileTextDropzone";
 import { ShareSection } from "@/components/shared/ShareSection";
+import { ValidatorPanel } from "@/components/shared/ValidatorPanel";
 import { SummaryContent } from "@/components/sessions/ConsultationSummaryPanel";
 import {
   useGenerateReportSummary,
+  useReportSummary,
   useReportSummaries,
   useDeleteReportSummary,
   useCreateReportShareToken,
   useRevokeReportShareToken,
+  useConfirmReportSummary,
+  useUnconfirmReportSummary,
+  useRevalidateReportSummary,
 } from "@/hooks/useReportSummaries";
 import { useAuth } from "@/hooks/useAuth";
-import type { StoredReportSummary } from "@mrp/shared";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
+  AlertTriangle,
   ClipboardList,
+  Eye,
   FileText,
   Link2,
   PlusCircle,
@@ -31,13 +38,22 @@ import { Link } from "react-router-dom";
 export function ReportSummaryPage() {
   const { t } = useTranslation();
   const { canWrite } = useAuth();
+  const queryClient = useQueryClient();
   const [reportText, setReportText] = useState("");
   const [title, setTitle] = useState("");
-  const [generatedSummary, setGeneratedSummary] = useState<StoredReportSummary | null>(null);
+  // Track only the id; the canonical summary is read from react-query so that
+  // confirm/unconfirm/revalidate mutations (which write the cache) refresh the
+  // inline view without bespoke local state plumbing.
+  const [generatedId, setGeneratedId] = useState<string | null>(null);
 
   const generateMutation = useGenerateReportSummary();
   const createShare = useCreateReportShareToken();
   const revokeShare = useRevokeReportShareToken();
+  const confirmMutation = useConfirmReportSummary();
+  const unconfirmMutation = useUnconfirmReportSummary();
+  const revalidateMutation = useRevalidateReportSummary();
+
+  const { data: generatedSummary } = useReportSummary(generatedId ?? "");
 
   const [listPage, setListPage] = useState(1);
   const { data: listData, isLoading: isLoadingList } = useReportSummaries({
@@ -52,7 +68,10 @@ export function ReportSummaryPage() {
       { reportText, title: title.trim() || undefined },
       {
         onSuccess: (data) => {
-          setGeneratedSummary(data);
+          // Seed the cache so useReportSummary serves it instantly without
+          // a redundant fetch.
+          queryClient.setQueryData(["report-summary", data.id], data);
+          setGeneratedId(data.id);
           setReportText("");
           setTitle("");
         },
@@ -61,8 +80,11 @@ export function ReportSummaryPage() {
   };
 
   const handleGenerateAnother = () => {
-    setGeneratedSummary(null);
+    setGeneratedId(null);
   };
+
+  const validationFailed = generatedSummary?.validator.status === "failed";
+  const isConfirmed = !!generatedSummary?.confirmation.confirmedAt;
 
   return (
     <div className="space-y-6">
@@ -83,7 +105,7 @@ export function ReportSummaryPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {!generatedSummary && !generateMutation.isPending && (
+          {!generatedId && !generateMutation.isPending && (
             <div className="space-y-4">
               <p className="text-sm text-gray-500">
                 {t("reportSummary.description")}
@@ -149,7 +171,7 @@ export function ReportSummaryPage() {
             </div>
           )}
 
-          {generateMutation.isError && !generateMutation.isPending && !generatedSummary && (
+          {generateMutation.isError && !generateMutation.isPending && !generatedId && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 rounded-lg bg-red-50 p-4 text-sm text-red-700">
                 <AlertCircle className="h-4 w-4" />
@@ -164,35 +186,59 @@ export function ReportSummaryPage() {
 
           {generatedSummary && (
             <div className="space-y-4">
-              <SummaryContent
-                summary={generatedSummary}
-                title={generatedSummary.title}
-                date={new Date(generatedSummary.createdAt).toLocaleDateString()}
+              {validationFailed ? (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+                  <div className="flex items-start gap-2 text-sm text-amber-800">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div>
+                      <p className="font-medium">{t("validator.sheetHidden")}</p>
+                      <p className="mt-1 text-amber-700">
+                        {t("validator.sheetHiddenDescription")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <SummaryContent
+                  summary={generatedSummary}
+                  title={generatedSummary.title}
+                  date={new Date(generatedSummary.createdAt).toLocaleDateString()}
+                />
+              )}
+              <ValidatorPanel
+                validator={generatedSummary.validator}
+                confirmation={generatedSummary.confirmation}
+                canWrite={generatedSummary.canWrite}
+                onConfirm={() => confirmMutation.mutate(generatedSummary.id)}
+                onUnconfirm={() => unconfirmMutation.mutate(generatedSummary.id)}
+                isConfirming={confirmMutation.isPending}
+                isUnconfirming={unconfirmMutation.isPending}
+                onRevalidate={() => revalidateMutation.mutate(generatedSummary.id)}
+                isRevalidating={revalidateMutation.isPending}
               />
-              <ShareSection
-                shareToken={generatedSummary.shareToken ?? null}
-                shareExpiresAt={generatedSummary.shareExpiresAt ?? null}
-                onCreateShare={(expiryHours) => createShare.mutate({ summaryId: generatedSummary.id, expiryHours }, {
-                  onSuccess: (data) => {
-                    setGeneratedSummary({
-                      ...generatedSummary,
-                      shareToken: data.token,
-                      shareExpiresAt: data.expiresAt,
-                    });
-                  },
-                })}
-                onRevokeShare={() => revokeShare.mutate(generatedSummary.id, {
-                  onSuccess: () => {
-                    setGeneratedSummary({
-                      ...generatedSummary,
-                      shareToken: null,
-                      shareExpiresAt: null,
-                    });
-                  },
-                })}
-                isCreating={createShare.isPending}
-                isRevoking={revokeShare.isPending}
-              />
+              {generatedSummary.canWrite && (
+                <ShareSection
+                  shareToken={generatedSummary.shareToken ?? null}
+                  shareExpiresAt={generatedSummary.shareExpiresAt ?? null}
+                  onCreateShare={(expiryHours) =>
+                    createShare.mutate({ summaryId: generatedSummary.id, expiryHours })
+                  }
+                  onRevokeShare={() => revokeShare.mutate(generatedSummary.id)}
+                  isCreating={createShare.isPending}
+                  isRevoking={revokeShare.isPending}
+                  disabled={!isConfirmed}
+                  disabledReason={!isConfirmed ? t("validator.shareGated") : undefined}
+                />
+              )}
+              {isConfirmed && (
+                <Link
+                  to={`/report-summaries/${generatedSummary.id}/patient-view`}
+                  className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700"
+                >
+                  <Eye className="h-4 w-4" />
+                  {t("validator.openPatientView")}
+                </Link>
+              )}
               <Button variant="secondary" onClick={handleGenerateAnother}>
                 <PlusCircle className="h-4 w-4" />
                 {t("reportSummary.generateNew")}

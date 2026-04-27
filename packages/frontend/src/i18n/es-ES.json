@@ -440,6 +440,9 @@
       "hallucination": "Detección de alucinaciones",
       "warningSign": "Adecuación de signos de alarma",
       "glossary": "Cobertura del glosario"
+    },
+    "notes": {
+      "glossaryTermMissing": "Término del glosario no encontrado en la fuente: «{{term}}»"
     }
   },
   "assignments": {

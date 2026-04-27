@@ -43,28 +43,68 @@ export function normalizeKeys(obj: Record<string, unknown>): Record<string, unkn
 export async function callOpenWebUi(
   systemPrompt: string,
   userMessage: string,
-  options?: { model?: string },
+  options?: { model?: string; signal?: AbortSignal; maxTokens?: number },
 ): Promise<string> {
   if (!config.openWebUi.baseUrl || !config.openWebUi.apiKey) {
     throw new AppError(503, "Summary generation feature is not configured");
   }
 
   const url = `${config.openWebUi.baseUrl}/chat/completions`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.openWebUi.apiKey}`,
+  const model = options?.model ?? config.openWebUi.model;
+  const startedAt = Date.now();
+
+  logger.info(
+    {
+      model,
+      url,
+      systemPromptChars: systemPrompt.length,
+      userMessageChars: userMessage.length,
+      maxTokens: options?.maxTokens ?? null,
     },
-    body: JSON.stringify({
-      model: options?.model ?? config.openWebUi.model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.3,
-    }),
-  });
+    "Open WebUI request starting",
+  );
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.openWebUi.apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+        temperature: 0.3,
+        ...(options?.maxTokens != null ? { max_tokens: options.maxTokens } : {}),
+      }),
+      signal: options?.signal,
+    });
+  } catch (error) {
+    logger.warn(
+      {
+        model,
+        url,
+        durationMs: Date.now() - startedAt,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "Open WebUI fetch failed before response headers arrived",
+    );
+    throw error;
+  }
+
+  const headersReceivedAt = Date.now();
+  logger.info(
+    {
+      model,
+      status: response.status,
+      headersDurationMs: headersReceivedAt - startedAt,
+    },
+    "Open WebUI response headers received",
+  );
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
@@ -75,9 +115,26 @@ export async function callOpenWebUi(
     choices?: { message?: { content?: string } }[];
   };
   const content = data?.choices?.[0]?.message?.content;
+  const totalDurationMs = Date.now() - startedAt;
+
   if (!content) {
+    logger.warn(
+      { model, totalDurationMs, body: JSON.stringify(data).slice(0, 500) },
+      "Open WebUI returned no content",
+    );
     throw new Error("No response content from Open WebUI");
   }
+
+  logger.info(
+    {
+      model,
+      totalDurationMs,
+      bodyDurationMs: totalDurationMs - (headersReceivedAt - startedAt),
+      contentChars: content.length,
+    },
+    "Open WebUI request finished",
+  );
+
   return content;
 }
 

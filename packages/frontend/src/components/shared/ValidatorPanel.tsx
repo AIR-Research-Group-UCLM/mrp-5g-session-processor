@@ -83,6 +83,27 @@ function SeverityChip({ severity }: { severity: ValidatorAxisSeverity }) {
   );
 }
 
+// Backend may emit deterministic notes as `__i18n__{"key":"…","values":{…}}`
+// so they can be rendered in the active UI language. LLM-generated notes are
+// free-form strings and pass through as-is.
+const I18N_NOTE_PREFIX = "__i18n__";
+
+function renderNote(
+  note: string,
+  t: ReturnType<typeof useTranslation>["t"],
+): string {
+  if (!note.startsWith(I18N_NOTE_PREFIX)) return note;
+  try {
+    const payload = JSON.parse(note.slice(I18N_NOTE_PREFIX.length)) as {
+      key: string;
+      values?: Record<string, string | number>;
+    };
+    return t(payload.key, payload.values ?? {});
+  } catch {
+    return note;
+  }
+}
+
 function AxisRow({ axisKey, axis }: { axisKey: AxisKey; axis: ValidatorAxis }) {
   const { t } = useTranslation();
   return (
@@ -96,7 +117,7 @@ function AxisRow({ axisKey, axis }: { axisKey: AxisKey; axis: ValidatorAxis }) {
       {axis.notes.length > 0 ? (
         <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-gray-600">
           {axis.notes.map((note, i) => (
-            <li key={i}>{note}</li>
+            <li key={i}>{renderNote(note, t)}</li>
           ))}
         </ul>
       ) : (
