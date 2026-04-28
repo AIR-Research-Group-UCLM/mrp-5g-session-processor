@@ -11,6 +11,15 @@ const setAssignmentsSchema = z.object({
   assignments: z.array(assignmentInputSchema),
 });
 
+const reportSummaryAssignmentInputSchema = z.object({
+  reportSummaryId: z.string().uuid("Invalid report summary ID"),
+  canWrite: z.boolean(),
+});
+
+const setReportSummaryAssignmentsSchema = z.object({
+  assignments: z.array(reportSummaryAssignmentInputSchema),
+});
+
 /**
  * Get all sessions available for assignment to a user.
  * Returns sessions NOT owned by the target user, with current assignment status.
@@ -66,8 +75,70 @@ const setUserAssignments: RequestHandler = async (req, res, next) => {
   }
 };
 
+/**
+ * Get all report summaries available for assignment to a user.
+ */
+const getAvailableReportSummaries: RequestHandler = async (req, res, next) => {
+  try {
+    const targetUserId = req.params.userId!;
+    const reportSummaries =
+      await assignmentService.getAllReportSummariesForAssignment(targetUserId);
+    res.json({ success: true, data: { reportSummaries } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get current report-summary assignments for a user.
+ */
+const getUserReportSummaryAssignments: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const targetUserId = req.params.userId!;
+    const assignments =
+      await assignmentService.getReportSummaryAssignmentsForUser(targetUserId);
+    res.json({ success: true, data: { assignments } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Set report-summary assignments for a user (replaces all existing).
+ */
+const setUserReportSummaryAssignments: RequestHandler = async (
+  req,
+  res,
+  next
+) => {
+  try {
+    const targetUserId = req.params.userId!;
+    const adminUserId = req.session.userId!;
+    const { assignments } = setReportSummaryAssignmentsSchema.parse(req.body);
+
+    await assignmentService.setReportSummaryAssignmentsForUser(
+      targetUserId,
+      assignments,
+      adminUserId
+    );
+
+    const updatedAssignments =
+      await assignmentService.getReportSummaryAssignmentsForUser(targetUserId);
+    res.json({ success: true, data: { assignments: updatedAssignments } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const assignmentsController = {
   getAvailableSessions,
   getUserAssignments,
   setUserAssignments,
+  getAvailableReportSummaries,
+  getUserReportSummaryAssignments,
+  setUserReportSummaryAssignments,
 };

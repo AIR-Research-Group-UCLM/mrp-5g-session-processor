@@ -1,0 +1,231 @@
+## Consultation Transcript
+
+[introduction] DOCTOR: Good morning; please come in and have a seat.
+[symptoms] DOCTOR: What brings you in today?
+[symptoms] PATIENT: Good morning,
+[symptoms] PATIENT: Doctor; I am here because I've developed these red patches on my skin over the last few weeks.
+[symptoms] DOCTOR: Can you describe these patches in a bit more detail; where they're located and how they feel?
+[symptoms] PATIENT: They are mostly on my arms and my torso,
+[symptoms] PATIENT: reddish with drier,
+[symptoms] PATIENT: flaky areas.
+[symptoms] PATIENT: They sometimes itch,
+[symptoms] PATIENT: especially at night and after showering.
+[symptoms] DOCTOR: When did you first notice them,
+[symptoms] DOCTOR: and have they changed in size,
+[symptoms] DOCTOR: shape or color since then?
+[symptoms] PATIENT: I first noticed a few small spots maybe four or five weeks ago; some have gotten a bit larger and slightly darker red,
+[symptoms] PATIENT: but not painful.
+[symptoms] DOCTOR: You mentioned itching.
+[symptoms] DOCTOR: On a scale from zero to ten,
+[symptoms] DOCTOR: how bad does the itch get,
+[symptoms] DOCTOR: and does anything make it better or worse?
+[symptoms] PATIENT: At its worst it's maybe a seven.
+[symptoms] PATIENT: Mostly at night or right after a hot shower.
+[symptoms] PATIENT: Scratching helps briefly,
+[symptoms] PATIENT: but I sometimes break the skin.
+[symptoms] DOCTOR: Have you noticed any oozing,
+[symptoms] DOCTOR: bleeding on its own,
+[symptoms] DOCTOR: or crusting apart from the small scratch wounds?
+[symptoms] PATIENT: No spontaneous bleeding or oozing,
+[symptoms] PATIENT: just tiny scabs where I've scratched too much.
+[symptoms] PATIENT: The patches themselves don't hurt.
+[symptoms] DOCTOR: Any fever,
+[symptoms] DOCTOR: weight loss,
+[symptoms] DOCTOR: night sweats,
+[symptoms] DOCTOR: fatigue,
+[symptoms] DOCTOR: joint pain,
+[symptoms] DOCTOR: or feeling generally unwell recently?
+[symptoms] PATIENT: No; I actually feel fine otherwise; no fever or fatigue; my weight is stable and my joints are okay.
+[symptoms] DOCTOR: Have you changed soaps,
+[symptoms] DOCTOR: detergents,
+[symptoms] DOCTOR: creams,
+[symptoms] DOCTOR: or started any new medications,
+[symptoms] DOCTOR: supplements,
+[symptoms] DOCTOR: or foods around the time this started?
+[symptoms] PATIENT: Not that I can recall.
+[symptoms] PATIENT: Same shower gel and laundry detergent; no new meds; and my diet hasn't changed much.
+[symptoms] DOCTOR: Any history of allergies,
+[symptoms] DOCTOR: asthma,
+[symptoms] DOCTOR: eczema or psoriasis in you or close family members?
+[symptoms] PATIENT: I had mild hay fever as a teenager,
+[symptoms] PATIENT: but no skin diseases that I know of.
+[symptoms] PATIENT: My parents don't have psoriasis or eczema.
+[symptoms] DOCTOR: Do you work with chemicals,
+[symptoms] DOCTOR: solvents or irritants,
+[symptoms] DOCTOR: or have you had any recent travel,
+[symptoms] DOCTOR: hiking or contact with plants or animals?
+[symptoms] PATIENT: I work in an office,
+[symptoms] PATIENT: mostly at a computer; no special chemicals,
+[symptoms] PATIENT: and I haven't traveled or done anything unusual outdoors recently.
+[symptoms] DOCTOR: Okay,
+[symptoms] DOCTOR: I'd like to examine your skin now.
+[symptoms] DOCTOR: I'll need you to roll up your sleeves and lift your shirt so I can see your arms and trunk.
+[symptoms] PATIENT: Sure,
+[symptoms] PATIENT: no problem.
+[symptoms] DOCTOR: I see multiple well defined reddish plaques with some fine scaling on the forearms and upper chest; some excoriation marks; but no active infection or blisters.
+[symptoms] PATIENT: Does it look serious?
+[symptoms] PATIENT: I'm a bit worried because some spots seem to be spreading slowly.
+[diagnosis] DOCTOR: From what I see,
+[diagnosis] DOCTOR: it doesn't look like an emergency,
+[diagnosis] DOCTOR: but the pattern is a bit atypical,
+[diagnosis] DOCTOR: and I'd like a dermatologist's opinion.
+[diagnosis] PATIENT: How would that work to day-do I need another appointment somewhere else?
+[diagnosis] DOCTOR: We can actually connect with a skin specialist right now,
+[diagnosis] DOCTOR: using these v r smart glasses,
+[diagnosis] DOCTOR: so they can see what I'm seeing and help guide us.
+[diagnosis] PATIENT: That sounds good; I'd appreciate having a specialist look at it.
+[diagnosis] DOCTOR: Great,
+[diagnosis] DOCTOR: I'm putting the v r glasses on now and starting the connection.
+[diagnosis] DOCTOR: You'll see me talking,
+[diagnosis] DOCTOR: but the specialist will also hear and see everything in the room.
+[diagnosis] PATIENT: Understood.
+[diagnosis] SPECIALIST: Hello,
+[diagnosis] SPECIALIST: this is dr Miller,
+[diagnosis] SPECIALIST: dermatologist.
+[diagnosis] SPECIALIST: I can see the consultation room and the skin lesions through your v r feed.
+[diagnosis] SPECIALIST: Can you both hear me clearly?
+[diagnosis] DOCTOR: Yes; we hear you clearly; this is dr Evans in primary care with a patient with progressive red,
+[diagnosis] DOCTOR: scaly patches on arms and trunk.
+[diagnosis] PATIENT: Hello doctor; yes, I can hear you.
+[diagnosis] PATIENT: It's a bit strange knowing you can see us through the glasses,
+[diagnosis] PATIENT: but it's fine.
+[diagnosis] SPECIALIST: Thank you; I'll ask a few questions and guide dr Evans on the exam.
+[diagnosis] SPECIALIST: Patients have these lesions ever completely disappeared,
+[diagnosis] SPECIALIST: or do they persist and slowly change?
+[diagnosis] PATIENT: They don't really go away; some fade a bit,
+[diagnosis] PATIENT: others appear nearby or get slightly larger over time.
+[diagnosis] SPECIALIST: Dr.
+[diagnosis] SPECIALIST: Evans,
+[diagnosis] SPECIALIST: could you bring the camera closer to one of the plaques on the forearm and tilt so I can see the scale and borders clearly?
+[diagnosis] DOCTOR: Of course; I'm moving closer now,
+[diagnosis] DOCTOR: and focusing on a mid forearm lesion with scaling and a small scratch mark.
+[diagnosis] SPECIALIST: Perfect!
+[diagnosis] SPECIALIST: hold there!
+[diagnosis] SPECIALIST: I see a well demarcated erythematous plaque,
+[diagnosis] SPECIALIST: with fine white scaling,
+[diagnosis] SPECIALIST: and superficial excoriations,
+[diagnosis] SPECIALIST: no vesicles or pustules.
+[diagnosis] SPECIALIST: Any involvement of the scalp,
+[diagnosis] SPECIALIST: elbows,
+[diagnosis] SPECIALIST: or knees?
+[diagnosis] DOCTOR: No scalp lesions that I can see,
+[diagnosis] DOCTOR: and the elbows and knees look clear; no thick plaques or silvery scale in those areas.
+[diagnosis] SPECIALIST: Patient,
+[diagnosis] SPECIALIST: does any one in your family have auto immune conditions like thyroid disease,
+[diagnosis] SPECIALIST: vitiligo,
+[diagnosis] SPECIALIST: or rheumatoid arthritis,
+[diagnosis] SPECIALIST: in addition to psoriasis or eczema?
+[diagnosis] PATIENT: Not that I am aware of.
+[diagnosis] PATIENT: My parents have high blood pressure and cholesterol,
+[diagnosis] PATIENT: but no autoimmune diseases that I know.
+[diagnosis] SPECIALIST: dr Evans,
+[diagnosis] SPECIALIST: could you gently stretch the skin on one plaque and scrape a bit of scale with a tongue depressor so I can see how the scale behaves?
+[diagnosis] DOCTOR: I'm stretching the skin now,
+[diagnosis] DOCTOR: and lightly scraping.
+[diagnosis] DOCTOR: The scale is fine,
+[diagnosis] DOCTOR: comes off easily,
+[diagnosis] DOCTOR: no pinpoint bleeding underneath.
+[diagnosis] SPECIALIST: Thank you.
+[diagnosis] SPECIALIST: Patient,
+[diagnosis] SPECIALIST: do the lesions ever form ring shapes with a clearer centre,
+[diagnosis] SPECIALIST: or are they mostly solid patches of redness and scale?
+[diagnosis] PATIENT: Some look a bit like rings,
+[diagnosis] PATIENT: but the centre is still slightly pink and dry; they are not completely clear in the middle.
+[diagnosis] SPECIALIST: dr Evans,
+[diagnosis] SPECIALIST: can you show me a trunk lesion,
+[diagnosis] SPECIALIST: and slowly rotate around it so I can assess symmetry and edge quality?
+[diagnosis] DOCTOR: Yes,
+[diagnosis] DOCTOR: I'm focusing on a chest lesion now and moving around it.
+[diagnosis] DOCTOR: It's oval,
+[diagnosis] DOCTOR: with slightly raised sharper borders,
+[diagnosis] DOCTOR: and central mild clearing.
+[diagnosis] SPECIALIST: That's helpful.
+[diagnosis] SPECIALIST: Given the distribution and border,
+[diagnosis] SPECIALIST: I am considering nummular eczema versus tinea corporis.
+[diagnosis] SPECIALIST: Any lesions in skin folds like groin or armpits?
+[diagnosis] DOCTOR: I've checked the axillae and groin-there are no obvious lesions there-just the arms and upper trunk.
+[diagnosis] SPECIALIST: Patient,
+[diagnosis] SPECIALIST: have you used any over-the-counter creams like steroids or antifungals on these spots so far?
+[diagnosis] PATIENT: No, I've only used some basic moisturizer because the skin felt dry,
+[diagnosis] PATIENT: nothing medicated.
+[diagnosis] SPECIALIST: With that in mind this looks more like subacute eczema,
+[diagnosis] SPECIALIST: possibly nummular,
+[diagnosis] SPECIALIST: rather than psoriasis or fungal infection,
+[diagnosis] SPECIALIST: though tinea can't be fully excluded.
+[diagnosis] PATIENT: So it's probably an eczema type rash.
+[diagnosis] PATIENT: Is it something serious or long term?
+[diagnosis] SPECIALIST: It's usually not dangerous,
+[diagnosis] SPECIALIST: but it can be chronic or recurrent.
+[diagnosis] SPECIALIST: With proper treatment and skin care,
+[diagnosis] SPECIALIST: we can usually control the symptoms well.
+[treatment] DOCTOR: dr Miller,
+[treatment] DOCTOR: would you recommend any immediate tests,
+[treatment] DOCTOR: like a skin scraping for fungus,
+[treatment] DOCTOR: or should we start empiric treatment first?
+[treatment] SPECIALIST: Given the appearance and lack of fold involvement,
+[treatment] SPECIALIST: I'd start with a medium potency topical corticosteroid plus emollients,
+[treatment] SPECIALIST: and do a scraping only if it doesn't improve.
+[treatment] DOCTOR: Okay,
+[treatment] DOCTOR: and for the patient,
+[treatment] DOCTOR: how long should we try the steroid before reassessing?
+[treatment] SPECIALIST: Two weeks of once daily application should show clear improvement.
+[treatment] SPECIALIST: If there's no response,
+[treatment] SPECIALIST: or it worsens,
+[treatment] SPECIALIST: then consider fungal testing or biopsy.
+[treatment] PATIENT: Could you please explain the treatment to me in simpler terms-what cream I'll use and how often?
+[treatment] DOCTOR: Of course,
+[treatment] DOCTOR: you'll use the prescription anti inflammatory cream like a medium strength steroid once a day on the red patches for about two weeks.
+[treatment] SPECIALIST: In addition,
+[treatment] SPECIALIST: apply a fragrance free moisturizer twice daily over the whole affected area and after showering.
+[treatment] SPECIALIST: And try shorter,
+[treatment] SPECIALIST: lukewarm showers instead of hot ones.
+[treatment] PATIENT: Will the cream have side effects?
+[treatment] PATIENT: I've heard steroids on the skin can be harmful.
+[treatment] DOCTOR: Used correctly for a short period,
+[treatment] DOCTOR: the risk is low.
+[treatment] DOCTOR: We'll avoid sensitive areas and limit duration to reduce any chance of thinning the skin.
+[treatment] SPECIALIST: Exactly.
+[treatment] SPECIALIST: If you notice burning,
+[treatment] SPECIALIST: worsening redness,
+[treatment] SPECIALIST: or signs of infection like pus,
+[treatment] SPECIALIST: stop and contact dr Evans promptly.
+[treatment] PATIENT: Is there anything I should avoid,
+[treatment] PATIENT: like certain soaps,
+[treatment] PATIENT: clothes or foods?
+[treatment] DOCTOR: Use mild,
+[treatment] DOCTOR: fragrance free soap,
+[treatment] DOCTOR: avoid harsh scrubbing,
+[treatment] DOCTOR: and wear loose cotton clothing.
+[treatment] DOCTOR: There is no specific food you must avoid unless you notice a clear trigger.
+[treatment] SPECIALIST: From my side,
+[treatment] SPECIALIST: I agree:
+[treatment] SPECIALIST: if the lesions become ring shaped with a very clear centre,
+[treatment] SPECIALIST: or spread,
+[treatment] SPECIALIST: despite steroids,
+[treatment] SPECIALIST: we'll reassess for a fungal cause.
+[treatment] PATIENT: How soon should I come back to check if it's improving?
+[treatment] DOCTOR: Letts schedule a follow up in about three weeks.
+[treatment] DOCTOR: If things worsen before then,
+[treatment] DOCTOR: more redness,
+[treatment] DOCTOR: pain,
+[treatment] DOCTOR: or spreading,
+[treatment] DOCTOR: come in sooner.
+[treatment] SPECIALIST: I'll also leave a note in your record.
+[treatment] SPECIALIST: If there's no improvement,
+[treatment] SPECIALIST: dr Evans can reconnect with me and we'll consider skin scraping or referral.
+[closing] PATIENT: Thank you both.
+[closing] PATIENT: It's reassuring to have a specialist involved without needing to go to another clinic today.
+[closing] SPECIALIST: You're welcome.
+[closing] SPECIALIST: I'm disconnecting from the VR session now.
+[closing] SPECIALIST: dr Evans will give you the prescription and written care instructions.
+[closing] DOCTOR: All right,
+[closing] DOCTOR: I've removed the glasses.
+[closing] DOCTOR: I'll print your prescription,
+[closing] DOCTOR: a leaflet about eczema care,
+[closing] DOCTOR: and set up your follow-up appointment.
+[closing] PATIENT: Great.
+[closing] PATIENT: I appreciate the help and explanations.
+[closing] PATIENT: I'll follow the instructions and see you in a few weeks.
+[closing] DOCTOR: You're welcome.
+[closing] DOCTOR: Take care of your skin and don't hesitate to contact us if anything changes before your next visit.
+

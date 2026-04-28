@@ -20,6 +20,13 @@ interface ShareSectionProps {
   onRevokeShare: () => void;
   isCreating: boolean;
   isRevoking: boolean;
+  /**
+   * When true, the create-link control is disabled. Use to gate sharing
+   * behind GP confirmation (Step 3 release gate).
+   */
+  disabled?: boolean;
+  /** Human-readable reason shown above the disabled control. */
+  disabledReason?: string;
 }
 
 export function ShareSection({
@@ -29,13 +36,18 @@ export function ShareSection({
   onRevokeShare,
   isCreating,
   isRevoking,
+  disabled = false,
+  disabledReason,
 }: ShareSectionProps) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [selectedExpiry, setSelectedExpiry] = useState<number | null>(168);
 
   const isExpired = shareExpiresAt ? new Date(shareExpiresAt) < new Date() : false;
-  const hasActiveLink = shareToken && !isExpired;
+  // A previously-issued token is treated as inactive while sharing is gated
+  // (e.g., after regeneration resets GP confirmation): the patient endpoint
+  // would refuse it anyway, so the UI mustn't pretend it's live.
+  const hasActiveLink = shareToken && !isExpired && !disabled;
 
   const shareUrl = shareToken
     ? `${window.location.origin}${basePathNormalized}/p/${shareToken}`
@@ -96,13 +108,17 @@ export function ShareSection({
           {shareToken && isExpired && (
             <p className="text-sm text-amber-600">{t("consultationSummary.linkExpired")}</p>
           )}
+          {disabled && disabledReason && (
+            <p className="text-sm text-amber-600">{disabledReason}</p>
+          )}
           <div className="flex items-center gap-2">
             <select
               value={selectedExpiry === null ? "never" : String(selectedExpiry)}
               onChange={(e) =>
                 setSelectedExpiry(e.target.value === "never" ? null : Number(e.target.value))
               }
-              className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              disabled={disabled}
+              className="rounded-lg border border-gray-300 bg-white px-2 py-1 text-sm text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
             >
               {EXPIRY_OPTIONS.map((opt) => (
                 <option key={String(opt.value)} value={opt.value === null ? "never" : opt.value}>
@@ -115,6 +131,7 @@ export function ShareSection({
               variant="secondary"
               onClick={() => onCreateShare(selectedExpiry)}
               isLoading={isCreating}
+              disabled={disabled}
             >
               <Link2 className="h-4 w-4" />
               {t("consultationSummary.createShareLink")}

@@ -1,3 +1,5 @@
-results/
+results
+results-gpt-4o
+results-naive
 comparisons.jsonl
 __pycache__/

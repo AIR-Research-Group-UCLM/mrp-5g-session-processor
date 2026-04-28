@@ -6,6 +6,8 @@ import { Upload, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Spinner } from "@/components/ui/Spinner";
 import { formatFileSize } from "@/utils/format";
+import { extractTextFromFile } from "@/api/report-summary.api";
+import { DOCUMENT_MIME_TYPES, DOCUMENT_MIME_TYPE_LIST } from "@mrp/shared";
 
 interface FileTextDropzoneProps {
   onTextExtracted: (text: string) => void;
@@ -18,9 +20,14 @@ const ACCEPTED_TYPES = {
   "text/xml": [".xml"],
   "text/html": [".html"],
   "text/rtf": [".rtf"],
+  [DOCUMENT_MIME_TYPES.pdf]: [".pdf"],
+  [DOCUMENT_MIME_TYPES.docx]: [".docx"],
+  [DOCUMENT_MIME_TYPES.odt]: [".odt"],
 };
 
-const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+const BINARY_TYPES = new Set<string>(DOCUMENT_MIME_TYPE_LIST);
+
+const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
 function readFileAsText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -29,6 +36,17 @@ function readFileAsText(file: File): Promise<string> {
     reader.onerror = () => reject(new Error("Failed to read file"));
     reader.readAsText(file);
   });
+}
+
+function getTranslatedError(code: string | undefined, t: (key: string) => string): string {
+  switch (code) {
+    case "file-invalid-type":
+      return t("reportSummary.file.fileTypeError");
+    case "file-too-large":
+      return t("reportSummary.file.fileTooLarge");
+    default:
+      return t("reportSummary.file.readError");
+  }
 }
 
 export function FileTextDropzone({ onTextExtracted, disabled }: FileTextDropzoneProps) {
@@ -42,8 +60,8 @@ export function FileTextDropzone({ onTextExtracted, disabled }: FileTextDropzone
       setError(null);
 
       if (fileRejections.length > 0) {
-        const firstError = fileRejections[0]?.errors[0]?.message;
-        setError(firstError ?? t("reportSummary.file.readError"));
+        const firstErrorCode = fileRejections[0]?.errors[0]?.code;
+        setError(getTranslatedError(firstErrorCode, t));
         return;
       }
 
@@ -52,7 +70,15 @@ export function FileTextDropzone({ onTextExtracted, disabled }: FileTextDropzone
 
       setIsReading(true);
       try {
-        const text = await readFileAsText(file);
+        let text: string;
+
+        if (BINARY_TYPES.has(file.type)) {
+          const result = await extractTextFromFile(file);
+          text = result.text;
+        } else {
+          text = await readFileAsText(file);
+        }
+
         setSelectedFile({ name: file.name, size: file.size });
         onTextExtracted(text);
       } catch {
@@ -81,7 +107,9 @@ export function FileTextDropzone({ onTextExtracted, disabled }: FileTextDropzone
     return (
       <div className="flex items-center gap-3 rounded-lg border-2 border-gray-200 bg-gray-50 p-6">
         <Spinner />
-        <span className="text-sm text-gray-500">{t("reportSummary.file.reading")}</span>
+        <span className="text-sm text-gray-500">
+          {t("reportSummary.file.extracting")}
+        </span>
       </div>
     );
   }

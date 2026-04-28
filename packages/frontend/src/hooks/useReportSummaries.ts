@@ -83,3 +83,51 @@ export function useRevokeReportShareToken() {
     },
   });
 }
+
+export function useConfirmReportSummary() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (summaryId: string) => reportSummaryApi.confirmReportSummary(summaryId),
+    onSuccess: (data, summaryId) => {
+      queryClient.setQueryData(["report-summary", summaryId], data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Error confirming report summary");
+    },
+  });
+}
+
+export function useUnconfirmReportSummary() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (summaryId: string) => reportSummaryApi.unconfirmReportSummary(summaryId),
+    onSuccess: (data, summaryId) => {
+      queryClient.setQueryData(["report-summary", summaryId], data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Error unconfirming report summary");
+    },
+  });
+}
+
+export function useRevalidateReportSummary() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (summaryId: string) => reportSummaryApi.revalidateReportSummary(summaryId),
+    onSuccess: (data, summaryId) => {
+      queryClient.setQueryData(["report-summary", summaryId], data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Error revalidating report summary");
+    },
+  });
+}
+
+export function useReportPatientView(summaryId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["report-summary-patient-view", summaryId],
+    queryFn: () => reportSummaryApi.getReportSummaryPatientView(summaryId),
+    enabled: enabled && !!summaryId,
+    retry: false,
+  });
+}

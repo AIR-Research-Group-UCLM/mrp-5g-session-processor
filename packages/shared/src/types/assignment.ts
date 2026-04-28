@@ -32,3 +32,36 @@ export interface SessionAssignmentListItem {
   ownerId: string;
   canWrite: boolean;
 }
+
+export interface ReportSummaryAssignment {
+  id: string;
+  reportSummaryId: string;
+  userId: string;
+  canWrite: boolean;
+  assignedBy: string;
+  assignedAt: string;
+}
+
+export interface ReportSummaryForAssignment {
+  id: string;
+  title: string | null;
+  ownerName: string;
+  ownerId: string;
+  createdAt: string;
+  isAssigned: boolean;
+  canWrite: boolean;
+}
+
+export interface ReportSummaryAssignmentInput {
+  reportSummaryId: string;
+  canWrite: boolean;
+}
+
+export interface ReportSummaryAssignmentListItem {
+  reportSummaryId: string;
+  reportSummaryTitle: string | null;
+  reportSummaryCreatedAt: string;
+  ownerName: string;
+  ownerId: string;
+  canWrite: boolean;
+}

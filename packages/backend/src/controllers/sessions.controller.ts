@@ -8,6 +8,10 @@ import {
   getConsultationSummary as getConsultationSummaryService,
   createShareToken as createShareTokenService,
   revokeShareToken as revokeShareTokenService,
+  confirmConsultationSummary as confirmConsultationSummaryService,
+  unconfirmConsultationSummary as unconfirmConsultationSummaryService,
+  getPatientView as getPatientViewService,
+  revalidateConsultationSummary as revalidateConsultationSummaryService,
 } from "../services/consultation-summary.service.js";
 import { AppError } from "../middleware/error.middleware.js";
 import { logger } from "../config/logger.js";
@@ -328,6 +332,50 @@ const revokeShareToken: RequestHandler = async (req, res, next) => {
   }
 };
 
+const confirmConsultationSummary: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    const userId = req.session.userId!;
+    const summary = confirmConsultationSummaryService(sessionId, userId);
+    res.json({ success: true, data: { summary } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const unconfirmConsultationSummary: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    const summary = unconfirmConsultationSummaryService(sessionId);
+    res.json({ success: true, data: { summary } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getConsultationPatientView: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    const view = getPatientViewService(sessionId);
+    if (!view) {
+      throw new AppError(404, "Patient view is unavailable until the GP confirms the sheet");
+    }
+    res.json({ success: true, data: view });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const revalidateConsultationSummary: RequestHandler = async (req, res, next) => {
+  try {
+    const sessionId = req.params.id!;
+    const summary = await revalidateConsultationSummaryService(sessionId);
+    res.json({ success: true, data: { summary } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const sessionsController = {
   list,
   create,
@@ -342,4 +390,8 @@ export const sessionsController = {
   generateConsultationSummary,
   createShareToken,
   revokeShareToken,
+  confirmConsultationSummary,
+  unconfirmConsultationSummary,
+  getConsultationPatientView,
+  revalidateConsultationSummary,
 };

@@ -385,12 +385,16 @@
     "generating": "Generando resumen...",
     "errorGenerating": "Error al generar el resumen. Inténtalo de nuevo.",
     "generateNew": "Generar Otro",
+    "clearText": "Limpiar",
     "file": {
-      "dropzone": "Arrastra un archivo de texto aquí, o haz clic para seleccionar",
+      "dropzone": "Arrastra un archivo aquí, o haz clic para seleccionar",
       "dropzoneActive": "Suelta el archivo aquí",
-      "acceptedFormats": "Archivos de texto (.txt, .md, .csv, .log) hasta 2 MB",
+      "acceptedFormats": "PDF, DOCX, ODT, TXT, MD, CSV y otros archivos de texto (hasta 10 MB)",
       "readError": "No se pudo leer el archivo",
-      "reading": "Leyendo archivo..."
+      "reading": "Leyendo archivo...",
+      "fileTypeError": "Tipo de archivo no soportado. Usa PDF, DOCX, ODT o un archivo de texto.",
+      "fileTooLarge": "El archivo es demasiado grande. El tamaño máximo es 10 MB.",
+      "extracting": "Extrayendo texto del documento..."
     },
     "list": {
       "title": "Informes Anteriores",
@@ -402,17 +406,62 @@
       "deleteError": "Error al eliminar el resumen de informe"
     }
   },
+  "validator": {
+    "title": "Validación de seguridad",
+    "model": "modelo",
+    "confirmed": "Confirmado",
+    "pending": "Pendiente de revisión",
+    "notRun": "La validación aún no se ha ejecutado.",
+    "failed": "El validador de seguridad no produjo un resultado utilizable. La ficha permanece oculta hasta que la validación sea correcta — reintenta la validación o regenera la ficha.",
+    "noIssues": "Sin incidencias.",
+    "expand": "Mostrar detalles",
+    "collapse": "Ocultar detalles",
+    "runAt": "Última validación: {{date}}",
+    "confirm": "Confirmar y liberar",
+    "unconfirm": "Retirar confirmación",
+    "retry": "Reintentar validación",
+    "sheetHidden": "Ficha oculta hasta que la validación tenga éxito",
+    "sheetHiddenDescription": "La validación de seguridad no se completó correctamente. El contenido para el paciente permanece oculto hasta que reintentes la validación. Si el problema persiste, regenera la ficha.",
+    "gateNotice": "El paciente no podrá ver esta ficha hasta que la confirmes. La confirmación también habilita el enlace para compartir.",
+    "shareGated": "Confirma la ficha para poder generar el enlace para compartir.",
+    "openPatientView": "Abrir vista del paciente",
+    "patientViewBadge": "Vista del paciente (previsualización)",
+    "patientViewUnavailable": "Vista del paciente no disponible",
+    "patientViewUnavailableDescription": "Esta ficha aún no ha sido confirmada o no tienes permiso de acceso.",
+    "backToReview": "Volver a la revisión",
+    "severity": {
+      "ok": "OK",
+      "minor": "Leve",
+      "major": "Importante",
+      "critical": "Crítico"
+    },
+    "axis": {
+      "medication": "Concordancia de medicación",
+      "diagnostic": "Concordancia diagnóstica",
+      "hallucination": "Detección de alucinaciones",
+      "warningSign": "Adecuación de signos de alarma",
+      "glossary": "Cobertura del glosario"
+    },
+    "notes": {
+      "glossaryTermMissing": "Término del glosario no encontrado en la fuente: «{{term}}»"
+    }
+  },
   "assignments": {
     "assignedSessions": "Sesiones Asignadas",
     "assignedSessionsDescription": "Selecciona las sesiones a las que este usuario debe tener acceso",
     "searchSessions": "Buscar sesiones...",
     "noSessionsFound": "No se encontraron sesiones",
     "noSessionsAvailable": "No hay sesiones disponibles para asignar",
-    "selectedCount": "{{count}} sesión(es) seleccionada(s)",
+    "selectedCount": "{{count}} seleccionado(s)",
     "updateSuccess": "Asignaciones actualizadas correctamente",
     "updateError": "Error al actualizar asignaciones",
     "assignedBadge": "Asignada",
     "canWrite": "Puede modificar",
-    "readOnly": "Solo lectura"
+    "readOnly": "Solo lectura",
+    "assignedReportSummaries": "Informes Asignados",
+    "assignedReportSummariesDescription": "Selecciona los informes a los que este usuario debe tener acceso",
+    "searchReportSummaries": "Buscar informes...",
+    "noReportSummariesFound": "No se encontraron informes",
+    "noReportSummariesAvailable": "No hay informes disponibles para asignar"
   }
 }

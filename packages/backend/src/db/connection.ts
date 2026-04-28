@@ -143,14 +143,71 @@ function runMigrations(database: Database.Database): void {
     database.exec("ALTER TABLE report_summaries ADD COLUMN tooltips TEXT");
     logger.info("Migration completed: tooltips column added to report_summaries");
   }
+
+  // Migration: Add validator + confirmation columns to consultation_summaries and report_summaries
+  const validatorColumns: Array<{ name: string; ddl: string }> = [
+    { name: "validator_model", ddl: "TEXT" },
+    { name: "validator_status", ddl: "TEXT" },
+    { name: "validator_report", ddl: "TEXT" },
+    { name: "validator_run_at", ddl: "TEXT" },
+    { name: "confirmed_at", ddl: "TEXT" },
+    { name: "confirmed_by", ddl: "TEXT" },
+  ];
+
+  for (const tableName of ["consultation_summaries", "report_summaries"] as const) {
+    const cols = database
+      .prepare(`PRAGMA table_info(${tableName})`)
+      .all() as Array<{ name: string }>;
+    const present = new Set(cols.map((c) => c.name));
+    for (const col of validatorColumns) {
+      if (!present.has(col.name)) {
+        logger.info(`Running migration: Adding ${col.name} column to ${tableName}...`);
+        database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${col.name} ${col.ddl}`);
+      }
+    }
+  }
+
+  // Migration: Add source_text column to report_summaries (used for safety-validator retries)
+  const rsCols2 = database
+    .prepare("PRAGMA table_info(report_summaries)")
+    .all() as Array<{ name: string }>;
+  if (!rsCols2.some((c) => c.name === "source_text")) {
+    logger.info("Running migration: Adding source_text column to report_summaries...");
+    database.exec("ALTER TABLE report_summaries ADD COLUMN source_text TEXT");
+  }
+
+  // Migration: Add report_summary_assignments table
+  const hasReportSummaryAssignmentsTable = database
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='report_summary_assignments'"
+    )
+    .get();
+
+  if (!hasReportSummaryAssignmentsTable) {
+    logger.info("Running migration: Creating report_summary_assignments table...");
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS report_summary_assignments (
+        id TEXT PRIMARY KEY,
+        report_summary_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        can_write INTEGER NOT NULL DEFAULT 0,
+        assigned_by TEXT NOT NULL,
+        assigned_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (report_summary_id) REFERENCES report_summaries(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL,
+        UNIQUE(report_summary_id, user_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_report_summary_assignments_report_summary_id ON report_summary_assignments(report_summary_id);
+      CREATE INDEX IF NOT EXISTS idx_report_summary_assignments_user_id ON report_summary_assignments(user_id);
+    `);
+    logger.info("Migration completed: report_summary_assignments table created");
+  }
 }
 
 export async function initializeDatabase(): Promise<void> {
   const dbDir = path.dirname(config.databasePath);
-
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
+  fs.mkdirSync(dbDir, { recursive: true });
 
   db = new Database(config.databasePath);
 

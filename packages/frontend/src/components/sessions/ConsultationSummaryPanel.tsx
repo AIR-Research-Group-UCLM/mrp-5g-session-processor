@@ -3,13 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Spinner } from "@/components/ui/Spinner";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { ShareSection } from "@/components/shared/ShareSection";
+import { ValidatorPanel } from "@/components/shared/ValidatorPanel";
 import {
   useCreateShareToken,
   useGenerateConsultationSummary,
   useConsultationSummary,
   useRevokeShareToken,
+  useConfirmConsultationSummary,
+  useUnconfirmConsultationSummary,
+  useRevalidateConsultationSummary,
 } from "@/hooks/useSessions";
+import { useAuth } from "@/hooks/useAuth";
 import type { ConsultationSummary } from "@mrp/shared";
+import { Eye } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   AlertCircle,
   AlertTriangle,
@@ -214,13 +221,19 @@ interface ConsultationSummaryPanelProps {
 
 export function ConsultationSummaryPanel({ sessionId }: ConsultationSummaryPanelProps) {
   const { t } = useTranslation();
+  const { canWrite } = useAuth();
   const { data: storedSummary, isLoading: isLoadingSummary } = useConsultationSummary(sessionId);
   const mutation = useGenerateConsultationSummary();
   const createShare = useCreateShareToken();
   const revokeShare = useRevokeShareToken();
+  const confirmMutation = useConfirmConsultationSummary();
+  const unconfirmMutation = useUnconfirmConsultationSummary();
+  const revalidateMutation = useRevalidateConsultationSummary();
 
   const summary = storedSummary;
   const hasSummary = !!summary;
+  const isConfirmed = !!summary?.confirmation.confirmedAt;
+  const validationFailed = summary?.validator.status === "failed";
 
   return (
     <Card>
@@ -243,13 +256,15 @@ export function ConsultationSummaryPanel({ sessionId }: ConsultationSummaryPanel
             <p className="text-sm text-gray-500">
               {t("consultationSummary.notGenerated")}
             </p>
-            <Button
-              variant="secondary"
-              onClick={() => mutation.mutate(sessionId)}
-            >
-              <RefreshCw className="h-4 w-4" />
-              {t("consultationSummary.regenerate")}
-            </Button>
+            {canWrite && (
+              <Button
+                variant="secondary"
+                onClick={() => mutation.mutate(sessionId)}
+              >
+                <RefreshCw className="h-4 w-4" />
+                {t("consultationSummary.regenerate")}
+              </Button>
+            )}
           </div>
         )}
 
@@ -268,27 +283,69 @@ export function ConsultationSummaryPanel({ sessionId }: ConsultationSummaryPanel
               <AlertCircle className="h-4 w-4" />
               {t("consultationSummary.errorGenerating")}
             </div>
-            <Button
-              variant="secondary"
-              onClick={() => mutation.mutate(sessionId)}
-            >
-              <RefreshCw className="h-4 w-4" />
-              {t("consultationSummary.regenerate")}
-            </Button>
+            {canWrite && (
+              <Button
+                variant="secondary"
+                onClick={() => mutation.mutate(sessionId)}
+              >
+                <RefreshCw className="h-4 w-4" />
+                {t("consultationSummary.regenerate")}
+              </Button>
+            )}
           </div>
         )}
 
         {hasSummary && !mutation.isPending && (
           <div className="space-y-4">
-            <SummaryContent summary={summary} />
-            <ShareSection
-              shareToken={summary.shareToken ?? null}
-              shareExpiresAt={summary.shareExpiresAt ?? null}
-              onCreateShare={(expiryHours) => createShare.mutate({ sessionId, expiryHours })}
-              onRevokeShare={() => revokeShare.mutate(sessionId)}
-              isCreating={createShare.isPending}
-              isRevoking={revokeShare.isPending}
+            {validationFailed ? (
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+                <div className="flex items-start gap-2 text-sm text-amber-800">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="font-medium">{t("validator.sheetHidden")}</p>
+                    <p className="mt-1 text-amber-700">
+                      {t("validator.sheetHiddenDescription")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <SummaryContent summary={summary} />
+            )}
+            <ValidatorPanel
+              validator={summary.validator}
+              confirmation={summary.confirmation}
+              canWrite={canWrite}
+              onConfirm={() => confirmMutation.mutate(sessionId)}
+              onUnconfirm={() => unconfirmMutation.mutate(sessionId)}
+              isConfirming={confirmMutation.isPending}
+              isUnconfirming={unconfirmMutation.isPending}
+              onRevalidate={() => revalidateMutation.mutate(sessionId)}
+              isRevalidating={revalidateMutation.isPending}
+              onRegenerate={() => mutation.mutate(sessionId)}
+              isRegenerating={mutation.isPending}
             />
+            {canWrite && (
+              <ShareSection
+                shareToken={summary.shareToken ?? null}
+                shareExpiresAt={summary.shareExpiresAt ?? null}
+                onCreateShare={(expiryHours) => createShare.mutate({ sessionId, expiryHours })}
+                onRevokeShare={() => revokeShare.mutate(sessionId)}
+                isCreating={createShare.isPending}
+                isRevoking={revokeShare.isPending}
+                disabled={!isConfirmed}
+                disabledReason={!isConfirmed ? t("validator.shareGated") : undefined}
+              />
+            )}
+            {isConfirmed && (
+              <Link
+                to={`/sessions/${sessionId}/patient-view`}
+                className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700"
+              >
+                <Eye className="h-4 w-4" />
+                {t("validator.openPatientView")}
+              </Link>
+            )}
           </div>
         )}
       </CardContent>

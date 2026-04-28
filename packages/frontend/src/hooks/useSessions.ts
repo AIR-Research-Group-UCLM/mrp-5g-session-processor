@@ -149,6 +149,54 @@ export function useRevokeShareToken() {
   });
 }
 
+export function useConfirmConsultationSummary() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sessionId: string) => sessionsApi.confirmConsultationSummary(sessionId),
+    onSuccess: (data, sessionId) => {
+      queryClient.setQueryData(["consultation-summary", sessionId], data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Error confirming consultation summary");
+    },
+  });
+}
+
+export function useUnconfirmConsultationSummary() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sessionId: string) => sessionsApi.unconfirmConsultationSummary(sessionId),
+    onSuccess: (data, sessionId) => {
+      queryClient.setQueryData(["consultation-summary", sessionId], data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Error unconfirming consultation summary");
+    },
+  });
+}
+
+export function useRevalidateConsultationSummary() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sessionId: string) => sessionsApi.revalidateConsultationSummary(sessionId),
+    onSuccess: (data, sessionId) => {
+      queryClient.setQueryData(["consultation-summary", sessionId], data);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Error revalidating consultation summary");
+    },
+  });
+}
+
+export function useConsultationPatientView(sessionId: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["consultation-summary-patient-view", sessionId],
+    queryFn: () => sessionsApi.getConsultationPatientView(sessionId),
+    enabled: enabled && !!sessionId,
+    retry: false,
+  });
+}
+
 export function useSessionAccuracy(id: string, enabled: boolean = true) {
   return useQuery({
     queryKey: ["session-accuracy", id],

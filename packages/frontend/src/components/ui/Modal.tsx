@@ -28,11 +28,11 @@ export function Modal({
       />
       <div
         className={cn(
-          "relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl",
+          "relative z-10 mx-4 flex max-h-[90vh] w-full max-w-md flex-col rounded-lg bg-white shadow-xl",
           className
         )}
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <button
             onClick={onClose}
@@ -41,7 +41,7 @@ export function Modal({
             <X className="h-5 w-5" />
           </button>
         </div>
-        {children}
+        <div className="overflow-y-auto px-6 py-4">{children}</div>
       </div>
     </div>
   );

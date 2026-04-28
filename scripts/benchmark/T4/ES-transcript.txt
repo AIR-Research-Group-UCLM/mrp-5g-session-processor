@@ -1,0 +1,233 @@
+## Transcripción de la consulta
+
+[introduction] DOCTOR: Buenos días; pase y tome asiento, por favor.
+[introduction] DOCTOR: ¿Qué le trae por aquí hoy?
+[introduction] PATIENT: Buenos días,
+[symptoms] PATIENT: doctor; vengo porque me han salido estas manchas rojas en la piel durante las últimas semanas.
+[symptoms] DOCTOR: ¿Podría describir estas manchas con un poco más de detalle; dónde están y cómo las siente?
+[symptoms] PATIENT: Están sobre todo en los brazos y el torso,
+[symptoms] PATIENT: rojizas con zonas más secas,
+[symptoms] PATIENT: y descamativas; a veces pican,
+[symptoms] PATIENT: sobre todo por la noche y después de la ducha.
+[symptoms] DOCTOR: ¿Cuándo las notó por primera vez,
+[symptoms] DOCTOR: y han cambiado de tamaño,
+[symptoms] DOCTOR: forma o color desde entonces?
+[symptoms] PATIENT: Las noté por primera vez hace quizá cuatro o cinco semanas.
+[symptoms] PATIENT: Algunas se han hecho un poco más grandes y un rojo algo más oscuro,
+[symptoms] PATIENT: pero no duelen.
+[symptoms] DOCTOR: Ha mencionado picor.
+[symptoms] DOCTOR: En una escala de cero a diez,
+[symptoms] DOCTOR: ¿cuánto le llega a picar,
+[symptoms] DOCTOR: y hay algo que lo mejore o lo empeore?
+[symptoms] PATIENT: En lo peor llega quizá a un siete.
+[symptoms] PATIENT: Sobre todo por la noche,
+[symptoms] PATIENT: o justo después de una ducha caliente.
+[symptoms] PATIENT: Rascarme alivia un momento,
+[symptoms] PATIENT: pero a veces me rompo la piel.
+[symptoms] DOCTOR: ¿Ha notado supuración,
+[symptoms] DOCTOR: sangrado espontáneo,
+[symptoms] DOCTOR: o costras aparte de las pequeñas heridas por rascado?
+[symptoms] PATIENT: No hay sangrado ni supuración espontánea,
+[symptoms] PATIENT: solo pequeñas costritas donde me he rascado demasiado.
+[symptoms] PATIENT: Las manchas en sí no duelen.
+[symptoms] DOCTOR: ¿Ha tenido fiebre,
+[symptoms] DOCTOR: pérdida de peso,
+[symptoms] DOCTOR: sudores nocturnos,
+[symptoms] DOCTOR: fatiga,
+[symptoms] DOCTOR: dolor articular,
+[symptoms] DOCTOR: o malestar general últimamente?
+[symptoms] PATIENT: No,
+[symptoms] PATIENT: por lo demás me encuentro bien; sin fiebre ni fatiga; mi peso es estable,
+[symptoms] PATIENT: y las articulaciones están bien.
+[symptoms] DOCTOR: ¿Ha cambiado de jabones,
+[symptoms] DOCTOR: detergentes,
+[symptoms] DOCTOR: cremas, o ha empezado algún medicamento,
+[symptoms] DOCTOR: suplemento o alimento nuevo cuando empezó esto?
+[symptoms] PATIENT: No que yo recuerde.
+[symptoms] PATIENT: Mismo gel de ducha y detergente de ropa,
+[symptoms] PATIENT: ningún medicamento nuevo, y la dieta no ha cambiado mucho.
+[symptoms] DOCTOR: ¿Tiene antecedentes de alergias,
+[symptoms] DOCTOR: asma,
+[symptoms] DOCTOR: eccema,
+[symptoms] DOCTOR: o psoriasis, en usted o familiares cercanos?
+[symptoms] PATIENT: Tuve una rinitis alérgica leve en la adolescencia,
+[symptoms] PATIENT: pero no conozco ninguna enfermedad de la piel.
+[symptoms] PATIENT: Mis padres no tienen psoriasis ni eccema.
+[symptoms] DOCTOR: ¿Trabaja con químicos,
+[symptoms] DOCTOR: disolventes,
+[symptoms] DOCTOR: o irritantes?
+[symptoms] DOCTOR: ¿o ha viajado recientemente,
+[symptoms] DOCTOR: hecho senderismo,
+[symptoms] DOCTOR: o tenido contacto con plantas o animales?
+[symptoms] PATIENT: Trabajo en una oficina,
+[symptoms] PATIENT: casi todo el día frente al ordenador.
+[symptoms] PATIENT: Ningún químico especial,
+[symptoms] PATIENT: y no he viajado ni he hecho nada raro al aire libre últimamente.
+[symptoms] DOCTOR: Muy bien,
+[symptoms] DOCTOR: me gustaría examinarle la piel ahora.
+[symptoms] DOCTOR: Le pediré que se suba las mangas y se levante un poco la camisa para ver los brazos y el tronco.
+[symptoms] PATIENT: Claro,
+[symptoms] PATIENT: sin problema.
+[symptoms] DOCTOR: Veo varias placas rojizas bien delimitadas con fina descamación en los antebrazos y parte alta del pecho,
+[symptoms] DOCTOR: algunas marcas de rascado,
+[symptoms] DOCTOR: pero no hay infección activa ni ampollas.
+[symptoms] PATIENT: ¿Tiene mala pinta?
+[symptoms] PATIENT: Estoy un poco preocupado porque algunas manchas parecen extenderse despacio.
+[diagnosis] DOCTOR: Por lo que veo,
+[diagnosis] DOCTOR: no parece una urgencia,
+[diagnosis] DOCTOR: pero el patrón es un poco atípico,
+[diagnosis] DOCTOR: y me gustaría la opinión de un dermatólogo.
+[diagnosis] PATIENT: ¿Cómo funcionaría eso hoy; necesito otra cita en otro sitio?
+[diagnosis] DOCTOR: De hecho podemos conectar con un especialista en piel ahora mismo,
+[diagnosis] DOCTOR: usando estas gafas inteligentes de realidad virtual,
+[diagnosis] DOCTOR: para que él vea lo que yo veo y nos pueda guiar.
+[diagnosis] PATIENT: Eso suena bien; agradezco que un especialista le eche un vistazo.
+[diagnosis] DOCTOR: Perfecto,
+[diagnosis] DOCTOR: me pongo las gafas de realidad virtual ahora y empiezo la conexión.
+[diagnosis] DOCTOR: Me verá hablar,
+[diagnosis] DOCTOR: pero el especialista también oirá y verá todo lo que pasa en la sala.
+[diagnosis] PATIENT: Entendido.
+[introduction] SPECIALIST: Hola,
+[introduction] SPECIALIST: soy el dr. Miller,
+[introduction] SPECIALIST: dermatólogo.
+[diagnosis] SPECIALIST: Veo la sala de consulta y las lesiones cutáneas a través de la imagen de sus gafas VR.
+[diagnosis] SPECIALIST: ¿Me oyen bien los dos?
+[diagnosis] DOCTOR: Sí; le oímos bien; soy el dr. Evans, de atención primaria, con un paciente con manchas rojas progresivas,
+[diagnosis] DOCTOR: escamosas, en brazos y tronco.
+[diagnosis] PATIENT: Hola,
+[diagnosis] PATIENT: doctor; sí,
+[diagnosis] PATIENT: le oigo.
+[diagnosis] PATIENT: Resulta algo raro saber que puede vernos a través de las gafas,
+[diagnosis] PATIENT: pero no pasa nada.
+[diagnosis] SPECIALIST: Gracias; voy a hacer unas preguntas,
+[diagnosis] SPECIALIST: y guiaré al dr. Evans en la exploración.
+[symptoms] SPECIALIST: Paciente, ¿estas lesiones han llegado a desaparecer por completo en algún momento,
+[symptoms] SPECIALIST: o persisten y van cambiando despacio?
+[symptoms] PATIENT: No desaparecen del todo; algunas se aclaran un poco,
+[symptoms] PATIENT: otras aparecen cerca o se hacen un poco más grandes con el tiempo.
+[symptoms] SPECIALIST: dr. Evans,
+[symptoms] SPECIALIST: ¿podría acercar la cámara a una de las placas del antebrazo e inclinarla para que vea bien la descamación y los bordes?
+[symptoms] DOCTOR: Por supuesto; me acerco ahora y enfoco una lesión del antebrazo medio con descamación y una pequeña marca de rascado.
+[symptoms] SPECIALIST: ¡Perfecto! manténgalo ahí — veo una placa eritematosa bien delimitada,
+[symptoms] SPECIALIST: con fina descamación blanca,
+[symptoms] SPECIALIST: y excoriaciones superficiales — sin vesículas ni pústulas.
+[symptoms] SPECIALIST: ¿Hay afectación del cuero cabelludo,
+[symptoms] SPECIALIST: codos,
+[symptoms] SPECIALIST: o rodillas?
+[symptoms] DOCTOR: No veo lesiones en el cuero cabelludo,
+[symptoms] DOCTOR: y los codos y las rodillas están limpios.
+[symptoms] DOCTOR: Sin placas gruesas ni descamación plateada en esas zonas.
+[symptoms] SPECIALIST: Paciente,
+[symptoms] SPECIALIST: ¿alguien en su familia tiene enfermedades autoinmunes como problemas de tiroides,
+[symptoms] SPECIALIST: vitíligo,
+[symptoms] SPECIALIST: o artritis reumatoide,
+[symptoms] SPECIALIST: aparte de psoriasis o eccema?
+[symptoms] PATIENT: No que yo sepa.
+[symptoms] PATIENT: Mis padres tienen hipertensión y colesterol alto,
+[symptoms] PATIENT: pero ninguna enfermedad autoinmune que yo conozca.
+[symptoms] SPECIALIST: dr. Evans,
+[symptoms] SPECIALIST: ¿podría estirar suavemente la piel sobre una placa y raspar un poco la descamación con un depresor lingual para ver cómo se comporta la escama?
+[symptoms] DOCTOR: Estoy estirando la piel y raspando suavemente.
+[symptoms] DOCTOR: La descamación es fina,
+[symptoms] DOCTOR: se desprende con facilidad,
+[symptoms] DOCTOR: sin sangrado puntiforme por debajo.
+[symptoms] SPECIALIST: Gracias.
+[symptoms] SPECIALIST: Paciente,
+[symptoms] SPECIALIST: ¿las lesiones llegan a formar anillos con el centro más claro,
+[symptoms] SPECIALIST: o son sobre todo manchas sólidas de enrojecimiento y descamación?
+[symptoms] PATIENT: Algunas parecen un poco anulares,
+[symptoms] PATIENT: pero el centro sigue algo rosado y seco; no están del todo limpias en el medio.
+[symptoms] SPECIALIST: dr. Evans,
+[symptoms] SPECIALIST: ¿puede mostrarme una lesión del tronco,
+[symptoms] SPECIALIST: y girar despacio alrededor para valorar simetría y calidad del borde?
+[symptoms] DOCTOR: Sí,
+[symptoms] DOCTOR: enfoco ahora una lesión del pecho y me muevo a su alrededor; es oval, con bordes algo elevados y más definidos, y aclaramiento central leve.
+[diagnosis] SPECIALIST: Eso ayuda.
+[diagnosis] SPECIALIST: Dada la distribución y el borde,
+[diagnosis] SPECIALIST: estoy considerando eccema numular frente a tiña corporal.
+[symptoms] SPECIALIST: ¿Hay lesiones en pliegues como ingles o axilas?
+[symptoms] DOCTOR: He revisado axilas e ingles; no hay lesiones evidentes ahí,
+[symptoms] DOCTOR: solo brazos y parte alta del tronco.
+[symptoms] SPECIALIST: Paciente,
+[symptoms] SPECIALIST: ¿ha usado cremas de venta libre como corticoides o antifúngicos sobre estas manchas hasta ahora?
+[symptoms] PATIENT: No,
+[symptoms] PATIENT: solo me he puesto una crema hidratante básica porque la piel se notaba seca,
+[symptoms] PATIENT: nada medicamentoso.
+[diagnosis] SPECIALIST: Con eso en mente esto se parece más a un eccema subagudo,
+[diagnosis] SPECIALIST: posiblemente numular,
+[diagnosis] SPECIALIST: y no tanto a psoriasis o a una infección por hongos,
+[diagnosis] SPECIALIST: aunque no se puede descartar del todo una tiña.
+[diagnosis] PATIENT: Entonces probablemente sea un tipo de erupción eccematosa.
+[diagnosis] PATIENT: ¿Es algo grave o a largo plazo?
+[diagnosis] SPECIALIST: Normalmente no es peligroso,
+[diagnosis] SPECIALIST: pero puede ser crónico o recurrente.
+[diagnosis] SPECIALIST: Con un tratamiento adecuado y buenos cuidados de la piel,
+[diagnosis] SPECIALIST: solemos controlar bien los síntomas.
+[treatment] DOCTOR: dr. Miller,
+[treatment] DOCTOR: ¿recomendaría alguna prueba inmediata, como un raspado cutáneo para hongos,
+[treatment] DOCTOR: o deberíamos empezar un tratamiento empírico primero?
+[treatment] SPECIALIST: Dado el aspecto y la ausencia de afectación de pliegues,
+[treatment] SPECIALIST: empezaría con un corticoesteroide tópico de potencia media más emolientes,
+[treatment] SPECIALIST: y haría el raspado solo si no mejora.
+[treatment] DOCTOR: De acuerdo,
+[treatment] DOCTOR: y para el paciente,
+[treatment] DOCTOR: ¿cuánto tiempo deberíamos probar el corticoide antes de reevaluar?
+[treatment] SPECIALIST: Dos semanas de aplicación una vez al día deberían mostrar una mejoría clara.
+[treatment] SPECIALIST: Si no hay respuesta o empeora,
+[treatment] SPECIALIST: entonces considerar prueba de hongos o biopsia.
+[treatment] PATIENT: ¿Podrían explicarme el tratamiento con palabras más sencillas?
+[treatment] PATIENT: ¿Qué crema voy a usar y cada cuánto?
+[treatment] DOCTOR: Por supuesto,
+[treatment] DOCTOR: va a usar una crema antiinflamatoria con receta,
+[treatment] DOCTOR: como un corticoide de potencia media, una vez al día sobre las manchas rojas durante unas dos semanas.
+[treatment] SPECIALIST: Además,
+[treatment] SPECIALIST: aplique una crema hidratante sin fragancia dos veces al día sobre toda la zona afectada y después de la ducha.
+[treatment] SPECIALIST: E intente duchas más cortas,
+[treatment] SPECIALIST: con agua templada en vez de muy caliente.
+[treatment] PATIENT: ¿La crema tendrá efectos secundarios?
+[treatment] PATIENT: He oído que los corticoides en la piel pueden ser dañinos.
+[treatment] DOCTOR: Usada correctamente durante un periodo corto,
+[treatment] DOCTOR: el riesgo es bajo.
+[treatment] DOCTOR: Evitaremos las zonas sensibles y limitaremos la duración para reducir el riesgo de adelgazamiento de la piel.
+[treatment] SPECIALIST: Exacto.
+[treatment] SPECIALIST: Si nota quemazón,
+[treatment] SPECIALIST: enrojecimiento que empeora,
+[treatment] SPECIALIST: o signos de infección como pus,
+[treatment] SPECIALIST: detenga el tratamiento y contacte con el dr. Evans cuanto antes.
+[treatment] PATIENT: ¿Hay algo que deba evitar,
+[treatment] PATIENT: como ciertos jabones,
+[treatment] PATIENT: ropa o alimentos?
+[treatment] DOCTOR: Use jabón suave,
+[treatment] DOCTOR: sin fragancia,
+[treatment] DOCTOR: evite frotar con fuerza,
+[treatment] DOCTOR: y use ropa de algodón holgada.
+[treatment] DOCTOR: No hay ningún alimento específico que deba evitar salvo que note un desencadenante claro.
+[treatment] SPECIALIST: Por mi parte estoy de acuerdo; si las lesiones toman forma anular con un centro muy claro,
+[treatment] SPECIALIST: o se extienden,
+[treatment] SPECIALIST: a pesar del corticoide,
+[treatment] SPECIALIST: revaluaremos para descartar una causa fúngica.
+[treatment] PATIENT: ¿En cuánto tiempo debo volver para ver si está mejorando?
+[treatment] DOCTOR: Vamos a programar una cita de seguimiento en unas tres semanas.
+[treatment] DOCTOR: Si las cosas empeoran antes de eso,
+[treatment] DOCTOR: más enrojecimiento,
+[treatment] DOCTOR: dolor,
+[treatment] DOCTOR: o extensión,
+[treatment] DOCTOR: venga antes.
+[treatment] SPECIALIST: También dejaré una nota en su historia.
+[treatment] SPECIALIST: Si no hay mejoría,
+[treatment] SPECIALIST: el dr. Evans puede volver a conectar conmigo,
+[treatment] SPECIALIST: y valoraremos un raspado cutáneo o una derivación.
+[closing] PATIENT: Gracias a los dos; me tranquiliza tener a un especialista sin necesidad de ir a otra clínica hoy.
+[closing] SPECIALIST: De nada.
+[closing] SPECIALIST: Me desconecto ya de la sesión de VR.
+[closing] SPECIALIST: El dr. Evans le entregará la receta y las instrucciones escritas.
+[closing] DOCTOR: Muy bien — me he quitado las gafas.
+[closing] DOCTOR: Le imprimiré la receta,
+[closing] DOCTOR: un folleto sobre cuidados del eccema,
+[closing] DOCTOR: y dejaré programada su cita de seguimiento.
+[closing] PATIENT: ¡Genial!
+[closing] PATIENT: Agradezco la ayuda y las explicaciones.
+[closing] PATIENT: Seguiré las instrucciones y nos vemos en unas semanas.
+[closing] DOCTOR: De nada.
+[closing] DOCTOR: Cuide su piel,
+[closing] DOCTOR: y no dude en contactarnos si algo cambia antes de la próxima visita.

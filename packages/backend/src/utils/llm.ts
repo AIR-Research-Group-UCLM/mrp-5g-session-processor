@@ -40,30 +40,97 @@ export function normalizeKeys(obj: Record<string, unknown>): Record<string, unkn
   return normalized;
 }
 
+// Per-model reasoning policy:
+//   - gpt-oss → reasoning_effort: "medium" (only model in our fleet that
+//     exposes a real reasoning knob; medium balances quality vs. latency).
+//   - everything else → push every "disable thinking" toggle the upstream
+//     might honour. Models that don't recognise them ignore them silently
+//     (verified against gemma4:31b — accepts and discards).
+type ThinkingPolicy =
+  | { kind: "gpt-oss"; reasoningEffort: "medium" }
+  | { kind: "disabled"; think: false; chatTemplateKwargs: { enable_thinking: false } };
+
+function thinkingPolicyFor(model: string): ThinkingPolicy {
+  if (/gpt-oss/i.test(model)) {
+    return { kind: "gpt-oss", reasoningEffort: "medium" };
+  }
+  return {
+    kind: "disabled",
+    think: false,
+    chatTemplateKwargs: { enable_thinking: false },
+  };
+}
+
 export async function callOpenWebUi(
   systemPrompt: string,
   userMessage: string,
+  options?: { model?: string; signal?: AbortSignal; maxTokens?: number },
 ): Promise<string> {
   if (!config.openWebUi.baseUrl || !config.openWebUi.apiKey) {
     throw new AppError(503, "Summary generation feature is not configured");
   }
 
   const url = `${config.openWebUi.baseUrl}/chat/completions`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.openWebUi.apiKey}`,
+  const model = options?.model ?? config.openWebUi.model;
+  const policy = thinkingPolicyFor(model);
+  const startedAt = Date.now();
+
+  logger.info(
+    {
+      model,
+      url,
+      systemPromptChars: systemPrompt.length,
+      userMessageChars: userMessage.length,
+      maxTokens: options?.maxTokens ?? null,
+      thinkingPolicy: policy.kind,
     },
-    body: JSON.stringify({
-      model: config.openWebUi.model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.3,
-    }),
-  });
+    "Open WebUI request starting",
+  );
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.openWebUi.apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+        temperature: 0.3,
+        ...(options?.maxTokens != null ? { max_tokens: options.maxTokens } : {}),
+        ...(policy.kind === "gpt-oss"
+          ? { reasoning_effort: policy.reasoningEffort }
+          : { think: policy.think, chat_template_kwargs: policy.chatTemplateKwargs }),
+      }),
+      signal: options?.signal,
+    });
+  } catch (error) {
+    logger.warn(
+      {
+        model,
+        url,
+        durationMs: Date.now() - startedAt,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "Open WebUI fetch failed before response headers arrived",
+    );
+    throw error;
+  }
+
+  const headersReceivedAt = Date.now();
+  logger.info(
+    {
+      model,
+      status: response.status,
+      headersDurationMs: headersReceivedAt - startedAt,
+    },
+    "Open WebUI response headers received",
+  );
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
@@ -74,24 +141,83 @@ export async function callOpenWebUi(
     choices?: { message?: { content?: string } }[];
   };
   const content = data?.choices?.[0]?.message?.content;
+  const totalDurationMs = Date.now() - startedAt;
+
   if (!content) {
+    logger.warn(
+      { model, totalDurationMs, body: JSON.stringify(data).slice(0, 500) },
+      "Open WebUI returned no content",
+    );
     throw new Error("No response content from Open WebUI");
   }
+
+  logger.info(
+    {
+      model,
+      totalDurationMs,
+      bodyDurationMs: totalDurationMs - (headersReceivedAt - startedAt),
+      contentChars: content.length,
+    },
+    "Open WebUI request finished",
+  );
+
   return content;
 }
 
 export function extractJson(text: string): unknown {
-  // Try direct parse first
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Try to extract JSON from markdown code block or surrounding text
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? text.match(/(\{[\s\S]*\})/);
-    if (jsonMatch?.[1]) {
-      return JSON.parse(jsonMatch[1].trim());
+  // Strip reasoning blocks (<think>...</think>, <reasoning>...</reasoning>)
+  // emitted by some models before the JSON payload.
+  const cleaned = text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
+    .trim();
+
+  const candidates: string[] = [cleaned];
+
+  // Markdown code block (```json ... ``` or just ``` ... ```)
+  const fence = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fence?.[1]) candidates.push(fence[1].trim());
+
+  // Balanced-brace slice from the first `{` to the matching `}`.
+  const firstBrace = cleaned.indexOf("{");
+  if (firstBrace !== -1) {
+    let depth = 0;
+    let end = -1;
+    let inString = false;
+    let escape = false;
+    for (let i = firstBrace; i < cleaned.length; i++) {
+      const ch = cleaned[i]!;
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (inString) {
+        if (ch === "\\") escape = true;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') inString = true;
+      else if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
     }
-    throw new Error("Failed to extract JSON from response");
+    if (end !== -1) candidates.push(cleaned.slice(firstBrace, end + 1));
   }
+
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // try the next candidate
+    }
+  }
+
+  throw new Error("Failed to extract JSON from response");
 }
 
 export function validateAndParseSummary(content: string): z.infer<typeof consultationSummarySchema> {

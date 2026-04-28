@@ -185,11 +185,18 @@ CREATE TABLE IF NOT EXISTS consultation_summaries (
     warning_signs TEXT NOT NULL,
     additional_notes TEXT,
     tooltips TEXT,
+    validator_model TEXT,
+    validator_status TEXT,                -- 'completed' | 'failed' | NULL (not yet run)
+    validator_report TEXT,                -- JSON: { medication, diagnostic, hallucination, warningSign, glossary }
+    validator_run_at TEXT,
+    confirmed_at TEXT,                    -- NULL until GP confirms
+    confirmed_by TEXT,                    -- user_id of GP who confirmed
     share_token TEXT UNIQUE,
     share_expires_at TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE
+    FOREIGN KEY (session_id) REFERENCES medical_sessions(id) ON DELETE CASCADE,
+    FOREIGN KEY (confirmed_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_consultation_summaries_session_id ON consultation_summaries(session_id);
@@ -200,6 +207,7 @@ CREATE TABLE IF NOT EXISTS report_summaries (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     title TEXT,
+    source_text TEXT,                     -- original report text; retained only while validation has not succeeded, cleared on success
     what_happened TEXT NOT NULL,
     diagnosis TEXT NOT NULL,
     treatment_plan TEXT NOT NULL,
@@ -207,15 +215,39 @@ CREATE TABLE IF NOT EXISTS report_summaries (
     warning_signs TEXT NOT NULL,
     additional_notes TEXT,
     tooltips TEXT,
+    validator_model TEXT,
+    validator_status TEXT,                -- 'completed' | 'failed' | NULL (not yet run)
+    validator_report TEXT,                -- JSON: { medication, diagnostic, hallucination, warningSign, glossary }
+    validator_run_at TEXT,
+    confirmed_at TEXT,                    -- NULL until GP confirms
+    confirmed_by TEXT,                    -- user_id of GP who confirmed
     share_token TEXT UNIQUE,
     share_expires_at TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (confirmed_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_report_summaries_user_id ON report_summaries(user_id);
 CREATE INDEX IF NOT EXISTS idx_report_summaries_share_token ON report_summaries(share_token);
+
+-- Assignments of report summaries to non-owner users (parallel to session_assignments)
+CREATE TABLE IF NOT EXISTS report_summary_assignments (
+    id TEXT PRIMARY KEY,
+    report_summary_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    can_write INTEGER NOT NULL DEFAULT 0,  -- 0 = read-only, 1 = can modify
+    assigned_by TEXT NOT NULL,
+    assigned_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (report_summary_id) REFERENCES report_summaries(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE SET NULL,
+    UNIQUE(report_summary_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_report_summary_assignments_report_summary_id ON report_summary_assignments(report_summary_id);
+CREATE INDEX IF NOT EXISTS idx_report_summary_assignments_user_id ON report_summary_assignments(user_id);
 
 -- FTS5 virtual table for full-text search on transcripts
 CREATE VIRTUAL TABLE IF NOT EXISTS transcript_fts USING fts5(

@@ -23,9 +23,13 @@ sessionsRoutes.get("/:id/accuracy", requireSessionReadAccess, sessionsController
 sessionsRoutes.get("/:id/video", requireSessionReadAccess, sessionsController.getVideoUrl);
 sessionsRoutes.get("/:id/video/stream", requireSessionReadAccess, sessionsController.streamVideo);
 sessionsRoutes.get("/:id/consultation-summary", requireSessionReadAccess, sessionsController.getConsultationSummary);
-sessionsRoutes.post("/:id/consultation-summary", requireSessionReadAccess, sessionsController.generateConsultationSummary);
-sessionsRoutes.post("/:id/consultation-summary/share", requireSessionReadAccess, sessionsController.createShareToken);
-sessionsRoutes.delete("/:id/consultation-summary/share", requireSessionReadAccess, sessionsController.revokeShareToken);
+sessionsRoutes.post("/:id/consultation-summary", requireSessionWriteAccess, sessionsController.generateConsultationSummary);
+sessionsRoutes.post("/:id/consultation-summary/share", requireSessionWriteAccess, sessionsController.createShareToken);
+sessionsRoutes.delete("/:id/consultation-summary/share", requireSessionWriteAccess, sessionsController.revokeShareToken);
+sessionsRoutes.post("/:id/consultation-summary/confirm", requireSessionWriteAccess, sessionsController.confirmConsultationSummary);
+sessionsRoutes.delete("/:id/consultation-summary/confirm", requireSessionWriteAccess, sessionsController.unconfirmConsultationSummary);
+sessionsRoutes.get("/:id/consultation-summary/patient-view", requireSessionReadAccess, sessionsController.getConsultationPatientView);
+sessionsRoutes.post("/:id/consultation-summary/revalidate", requireSessionWriteAccess, sessionsController.revalidateConsultationSummary);
 
 // Create session - only requires general write access (no session yet)
 // Security: Rate limit uploads to prevent abuse, validate magic bytes

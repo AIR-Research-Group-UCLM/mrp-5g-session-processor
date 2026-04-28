@@ -385,12 +385,16 @@
     "generating": "Generating summary...",
     "errorGenerating": "Error generating summary. Please try again.",
     "generateNew": "Generate Another",
+    "clearText": "Clear",
     "file": {
-      "dropzone": "Drag a text file here, or click to select",
+      "dropzone": "Drag a file here, or click to select",
       "dropzoneActive": "Drop the file here",
-      "acceptedFormats": "Text files (.txt, .md, .csv, .log) up to 2 MB",
+      "acceptedFormats": "PDF, DOCX, ODT, TXT, MD, CSV and other text files (up to 10 MB)",
       "readError": "Could not read the file",
-      "reading": "Reading file..."
+      "reading": "Reading file...",
+      "fileTypeError": "Unsupported file type. Please use PDF, DOCX, ODT or a text file.",
+      "fileTooLarge": "File is too large. Maximum size is 10 MB.",
+      "extracting": "Extracting text from document..."
     },
     "list": {
       "title": "Previous Reports",
@@ -402,17 +406,62 @@
       "deleteError": "Error deleting report summary"
     }
   },
+  "validator": {
+    "title": "Safety validation",
+    "model": "model",
+    "confirmed": "Confirmed",
+    "pending": "Pending review",
+    "notRun": "Validation has not been run yet.",
+    "failed": "The safety validator could not produce a usable result. The sheet is hidden until validation succeeds — retry validation, or regenerate the sheet.",
+    "noIssues": "No issues found.",
+    "expand": "Expand details",
+    "collapse": "Hide details",
+    "runAt": "Last validated: {{date}}",
+    "confirm": "Confirm and release",
+    "unconfirm": "Withdraw confirmation",
+    "retry": "Retry validation",
+    "sheetHidden": "Sheet hidden until validation succeeds",
+    "sheetHiddenDescription": "The safety validator did not complete successfully on this sheet. The patient-facing content is hidden until you retry validation. If this persists, regenerate the sheet.",
+    "gateNotice": "The patient cannot view this sheet until you confirm it. Confirmation also enables sharing.",
+    "shareGated": "Confirm the sheet to enable share-link issuance.",
+    "openPatientView": "Open patient view",
+    "patientViewBadge": "Patient view (preview)",
+    "patientViewUnavailable": "Patient view unavailable",
+    "patientViewUnavailableDescription": "This sheet has not been confirmed yet, or you do not have access.",
+    "backToReview": "Back to review",
+    "severity": {
+      "ok": "OK",
+      "minor": "Minor",
+      "major": "Major",
+      "critical": "Critical"
+    },
+    "axis": {
+      "medication": "Medication concordance",
+      "diagnostic": "Diagnostic concordance",
+      "hallucination": "Hallucination detection",
+      "warningSign": "Warning-sign appropriateness",
+      "glossary": "Glossary coverage"
+    },
+    "notes": {
+      "glossaryTermMissing": "Glossary term not found in source: \"{{term}}\""
+    }
+  },
   "assignments": {
     "assignedSessions": "Assigned Sessions",
     "assignedSessionsDescription": "Select sessions this user should have access to",
     "searchSessions": "Search sessions...",
     "noSessionsFound": "No sessions found",
     "noSessionsAvailable": "No sessions available for assignment",
-    "selectedCount": "{{count}} session(s) selected",
+    "selectedCount": "{{count}} selected",
     "updateSuccess": "Assignments updated successfully",
     "updateError": "Error updating assignments",
     "assignedBadge": "Assigned",
     "canWrite": "Can modify",
-    "readOnly": "Read only"
+    "readOnly": "Read only",
+    "assignedReportSummaries": "Assigned Report Summaries",
+    "assignedReportSummariesDescription": "Select report summaries this user should have access to",
+    "searchReportSummaries": "Search report summaries...",
+    "noReportSummariesFound": "No report summaries found",
+    "noReportSummariesAvailable": "No report summaries available for assignment"
   }
 }
