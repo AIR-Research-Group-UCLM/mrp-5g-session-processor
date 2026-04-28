@@ -280,6 +280,12 @@ const tooltipsSchema = z.record(z.string(), z.string());
 /** The summary fields produced by the first LLM call (before tooltips are added). */
 export type SummaryFields = z.infer<typeof consultationSummarySchema>;
 
+// Tooltips are non-critical — bound the wall time so a stalled upstream cannot
+// hang the parent request indefinitely. No retry: a slow first attempt is far
+// more often a stuck connection than a transient blip, and tooltips already
+// soft-fail to null on any error.
+const TOOLTIPS_TIMEOUT_MS = 60_000;
+
 export async function generateTooltips(
   summary: SummaryFields,
 ): Promise<Record<string, string> | null> {
@@ -300,8 +306,11 @@ Only include terms that genuinely need explanation — skip everyday words. Retu
 
 CRITICAL: Generate explanations in the same language as the summary.`;
 
+  const controller = new AbortController();
+  const timeoutHandle = setTimeout(() => controller.abort(), TOOLTIPS_TIMEOUT_MS);
+
   try {
-    const content = await callOpenWebUi(systemPrompt, summaryText);
+    const content = await callOpenWebUi(systemPrompt, summaryText, { signal: controller.signal });
     const raw = extractJson(content);
     const result = tooltipsSchema.safeParse(raw);
 
@@ -312,10 +321,19 @@ CRITICAL: Generate explanations in the same language as the summary.`;
 
     return Object.keys(result.data).length > 0 ? result.data : null;
   } catch (error) {
+    const aborted = controller.signal.aborted;
     logger.warn(
-      { error: error instanceof Error ? error.message : String(error) },
-      "Tooltip generation failed (non-critical)",
+      {
+        aborted,
+        timeoutMs: aborted ? TOOLTIPS_TIMEOUT_MS : undefined,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      aborted
+        ? "Tooltip generation aborted at timeout (non-critical)"
+        : "Tooltip generation failed (non-critical)",
     );
     return null;
+  } finally {
+    clearTimeout(timeoutHandle);
   }
 }
