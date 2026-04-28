@@ -127,23 +127,38 @@ EXAMPLE (medication axis):
 CRITICAL: write each issue in the same language as the SUMMARY. Keep each issue under 200 characters. List AT MOST ${AXIS_MAX_ISSUES} issues — if more exist, prioritise the highest patient-safety risk first and omit the rest.`;
 }
 
+// Per-axis pruning: gpt-oss:20b reliably fails on large prompts (>10 KB user
+// message), regenerating the SUMMARY in patient-facing prose instead of
+// validating. For 3 of 4 axes only one SUMMARY field is relevant, so we pass
+// that field alone — far less SUMMARY structure for the model to copy. For
+// the hallucination axis we keep every factual field but drop tooltips
+// (descriptive, not subject to source traceability).
 function buildValidatorUserMessage(
   summary: ConsultationSummary,
   sourceText: string,
+  axisLabel: AxisDefinition["label"],
 ): string {
-  const summaryJson = JSON.stringify(
-    {
-      whatHappened: summary.whatHappened,
-      diagnosis: summary.diagnosis,
-      treatmentPlan: summary.treatmentPlan,
-      followUp: summary.followUp,
-      warningSigns: summary.warningSigns,
-      additionalNotes: summary.additionalNotes,
-      tooltips: summary.tooltips ?? {},
-    },
-    null,
-    2,
-  );
+  const relevant: Record<string, unknown> = (() => {
+    switch (axisLabel) {
+      case "medication":
+        return { treatmentPlan: summary.treatmentPlan };
+      case "diagnostic":
+        return { diagnosis: summary.diagnosis };
+      case "warningSign":
+        return { warningSigns: summary.warningSigns };
+      case "hallucination":
+      default:
+        return {
+          whatHappened: summary.whatHappened,
+          diagnosis: summary.diagnosis,
+          treatmentPlan: summary.treatmentPlan,
+          followUp: summary.followUp,
+          warningSigns: summary.warningSigns,
+          additionalNotes: summary.additionalNotes,
+        };
+    }
+  })();
+  const summaryJson = JSON.stringify(relevant, null, 2);
   return `## SOURCE\n\n${sourceText}\n\n## SUMMARY\n\n${summaryJson}`;
 }
 
@@ -297,7 +312,7 @@ async function runValidationForAxis(
   context: { sessionId?: string; reportSummaryId?: string },
 ): Promise<string[] | null> {
   const systemPrompt = buildAxisPrompt(axis);
-  const userMessage = buildValidatorUserMessage(summary, sourceText);
+  const userMessage = buildValidatorUserMessage(summary, sourceText, axis.label);
 
   try {
     return await withRetry(
