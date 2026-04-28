@@ -15,11 +15,23 @@ import { callOpenWebUi, extractJson } from "../utils/llm.js";
 // or a single string, or null) — within the instruction-following budget of
 // smaller open-weight models like gpt-oss:20b.
 //
-// Default to serial execution to avoid hammering a single Open WebUI worker;
-// flip SAFETY_VALIDATOR_PARALLEL to true if the upstream can handle 5 in flight.
-const SAFETY_VALIDATOR_PARALLEL = false;
+// Run the four LLM axes in parallel. With serial execution the request can
+// outlive an upstream proxy timeout (4 × per-axis budget), and Open WebUI
+// handles the concurrent load fine in practice — verified empirically.
+const SAFETY_VALIDATOR_PARALLEL = true;
 const AXIS_TIMEOUT_MS = 120_000;
-const AXIS_MAX_RETRIES = 2;
+// `withRetry` reads this as the max ATTEMPTS cap (not extra retries on top of
+// the first try). With gpt-oss:20b a successful axis routinely needs 60–110 s
+// of reasoning, and parallel mode means total wall time = max(per-axis time).
+// So 1 attempt × 120 s timeout = 120 s worst case, which fits inside a typical
+// proxy timeout. Bumping to 2 doubles the worst case to ~240 s.
+//
+// Per-axis failures are absorbed by the soft-fail path in runSafetyValidation
+// (the failed axis defaults to "ok"/empty, the request still returns a usable
+// report), and the looser parser below recovers most legitimate-but-misshapen
+// responses without needing a retry. Net effect: a single attempt is the
+// reliability sweet spot for this model + this validator design.
+const AXIS_MAX_RETRIES = 1;
 // Cap each axis response at ~500 tokens (≈ 1.5–2 kB). Combined with the
 // "top N most relevant issues" instruction, this prevents runaway generations
 // that previously stretched per-axis latency into the timeout window.
@@ -197,17 +209,49 @@ const SUMMARY_ECHO_KEYS = [
   "tooltips",
 ] as const;
 
+// Negation noun stems the model uses across English and Spanish to mean
+// "nothing wrong here". Matched whole-word inside `looksLikeNoIssuesAnswer`.
+const NO_ISSUES_NOUN_REGEX =
+  /(?:^|\W)(?:no|sin|without)\s+(?:issues?|hallucinat\w+|problems?|errors?|inaccuracies|inaccuracy|discrepan\w+|factual\s+claims?|alucinacion\w+|errores|problemas|cuestiones|reclamacion\w+|incoherencias)/i;
+const SUMMARY_AFFIRMATION_REGEX =
+  /\b(?:summary|resumen)\b[^.!?\n]{0,80}\b(?:accurate|correct|faithful|consistent|preciso|correcto|exacto|fiel|coherente)\b/i;
+
+// gpt-oss:20b occasionally answers a "no issues" axis check with a short
+// natural-language reply ("No.", "No hallucinations detected.", "The summary
+// is accurate.") instead of `{"issues": []}`. Recover that case so a benign
+// answer doesn't cost a retry. Conservative on purpose: short, no JSON tokens,
+// and either a one-word negation or an explicit "no <noun>" / "summary is
+// accurate" pattern.
+function looksLikeNoIssuesAnswer(raw: string): boolean {
+  const cleaned = raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
+    .trim();
+  if (cleaned.length === 0 || cleaned.length > 400) return false;
+  if (cleaned.includes("{") || cleaned.includes("[")) return false;
+  if (/^(?:no|none|n\/a|nada|ninguno|ninguna)[.!]?$/i.test(cleaned)) return true;
+  return NO_ISSUES_NOUN_REGEX.test(cleaned) || SUMMARY_AFFIRMATION_REGEX.test(cleaned);
+}
+
 function parseAxisResponse(raw: string, axis: AxisDefinition): string[] {
-  // Strict shape: a JSON object with at least one key whose value is a string
-  // or an array of strings. Bare strings/arrays/primitives are rejected — the
-  // looser contract caused the model to emit free-form prose that polluted the
-  // notes list.
+  // Some open-weight models bail out of JSON entirely and reply with a short
+  // affirmation that nothing is wrong. Treat that as a clean zero-issues
+  // answer instead of forcing a retry on a semantically valid response.
+  if (looksLikeNoIssuesAnswer(raw)) return [];
+
   const parsed = extractJson(raw);
 
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+  // Tolerate bare arrays — gpt-oss occasionally drops the `{"issues": ...}`
+  // envelope and returns the array directly (or `[]` for no issues). Accept
+  // both shapes; `issuesField` still normalises objects-inside-arrays.
+  if (Array.isArray(parsed)) {
+    return issuesField.parse(parsed);
+  }
+
+  if (!parsed || typeof parsed !== "object") {
     throw new Error(
-      `Expected JSON object for axis "${axis.label}", got ${
-        Array.isArray(parsed) ? "array" : parsed === null ? "null" : typeof parsed
+      `Expected JSON object or array for axis "${axis.label}", got ${
+        parsed === null ? "null" : typeof parsed
       }`,
     );
   }
