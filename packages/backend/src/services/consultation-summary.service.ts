@@ -4,9 +4,8 @@ import type { StoredConsultationSummary, ConsultationSummaryPublic } from "@mrp/
 import { config } from "../config/index.js";
 import { getDb } from "../db/connection.js";
 import { logger } from "../config/logger.js";
-import { withRetry } from "../utils/retry.js";
 import { AppError } from "../middleware/error.middleware.js";
-import { callOpenWebUi, validateAndParseSummary, buildSummaryPrompt, generateTooltips } from "../utils/llm.js";
+import { generateSummaryFields, generateTooltips } from "../utils/llm.js";
 import {
   createShareToken as createShareTokenUtil,
   revokeShareToken as revokeShareTokenUtil,
@@ -108,27 +107,18 @@ async function generateSummaryFromTranscript(sessionId: string): Promise<StoredC
   }
 
   const languageName = getLanguageName(session.language ?? "es");
-  const systemPrompt = buildSummaryPrompt(
-    "the raw transcript of a medical consultation (with speaker roles and section types)",
-    `Generate ALL text in ${languageName}`,
-  );
+  const sourceDescription =
+    "the raw transcript of a medical consultation (with speaker roles and section types)";
+  const languageInstruction = `Generate ALL text in ${languageName}`;
   const userMessage = buildUserMessage(sections);
 
   logger.info({ sessionId, model: config.openWebUi.model }, "Generating consultation summary");
-  logger.debug({ sessionId, systemPrompt }, "Consultation summary system message");
   logger.debug({ sessionId, userMessage }, "Consultation summary user message");
 
-  const content = await withRetry(
-    () => callOpenWebUi(systemPrompt, userMessage),
-    {
-      operationName: "consultation-summary-generation",
-      sessionId,
-      timeoutMs: 120_000,
-      maxRetries: 2,
-    }
-  );
-
-  const summary = validateAndParseSummary(content);
+  const summary = await generateSummaryFields(sourceDescription, languageInstruction, userMessage, {
+    sessionId,
+    operationName: "consultation-summary-generation",
+  });
   const tooltips = await generateTooltips(summary);
   const summaryWithTooltips = { ...summary, warningSigns: summary.warningSigns, tooltips: tooltips ?? null };
   const validation = await runSafetyValidation(summaryWithTooltips, userMessage, { sessionId });

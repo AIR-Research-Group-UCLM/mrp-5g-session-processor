@@ -7,8 +7,7 @@ import type {
 import { config } from "../config/index.js";
 import { getDb } from "../db/connection.js";
 import { logger } from "../config/logger.js";
-import { withRetry } from "../utils/retry.js";
-import { callOpenWebUi, validateAndParseSummary, buildSummaryPrompt, generateTooltips } from "../utils/llm.js";
+import { generateSummaryFields, generateTooltips } from "../utils/llm.js";
 import {
   createShareToken as createShareTokenUtil,
   revokeShareToken as revokeShareTokenUtil,
@@ -100,24 +99,15 @@ export async function generateReportSummary(
   reportText: string,
   title: string | null,
 ): Promise<StoredReportSummary> {
-  const systemPrompt = buildSummaryPrompt(
-    "a doctor's medical report about a patient consultation",
-    "Generate ALL text in the same language as the doctor's report",
-  );
+  const sourceDescription = "a doctor's medical report about a patient consultation";
+  const languageInstruction = "Generate ALL text in the same language as the doctor's report";
   const userMessage = `## Doctor's Report\n\n${reportText}`;
 
   logger.info({ userId, model: config.openWebUi.model }, "Generating report summary");
 
-  const content = await withRetry(
-    () => callOpenWebUi(systemPrompt, userMessage),
-    {
-      operationName: "report-summary-generation",
-      timeoutMs: 120_000,
-      maxRetries: 2,
-    }
-  );
-
-  const summary = validateAndParseSummary(content);
+  const summary = await generateSummaryFields(sourceDescription, languageInstruction, userMessage, {
+    operationName: "report-summary-generation",
+  });
   const tooltips = await generateTooltips(summary);
   const summaryWithTooltips = { ...summary, warningSigns: summary.warningSigns, tooltips: tooltips ?? null };
   const validation = await runSafetyValidation(summaryWithTooltips, reportText);

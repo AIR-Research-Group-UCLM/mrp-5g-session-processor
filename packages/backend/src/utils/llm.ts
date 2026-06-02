@@ -2,6 +2,7 @@ import { z } from "zod";
 import { config } from "../config/index.js";
 import { logger } from "../config/logger.js";
 import { AppError } from "../middleware/error.middleware.js";
+import { withRetry } from "./retry.js";
 
 export const consultationSummarySchema = z.object({
   whatHappened: z.string(),
@@ -12,7 +13,9 @@ export const consultationSummarySchema = z.object({
     z.array(z.string()),
     z.string().transform((s) => [s]),
   ]),
-  additionalNotes: z.string().nullable(),
+  // Optional + nullable: smaller models (gpt-oss:20b) intermittently omit this
+  // key when there is "nothing extra"; we treat absence the same as null.
+  additionalNotes: z.string().nullable().optional().default(null),
 });
 
 /** Map of normalized key (lowercase, no separators) → canonical camelCase field name */
@@ -22,12 +25,15 @@ export const CANONICAL_KEYS: Record<string, string> = {
   diagnosis: "diagnosis",
   treatmentplan: "treatmentPlan",
   treatment_plan: "treatmentPlan",
+  treatment: "treatmentPlan",
   followup: "followUp",
   follow_up: "followUp",
   warningsigns: "warningSigns",
   warning_signs: "warningSigns",
+  warnings: "warningSigns",
   additionalnotes: "additionalNotes",
   additional_notes: "additionalNotes",
+  notes: "additionalNotes",
 };
 
 export function normalizeKeys(obj: Record<string, unknown>): Record<string, unknown> {
@@ -228,6 +234,18 @@ export function validateAndParseSummary(content: string): z.infer<typeof consult
   const result = consultationSummarySchema.safeParse(parsed);
 
   if (!result.success) {
+    logger.error(
+      {
+        issues: result.error.issues,
+        rawKeys:
+          parsed && typeof parsed === "object" && !Array.isArray(parsed)
+            ? Object.keys(parsed as Record<string, unknown>)
+            : null,
+        contentChars: content.length,
+        contentPreview: content.slice(0, 1500),
+      },
+      "Invalid summary response structure from LLM",
+    );
     throw new Error("Invalid summary response structure from LLM");
   }
 
@@ -250,7 +268,7 @@ ${buildCommonRules(languageInstruction)}`;
 }
 
 export function buildJsonFormatSpec(): string {
-  return `Respond in JSON with the following format:
+  return `Respond in JSON with EXACTLY this shape (all six keys are required, spelled exactly as shown — do not translate, shorten, or rename them):
 {
   "whatHappened": "A clear summary of what took place during the consultation",
   "diagnosis": "What the doctor found or suspects, explained simply",
@@ -267,8 +285,265 @@ export function buildCommonRules(languageInstruction: string): string {
 - Be reassuring but honest
 - If warning signs were mentioned, list them clearly
 - If there is no information for a field, provide a reasonable "No specific information was discussed" message
-- additionalNotes should be null if there is nothing extra to add
+- additionalNotes should be null if there is nothing extra to add, but the key must still appear in the response
+- warningSigns must always be a JSON array (use [] if there are no warning signs)
+- Use the English keys exactly as listed above; only the VALUES are translated
 - CRITICAL: ${languageInstruction}`;
+}
+
+/**
+ * Strip wrappers a model may add around plain prose: <think>/<reasoning>
+ * blocks, code fences, JSON envelopes (`{ "value": "..." }`), and surrounding
+ * quotes. Used by the per-field fallback path which expects raw text.
+ */
+function cleanScalarFieldResponse(text: string): string {
+  let cleaned = text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
+    .trim();
+
+  const fence = cleaned.match(/```(?:json|text|markdown)?\s*([\s\S]*?)```/);
+  if (fence?.[1]) cleaned = fence[1].trim();
+
+  if (cleaned.startsWith("{") || cleaned.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (typeof parsed === "string") {
+        cleaned = parsed;
+      } else if (Array.isArray(parsed) && parsed.every((p) => typeof p === "string")) {
+        cleaned = parsed.join("\n");
+      } else if (parsed && typeof parsed === "object") {
+        const firstString = Object.values(parsed as Record<string, unknown>).find(
+          (v): v is string => typeof v === "string",
+        );
+        if (firstString) cleaned = firstString;
+      }
+    } catch {
+      // not JSON; keep as-is
+    }
+  }
+
+  return cleaned.replace(/^["']|["']$/g, "").trim();
+}
+
+interface PerFieldOptions {
+  sessionId?: string;
+}
+
+// Per-field calls run in parallel against gpt-oss:20b, which under
+// reasoning_effort: "medium" can spend 100s+ on a single field for dense
+// transcripts. Cap generously so a slow field doesn't kill the batch.
+const PER_FIELD_TIMEOUT_MS = 180_000;
+const PER_FIELD_MAX_RETRIES = 2;
+// Bound output length to prevent the model from rambling indefinitely (which
+// also stretches reasoning time). Sized generously for one paragraph / one
+// short JSON array.
+const PER_FIELD_SCALAR_MAX_TOKENS = 800;
+const PER_FIELD_WARNING_SIGNS_MAX_TOKENS = 600;
+const NO_INFO_PLACEHOLDER = "No specific information was discussed";
+
+async function generateScalarField(
+  fieldKey: string,
+  fieldDescription: string,
+  sourceDescription: string,
+  languageInstruction: string,
+  userMessage: string,
+  options?: PerFieldOptions,
+): Promise<string> {
+  const systemPrompt = `You are a medical communication specialist. Given ${sourceDescription}, write ONLY the "${fieldKey}" portion of a patient-friendly consultation summary.
+
+What "${fieldKey}" means: ${fieldDescription}
+
+Use simple, everyday language — avoid medical jargon. Be reassuring but honest.
+
+Respond with ONE plain-text paragraph and nothing else. No JSON. No code fences. No markdown. No "${fieldKey}:" prefix. No quotation marks wrapping the response. No extra commentary before or after. Just the prose itself, ready to be shown to the patient.
+
+If the source has no information about "${fieldKey}", respond with exactly: "${NO_INFO_PLACEHOLDER}"
+
+CRITICAL: ${languageInstruction}`;
+
+  const content = await withRetry(
+    () => callOpenWebUi(systemPrompt, userMessage, { maxTokens: PER_FIELD_SCALAR_MAX_TOKENS }),
+    {
+      operationName: `summary-field[${fieldKey}]`,
+      sessionId: options?.sessionId,
+      timeoutMs: PER_FIELD_TIMEOUT_MS,
+      maxRetries: PER_FIELD_MAX_RETRIES,
+    },
+  );
+
+  const cleaned = cleanScalarFieldResponse(content);
+  return cleaned.length > 0 ? cleaned : NO_INFO_PLACEHOLDER;
+}
+
+async function generateWarningSignsField(
+  sourceDescription: string,
+  languageInstruction: string,
+  userMessage: string,
+  options?: PerFieldOptions,
+): Promise<string[]> {
+  const systemPrompt = `You are a medical communication specialist. Given ${sourceDescription}, list the warning signs that should prompt the patient to seek urgent medical care.
+
+Respond with ONLY a JSON array of short strings — one warning sign per array element. No prose, no markdown, no code fences, no commentary. If no warning signs were discussed, respond with exactly: []
+
+CRITICAL: ${languageInstruction}`;
+
+  const content = await withRetry(
+    () =>
+      callOpenWebUi(systemPrompt, userMessage, { maxTokens: PER_FIELD_WARNING_SIGNS_MAX_TOKENS }),
+    {
+      operationName: "summary-field[warningSigns]",
+      sessionId: options?.sessionId,
+      timeoutMs: PER_FIELD_TIMEOUT_MS,
+      maxRetries: PER_FIELD_MAX_RETRIES,
+    },
+  );
+
+  try {
+    const raw = extractJson(content);
+    const result = z
+      .union([z.array(z.string()), z.string().transform((s) => [s])])
+      .safeParse(raw);
+    if (result.success) return result.data;
+  } catch {
+    // fall through to line-split salvage
+  }
+
+  // Last-ditch salvage: treat as bullet/newline list. Filters absurdly long
+  // lines (likely prose, not signs) so we don't poison the schema.
+  return content
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, "")
+    .split(/\n+/)
+    .map((line) => line.replace(/^[-*•·\d.)\s]+/, "").trim())
+    .filter((line) => line.length > 0 && line.length < 500);
+}
+
+/**
+ * Per-field fallback: when the all-at-once JSON request keeps coming back
+ * malformed (e.g. gpt-oss:20b inventing its own discharge-note schema), ask
+ * the model for one field at a time as plain prose. Single-field prompts are
+ * dramatically harder to derail. Runs the five required fields in parallel;
+ * additionalNotes is intentionally skipped and defaulted to null.
+ */
+export async function generateSummaryFieldsPerField(
+  sourceDescription: string,
+  languageInstruction: string,
+  userMessage: string,
+  options?: PerFieldOptions,
+): Promise<SummaryFields> {
+  logger.info(
+    { sessionId: options?.sessionId },
+    "Generating consultation summary per-field (fallback)",
+  );
+
+  const [whatHappened, diagnosis, treatmentPlan, followUp, warningSigns] = await Promise.all([
+    generateScalarField(
+      "whatHappened",
+      "A clear summary of what took place during the consultation.",
+      sourceDescription,
+      languageInstruction,
+      userMessage,
+      options,
+    ),
+    generateScalarField(
+      "diagnosis",
+      "What the doctor found or suspects, explained simply.",
+      sourceDescription,
+      languageInstruction,
+      userMessage,
+      options,
+    ),
+    generateScalarField(
+      "treatmentPlan",
+      "What the patient needs to do (medications, lifestyle changes, etc.).",
+      sourceDescription,
+      languageInstruction,
+      userMessage,
+      options,
+    ),
+    generateScalarField(
+      "followUp",
+      "Next steps, when to come back, what appointments to schedule.",
+      sourceDescription,
+      languageInstruction,
+      userMessage,
+      options,
+    ),
+    generateWarningSignsField(sourceDescription, languageInstruction, userMessage, options),
+  ]);
+
+  return {
+    whatHappened,
+    diagnosis,
+    treatmentPlan,
+    followUp,
+    warningSigns,
+    additionalNotes: null,
+  };
+}
+
+interface SummaryGenerationOptions extends PerFieldOptions {
+  operationName?: string;
+  timeoutMs?: number;
+  maxRetries?: number;
+  maxTokens?: number;
+}
+
+// All-at-once budget. Gives the model room for a full six-field JSON object
+// without rambling — if it cannot fit the answer in this many tokens, the
+// per-field fallback will pick up the slack.
+const ALL_AT_ONCE_DEFAULT_TIMEOUT_MS = 240_000;
+const ALL_AT_ONCE_DEFAULT_MAX_TOKENS = 2000;
+
+/**
+ * Generate the structured summary fields, with a robust fallback path:
+ *   1. Try the all-at-once JSON prompt (with validation INSIDE the retry, so
+ *      a malformed response retries the LLM call rather than failing fast).
+ *   2. If retries are exhausted, fall back to per-field generation: one LLM
+ *      call per scalar field as plain prose, plus one for warningSigns as a
+ *      JSON array. Single-field prompts resist the "model invents its own
+ *      schema" failure mode that derails the all-at-once path on dense
+ *      transcripts.
+ */
+export async function generateSummaryFields(
+  sourceDescription: string,
+  languageInstruction: string,
+  userMessage: string,
+  options?: SummaryGenerationOptions,
+): Promise<SummaryFields> {
+  const operationName = options?.operationName ?? "summary-generation";
+  const timeoutMs = options?.timeoutMs ?? ALL_AT_ONCE_DEFAULT_TIMEOUT_MS;
+  const maxRetries = options?.maxRetries ?? 2;
+  const maxTokens = options?.maxTokens ?? ALL_AT_ONCE_DEFAULT_MAX_TOKENS;
+  const systemPrompt = buildSummaryPrompt(sourceDescription, languageInstruction);
+
+  try {
+    return await withRetry(
+      async () => {
+        const content = await callOpenWebUi(systemPrompt, userMessage, { maxTokens });
+        return validateAndParseSummary(content);
+      },
+      {
+        operationName,
+        sessionId: options?.sessionId,
+        timeoutMs,
+        maxRetries,
+      },
+    );
+  } catch (error) {
+    logger.warn(
+      {
+        sessionId: options?.sessionId,
+        operationName,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      "All-at-once summary failed; falling back to per-field generation",
+    );
+    return generateSummaryFieldsPerField(sourceDescription, languageInstruction, userMessage, {
+      sessionId: options?.sessionId,
+    });
+  }
 }
 
 const tooltipsSchema = z.record(z.string(), z.string());
