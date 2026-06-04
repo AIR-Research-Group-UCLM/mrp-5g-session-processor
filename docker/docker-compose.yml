@@ -43,10 +43,44 @@ services:
     networks:
       - mrp-network
 
+  # Optional local transcription engine. Does NOT start with a plain `docker compose up`;
+  # bring it up with the profile:  docker compose --profile whisperx up   (or `pnpm docker:whisperx`).
+  # Then set WHISPERX_ENABLED=true in packages/backend/.env to offer it in the UI.
+  whisperx:
+    build:
+      context: ../whisperx-service
+      dockerfile: Dockerfile
+    image: mrp-whisperx:latest
+    container_name: mrp-whisperx
+    restart: unless-stopped
+    profiles: ["whisperx"]
+    ports:
+      - "8001:8001"
+    # Sidecar settings (WHISPERX_HF_TOKEN, WHISPERX_MODEL, WHISPERX_DEVICE,
+    # WHISPERX_IDLE_TTL_SECONDS, ...) live in whisperx-service/.env — copy
+    # whisperx-service/.env.example to create it. Optional: app.py supplies sane
+    # defaults for anything omitted, so the file can be absent or partial.
+    env_file:
+      - path: ../whisperx-service/.env
+        required: false
+    volumes:
+      - whisperx_cache:/root/.cache                   # persist downloaded models across restarts
+    networks:
+      - mrp-network
+    # GPU: install the NVIDIA Container Toolkit, set WHISPERX_DEVICE=cuda, and uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
 volumes:
   garage_data:
   garage_meta:
   redis_data:
+  whisperx_cache:
 
 networks:
   mrp-network:

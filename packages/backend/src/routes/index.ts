@@ -7,10 +7,12 @@ import { usersRoutes } from "./users.routes.js";
 import { assignmentsRoutes } from "./assignments.routes.js";
 import { consultationSummaryRoutes } from "./consultation-summary.routes.js";
 import { reportSummaryRoutes } from "./report-summary.routes.js";
+import { configRoutes } from "./config.routes.js";
 
 export const routes = Router();
 
 routes.use("/auth", authRoutes);
+routes.use("/config", configRoutes);
 routes.use("/sessions", sessionsRoutes);
 routes.use("/search", searchRoutes);
 routes.use("/simulator", simulatorRoutes);

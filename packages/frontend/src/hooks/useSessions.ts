@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as sessionsApi from "@/api/sessions.api";
-import type { UpdateSessionInput } from "@mrp/shared";
+import type { UpdateSessionInput, TranscriptionEngine } from "@mrp/shared";
 import toast from "react-hot-toast";
 
 export function useSessions(params?: {
@@ -46,7 +46,12 @@ export function useCreateSession() {
       metadata,
     }: {
       file: File;
-      metadata?: { title?: string; userTags?: string[]; notes?: string };
+      metadata?: {
+        title?: string;
+        userTags?: string[];
+        notes?: string;
+        transcriptionEngine?: TranscriptionEngine;
+      };
     }) => sessionsApi.createSession(file, metadata),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });

@@ -176,6 +176,19 @@ function runMigrations(database: Database.Database): void {
     database.exec("ALTER TABLE report_summaries ADD COLUMN source_text TEXT");
   }
 
+  // Migration: Add transcription_engine column to medical_sessions
+  const msColumns = database
+    .prepare("PRAGMA table_info(medical_sessions)")
+    .all() as Array<{ name: string }>;
+
+  if (!msColumns.some((col) => col.name === "transcription_engine")) {
+    logger.info("Running migration: Adding transcription_engine column to medical_sessions...");
+    database.exec(
+      "ALTER TABLE medical_sessions ADD COLUMN transcription_engine TEXT DEFAULT 'openai'"
+    );
+    logger.info("Migration completed: transcription_engine column added");
+  }
+
   // Migration: Add report_summary_assignments table
   const hasReportSummaryAssignmentsTable = database
     .prepare(

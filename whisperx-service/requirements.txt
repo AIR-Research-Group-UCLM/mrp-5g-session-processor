@@ -1,0 +1,8 @@
+# WhisperX transcription sidecar (installed inside the Docker image — see Dockerfile).
+#
+# torch / torchaudio are pulled in transitively by whisperx (a CUDA-capable build
+# that also runs on CPU); no need to install them separately here.
+whisperx==3.8.6
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9

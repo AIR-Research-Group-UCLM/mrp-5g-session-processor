@@ -53,7 +53,9 @@
     "confirmDelete": "¿Estás seguro de eliminar esta sesión?",
     "notFound": "Sesión no encontrada",
     "backToSessions": "Volver a sesiones",
-    "simulated": "Simulada"
+    "simulated": "Simulada",
+    "engineWhisperx": "WhisperX (local)",
+    "engineOpenai": "Nube (gpt-4o)"
   },
   "newSession": {
     "title": "Nueva Sesión",
@@ -67,6 +69,13 @@
     "tagsPlaceholder": "Ej: cardiología, seguimiento, urgente",
     "notes": "Notas",
     "notesPlaceholder": "Notas adicionales sobre la sesión...",
+    "transcriptionSection": "Transcripción",
+    "transcriptionDescription": "Elige el motor que transcribirá y diarizará el audio",
+    "transcriptionEngine": "Motor de transcripción",
+    "engineOpenai": "Nube — gpt-4o-transcribe-diarize (alta precisión)",
+    "engineWhisperx": "Local — WhisperX ({{device}})",
+    "engineWhisperxUnavailable": "Local — WhisperX (no disponible)",
+    "engineWhisperxHint": "El audio se transcribe en este servidor ({{device}}); no se envía a la nube.",
     "processSession": "Procesar Sesión"
   },
   "upload": {

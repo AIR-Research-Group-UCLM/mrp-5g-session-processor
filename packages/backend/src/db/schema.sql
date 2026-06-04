@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS medical_sessions (
     video_size_bytes INTEGER,
     video_mime_type TEXT,
     language TEXT DEFAULT 'es', -- ISO 639-1 code (auto-detected from audio)
+    transcription_engine TEXT DEFAULT 'openai', -- 'openai' (cloud) | 'whisperx' (local)
     summary TEXT,
     keywords TEXT, -- JSON array
     user_tags TEXT, -- JSON array

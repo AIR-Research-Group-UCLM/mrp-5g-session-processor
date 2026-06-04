@@ -27,6 +27,17 @@ const envSchema = z.object({
   OPENAI_MODEL_SEGMENTATION: z.string().default("gpt-5.1"),
   OPENAI_MODEL_METADATA: z.string().default("gpt-5.1"),
 
+  // Transcription engine selection (cloud OpenAI vs local WhisperX sidecar)
+  TRANSCRIPTION_ENGINE_DEFAULT: z.enum(["openai", "whisperx"]).default("openai"),
+  WHISPERX_ENABLED: z.string().default("false"),
+  // Hardware for the local WhisperX sidecar. Default CPU; "gpu" is accepted as an alias for "cuda".
+  WHISPERX_DEVICE: z.enum(["cpu", "cuda", "gpu"]).default("cpu"),
+  WHISPERX_SERVICE_URL: z.string().default("http://localhost:8001"),
+  WHISPERX_REQUEST_TIMEOUT_MS: z.coerce.number().default(1_800_000), // 30 min hard cap per job
+  WHISPERX_POLL_INTERVAL_MS: z.coerce.number().default(4_000),
+  // Optional forced language (ISO 639-1). When unset, WhisperX auto-detects.
+  WHISPERX_LANGUAGE: z.string().optional(),
+
   // Open WebUI (optional - consultation summary feature)
   OPEN_WEBUI_BASE_URL: z.string().optional(),
   OPEN_WEBUI_API_KEY: z.string().optional(),
@@ -107,6 +118,20 @@ export const config = {
       transcription: env.OPENAI_MODEL_TRANSCRIPTION,
       segmentation: env.OPENAI_MODEL_SEGMENTATION,
       metadata: env.OPENAI_MODEL_METADATA,
+    },
+  },
+
+  transcription: {
+    // Engine used when a session is created without an explicit choice.
+    defaultEngine: env.TRANSCRIPTION_ENGINE_DEFAULT,
+    whisperx: {
+      enabled: env.WHISPERX_ENABLED === "true",
+      // Normalize the CPU/GPU switch: "gpu" is a friendly alias for "cuda".
+      device: env.WHISPERX_DEVICE === "gpu" ? "cuda" : env.WHISPERX_DEVICE,
+      serviceUrl: env.WHISPERX_SERVICE_URL.replace(/\/$/, ""),
+      requestTimeoutMs: env.WHISPERX_REQUEST_TIMEOUT_MS,
+      pollIntervalMs: env.WHISPERX_POLL_INTERVAL_MS,
+      language: env.WHISPERX_LANGUAGE ?? null,
     },
   },
 

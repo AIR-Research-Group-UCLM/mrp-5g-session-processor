@@ -106,6 +106,21 @@ pnpm test
 pnpm lint
 ```
 
+### Local transcription (optional)
+
+By default the app transcribes in the cloud (`gpt-4o-transcribe-diarize`) and needs no extra setup. A fully **local** engine (WhisperX) is available as an opt-in Docker service in `whisperx-service/`:
+
+```bash
+# 1) configure the sidecar (gated pyannote token, optional smaller model)
+cp whisperx-service/.env.example whisperx-service/.env   # set WHISPERX_HF_TOKEN=...
+# 2) start the sidecar (also starts Redis/Garage)
+pnpm docker:whisperx
+# 3) enable it for the app
+echo "WHISPERX_ENABLED=true" >> packages/backend/.env
+```
+
+Then run `pnpm dev` (or build for prod) as usual — the New Session page gains a **Local — WhisperX** option (cost recorded as $0). CPU by default; set `WHISPERX_DEVICE=cuda` for GPU. Details in `whisperx-service/README.md`.
+
 ## Project Structure
 
 ```

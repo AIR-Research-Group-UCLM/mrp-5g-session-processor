@@ -149,6 +149,13 @@ export function SessionDetailPage() {
               )}
               {session.status !== "completed" && <SessionStatusBadge status={session.status} />}
               {session.isSimulated && <Badge variant="secondary">{t("sessions.simulated")}</Badge>}
+              {session.transcriptionEngine && (
+                <Badge variant={session.transcriptionEngine === "whisperx" ? "info" : "default"}>
+                  {session.transcriptionEngine === "whisperx"
+                    ? t("sessions.engineWhisperx")
+                    : t("sessions.engineOpenai")}
+                </Badge>
+              )}
             </div>
           </div>
         </div>

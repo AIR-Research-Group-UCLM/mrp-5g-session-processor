@@ -1,0 +1,7 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+# model caches if pointed here
+.cache/
+models/

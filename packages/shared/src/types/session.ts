@@ -4,6 +4,9 @@ import type { ProcessingTimeline } from "./processing.js";
 
 export type SessionStatus = "pending" | "processing" | "completed" | "failed";
 
+/** Which transcription backend processed (or will process) a session. */
+export type TranscriptionEngine = "openai" | "whisperx";
+
 export interface MedicalSession {
   id: string;
   userId: string;
@@ -15,6 +18,7 @@ export interface MedicalSession {
   videoSizeBytes: number | null;
   videoMimeType: string | null;
   language: string | null;
+  transcriptionEngine: TranscriptionEngine | null;
   summary: string | null;
   keywords: string[] | null;
   userTags: string[] | null;
@@ -80,6 +84,7 @@ export interface SessionListItem
     | "userTags"
     | "videoDurationSeconds"
     | "language"
+    | "transcriptionEngine"
     | "isSimulated"
     | "createdAt"
     | "startedAt"
@@ -103,6 +108,8 @@ export interface CreateSessionInput {
   title?: string;
   userTags?: string[];
   notes?: string;
+  /** Transcription engine to use; falls back to the server default when omitted. */
+  transcriptionEngine?: TranscriptionEngine;
 }
 
 export interface UpdateSessionInput {

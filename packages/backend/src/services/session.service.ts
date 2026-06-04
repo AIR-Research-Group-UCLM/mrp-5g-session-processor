@@ -3,6 +3,7 @@ import { getDb } from "../db/connection.js";
 import { s3Service } from "./s3.service.js";
 import { queueService } from "./processing/queue.service.js";
 import { logger } from "../config/logger.js";
+import { config } from "../config/index.js";
 import type {
   MedicalSession,
   SessionListItem,
@@ -31,6 +32,7 @@ interface DbSession {
   video_size_bytes: number | null;
   video_mime_type: string | null;
   language: string | null;
+  transcription_engine: string | null;
   summary: string | null;
   keywords: string | null;
   user_tags: string | null;
@@ -131,6 +133,7 @@ function mapDbSession(row: DbSession): MedicalSession {
     videoSizeBytes: row.video_size_bytes,
     videoMimeType: row.video_mime_type,
     language: row.language,
+    transcriptionEngine: (row.transcription_engine as MedicalSession["transcriptionEngine"]) ?? null,
     summary: row.summary,
     keywords: row.keywords ? JSON.parse(row.keywords) : null,
     userTags: row.user_tags ? JSON.parse(row.user_tags) : null,
@@ -297,7 +300,7 @@ async function listByUser(
   let query = `
     SELECT
       ms.id, ms.title, ms.status, ms.summary, ms.keywords, ms.user_tags,
-      ms.video_duration_seconds, ms.language, ms.is_simulated, ms.created_at,
+      ms.video_duration_seconds, ms.language, ms.transcription_engine, ms.is_simulated, ms.created_at,
       ms.started_at, ms.completed_at, ms.processing_cost_usd, ms.user_id,
       s.conversation_started_at as sim_conversation_started_at,
       s.conversation_completed_at as sim_conversation_completed_at,
@@ -387,6 +390,7 @@ async function listByUser(
       userTags: row.user_tags ? JSON.parse(row.user_tags) : null,
       videoDurationSeconds: row.video_duration_seconds,
       language: row.language,
+      transcriptionEngine: (row.transcription_engine as SessionListItem["transcriptionEngine"]) ?? null,
       isSimulated: row.is_simulated === 1,
       createdAt: row.created_at,
       startedAt,
@@ -424,11 +428,13 @@ async function create(
 
   await fs.unlink(file.path);
 
+  const transcriptionEngine = input.transcriptionEngine ?? config.transcription.defaultEngine;
+
   const stmt = db.prepare(`
     INSERT INTO medical_sessions (
       id, user_id, title, status, video_s3_key, video_original_name,
-      video_size_bytes, video_mime_type, user_tags, notes
-    ) VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)
+      video_size_bytes, video_mime_type, transcription_engine, user_tags, notes
+    ) VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?)
   `);
 
   stmt.run(
@@ -439,6 +445,7 @@ async function create(
     file.originalname,
     file.size,
     file.mimetype,
+    transcriptionEngine,
     input.userTags ? JSON.stringify(input.userTags) : null,
     input.notes ?? null
   );

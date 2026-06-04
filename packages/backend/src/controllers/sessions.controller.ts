@@ -15,6 +15,7 @@ import {
 } from "../services/consultation-summary.service.js";
 import { AppError } from "../middleware/error.middleware.js";
 import { logger } from "../config/logger.js";
+import { config } from "../config/index.js";
 
 const listQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
@@ -33,6 +34,7 @@ const createBodySchema = z.object({
   title: z.string().optional(),
   userTags: z.array(z.string()).optional(),
   notes: z.string().optional(),
+  transcriptionEngine: z.enum(["openai", "whisperx"]).optional(),
 });
 
 const list: RequestHandler = async (req, res, next) => {
@@ -59,6 +61,11 @@ const create: RequestHandler = async (req, res, next) => {
 
     const body = createBodySchema.parse(req.body);
     const userId = req.session.userId!;
+
+    // Local transcription must be explicitly enabled by the operator before it can be requested.
+    if (body.transcriptionEngine === "whisperx" && !config.transcription.whisperx.enabled) {
+      throw new AppError(400, "Local transcription (WhisperX) is not enabled on this server");
+    }
 
     const session = await sessionService.create(userId, req.file, body);
 

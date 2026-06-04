@@ -7,6 +7,7 @@ import type {
   UpdateSessionInput,
   SearchResult,
   TranscriptionAccuracy,
+  TranscriptionEngine,
   StoredConsultationSummary,
   ConsultationSummaryPublic,
 } from "@mrp/shared";
@@ -69,7 +70,12 @@ export async function getSessionStatus(
 
 export async function createSession(
   file: File,
-  metadata?: { title?: string; userTags?: string[]; notes?: string }
+  metadata?: {
+    title?: string;
+    userTags?: string[];
+    notes?: string;
+    transcriptionEngine?: TranscriptionEngine;
+  }
 ): Promise<MedicalSession> {
   const formData = new FormData();
   formData.append("video", file);
@@ -77,6 +83,8 @@ export async function createSession(
   if (metadata?.userTags)
     formData.append("userTags", JSON.stringify(metadata.userTags));
   if (metadata?.notes) formData.append("notes", metadata.notes);
+  if (metadata?.transcriptionEngine)
+    formData.append("transcriptionEngine", metadata.transcriptionEngine);
 
   const response = await apiClient.post<
     ApiResponse<{ session: MedicalSession }>

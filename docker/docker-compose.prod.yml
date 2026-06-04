@@ -36,6 +36,10 @@ services:
       OPEN_WEBUI_BASE_URL: ${OPEN_WEBUI_BASE_URL:-}
       OPEN_WEBUI_API_KEY: ${OPEN_WEBUI_API_KEY:-}
       OPEN_WEBUI_MODEL: ${OPEN_WEBUI_MODEL:-gpt-oss:20b}
+      TRANSCRIPTION_ENGINE_DEFAULT: ${TRANSCRIPTION_ENGINE_DEFAULT:-openai}
+      WHISPERX_ENABLED: ${WHISPERX_ENABLED:-false}
+      WHISPERX_DEVICE: ${WHISPERX_DEVICE:-cpu}
+      WHISPERX_SERVICE_URL: ${WHISPERX_SERVICE_URL:-http://whisperx:8001}
     volumes:
       - ./data/app:/app/data
     depends_on:
@@ -66,6 +70,35 @@ services:
       - GARAGE_ALLOW_WORLD_READABLE_SECRETS=true
     networks:
       - mrp-network
+
+  # Optional local transcription engine. Opt-in via the `whisperx` profile so a plain
+  # `docker compose -f docker/docker-compose.prod.yml up` is unchanged. Enable with:
+  #   docker compose -f docker/docker-compose.prod.yml --profile whisperx up -d
+  # and set WHISPERX_ENABLED=true (already wired on the app service above).
+  whisperx:
+    build:
+      context: ../whisperx-service
+      dockerfile: Dockerfile
+    image: mrp-whisperx:latest
+    container_name: mrp-whisperx
+    restart: unless-stopped
+    profiles: ["whisperx"]
+    # Sidecar settings live in whisperx-service/.env (copy whisperx-service/.env.example).
+    env_file:
+      - path: ../whisperx-service/.env
+        required: false
+    volumes:
+      - ./data/whisperx-cache:/root/.cache
+    networks:
+      - mrp-network
+    # GPU: install the NVIDIA Container Toolkit, set WHISPERX_DEVICE=cuda, and uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
 networks:
   mrp-network:

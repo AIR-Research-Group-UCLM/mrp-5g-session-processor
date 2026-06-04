@@ -9,7 +9,8 @@
     "test": "pnpm -r run test",
     "lint": "pnpm -r run lint",
     "docker:up": "docker compose -f docker/docker-compose.yml up",
-    "docker:down": "docker compose -f docker/docker-compose.yml down",
+    "docker:whisperx": "docker compose -f docker/docker-compose.yml --profile whisperx up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml --profile whisperx down",
     "docker:init": "bash docker/init-garage.sh",
     "db:seed": "pnpm --filter backend run seed:users"
   },

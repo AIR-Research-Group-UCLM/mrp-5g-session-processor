@@ -9,6 +9,7 @@ import { logger } from "../../config/logger.js";
 import { getDb } from "../../db/connection.js";
 import { withRetry } from "../../utils/retry.js";
 import { s3Service } from "../s3.service.js";
+import { transcribeWithWhisperX } from "./whisperx.service.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -86,6 +87,7 @@ async function detectLanguageFromText(text: string): Promise<LanguageDetectionRe
 interface DbSession {
   video_s3_key: string;
   video_mime_type: string | null;
+  transcription_engine: string | null;
 }
 
 const AUDIO_MIMETYPES = [
@@ -131,11 +133,24 @@ export async function processTranscription(sessionId: string): Promise<Transcrip
 
   try {
     const session = db
-      .prepare("SELECT video_s3_key, video_mime_type FROM medical_sessions WHERE id = ?")
+      .prepare(
+        "SELECT video_s3_key, video_mime_type, transcription_engine FROM medical_sessions WHERE id = ?"
+      )
       .get(sessionId) as DbSession | undefined;
 
     if (!session?.video_s3_key) {
       throw new Error("Session or media file not found");
+    }
+
+    const engine: "openai" | "whisperx" =
+      session.transcription_engine === "whisperx" ? "whisperx" : "openai";
+
+    // Honesty/privacy guard: a session that asked for local transcription must NOT silently
+    // fall back to the cloud if the local engine has since been disabled — fail loudly instead.
+    if (engine === "whisperx" && !config.transcription.whisperx.enabled) {
+      throw new Error(
+        "Session requests local WhisperX transcription but it is disabled on this server"
+      );
     }
 
     const isAudio = isAudioFile(session.video_mime_type);
@@ -221,46 +236,66 @@ export async function processTranscription(sessionId: string): Promise<Transcrip
     const durationSeconds = Math.round(parseFloat(durationOutput.trim()));
 
     logger.info(
-      { sessionId, durationSeconds, audioSizeBytes: audioStats.size, model: config.openai.models.transcription },
+      {
+        sessionId,
+        engine,
+        durationSeconds,
+        audioSizeBytes: audioStats.size,
+        model:
+          engine === "whisperx"
+            ? `whisperx (${config.transcription.whisperx.device})`
+            : config.openai.models.transcription,
+      },
       "Transcribing audio"
     );
 
-    const audioFile = await fs.readFile(audioPath);
-    const audioBlob = new Blob([audioFile], { type: "audio/mp3" });
-    const file = new File([audioBlob], "audio.mp3", { type: "audio/mp3" });
-
-    logger.debug({ sessionId, fileSizeBytes: audioFile.length }, "Audio file prepared for OpenAI");
-
-    // Use transcription model with diarization support
-    // Timeout: 10 minutes, retries: 3 attempts
-    const transcription = await withRetry<TranscriptionResponse>(
-      async () => {
-        try {
-          return (await openai.audio.transcriptions.create({
-            file,
-            model: config.openai.models.transcription,
-            response_format: "diarized_json",
-            chunking_strategy: "auto",
-          })) as TranscriptionResponse;
-        } catch (openaiError) {
-          const err = openaiError as Error & { status?: number; response?: unknown };
-          logger.error(
-            {
-              sessionId,
-              error: err.message,
-              status: err.status,
-              response: err.response,
-            },
-            "OpenAI transcription API error"
-          );
-          throw err;
-        }
-      },
-      {
-        operationName: "transcription",
+    let transcription: TranscriptionResponse;
+    if (engine === "whisperx") {
+      // Local sidecar: submit + poll. Returns the normalized transcript shape directly,
+      // including a detected language (so the gpt-4o-mini language step below is skipped).
+      transcription = await transcribeWithWhisperX(audioPath, {
         sessionId,
-      }
-    );
+        language: config.transcription.whisperx.language ?? undefined,
+        device: config.transcription.whisperx.device,
+      });
+    } else {
+      const audioFile = await fs.readFile(audioPath);
+      const audioBlob = new Blob([audioFile], { type: "audio/mp3" });
+      const file = new File([audioBlob], "audio.mp3", { type: "audio/mp3" });
+
+      logger.debug({ sessionId, fileSizeBytes: audioFile.length }, "Audio file prepared for OpenAI");
+
+      // Use transcription model with diarization support
+      // Timeout: 10 minutes, retries: 3 attempts
+      transcription = await withRetry<TranscriptionResponse>(
+        async () => {
+          try {
+            return (await openai.audio.transcriptions.create({
+              file,
+              model: config.openai.models.transcription,
+              response_format: "diarized_json",
+              chunking_strategy: "auto",
+            })) as TranscriptionResponse;
+          } catch (openaiError) {
+            const err = openaiError as Error & { status?: number; response?: unknown };
+            logger.error(
+              {
+                sessionId,
+                error: err.message,
+                status: err.status,
+                response: err.response,
+              },
+              "OpenAI transcription API error"
+            );
+            throw err;
+          }
+        },
+        {
+          operationName: "transcription",
+          sessionId,
+        }
+      );
+    }
 
     // Detect language from transcript text if API doesn't provide it
     // (diarized_json format doesn't include language field)
@@ -315,12 +350,16 @@ export async function processTranscription(sessionId: string): Promise<Transcrip
     const transcriptS3Key = session.video_s3_key.replace(/\.[^.]+$/, "_transcript.json");
     await s3Service.uploadFile(transcriptS3Key, transcriptPath, "application/json");
 
-    // Calculate cost: duration in minutes * price per minute + language detection cost
-    const transcriptionCostUsd = (durationSeconds / 60) * config.pricing.openai.transcriptionPerMinute;
+    // Calculate cost: duration in minutes * price per minute + language detection cost.
+    // Local WhisperX runs on our own hardware, so its transcription cost is zero.
+    const transcriptionCostUsd =
+      engine === "whisperx"
+        ? 0
+        : (durationSeconds / 60) * config.pricing.openai.transcriptionPerMinute;
     const costUsd = transcriptionCostUsd + languageDetectionCostUsd;
 
     logger.info(
-      { sessionId, durationSeconds, transcriptionCostUsd, languageDetectionCostUsd, costUsd },
+      { sessionId, engine, durationSeconds, transcriptionCostUsd, languageDetectionCostUsd, costUsd },
       "Transcription completed and saved"
     );
 
