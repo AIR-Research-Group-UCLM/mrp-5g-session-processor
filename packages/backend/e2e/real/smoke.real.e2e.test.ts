@@ -2,8 +2,12 @@
  * Opt-in smoke test against the real AI providers (OpenAI, Open WebUI, ElevenLabs).
  * Run with `pnpm test:e2e:real`. It costs money on every run and takes several
  * minutes, so it only checks structure, never exact model output.
+ *
+ * The three scenarios are independent and run concurrently (the backend
+ * processes two sessions at a time), so wall time is that of the slowest one.
+ * Concurrent tests must use the `expect` from their own test context.
  */
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, it, type ExpectStatic } from "vitest";
 import { ApiClient } from "../support/api.js";
 import {
   createApiKey,
@@ -25,7 +29,7 @@ const REPORT_TEXT =
   "Se ajusta metformina a 850 mg cada 12 horas y se mantiene enalapril 10 mg al día. " +
   "Se recomienda dieta y ejercicio. Signos de alarma: dolor torácico o mareo intenso. Revisión en tres meses.";
 
-function expectPatientSummary(summary: any) {
+function expectPatientSummary(expect: ExpectStatic, summary: any) {
   for (const field of ["whatHappened", "diagnosis", "treatmentPlan", "followUp"]) {
     expect(typeof summary[field], field).toBe("string");
     expect(summary[field].length, field).toBeGreaterThan(0);
@@ -34,7 +38,7 @@ function expectPatientSummary(summary: any) {
   expect(["completed", "failed"]).toContain(summary.validator.status);
 }
 
-describe("real AI smoke test", () => {
+describe.concurrent("real AI smoke test", () => {
   let user: TestUser;
   let client: ApiClient;
 
@@ -44,7 +48,7 @@ describe("real AI smoke test", () => {
     client = ApiClient.anonymous().withBearer((await createApiKey(admin.client, user.id)).key);
   });
 
-  it("processes a real consultation recording end to end", async () => {
+  it("processes a real consultation recording end to end", async ({ expect }) => {
     const upload = await client.upload("/sessions", [
       { field: "video", path: ctx().fixtures.sampleSessionAudio, contentType: "audio/mpeg" },
     ]);
@@ -70,16 +74,16 @@ describe("real AI smoke test", () => {
 
     const consultation = await client.get(`/sessions/${sessionId}/consultation-summary`);
     expect(consultation.status).toBe(200);
-    expectPatientSummary(consultation.body.data.summary);
+    expectPatientSummary(expect, consultation.body.data.summary);
   });
 
-  it("generates a real report summary", async () => {
+  it("generates a real report summary", async ({ expect }) => {
     const response = await client.post("/report-summaries", { reportText: REPORT_TEXT, title: "Smoke real" });
     expect(response.status, JSON.stringify(response.body)).toBe(201);
-    expectPatientSummary(response.body.data.summary);
+    expectPatientSummary(expect, response.body.data.summary);
   });
 
-  it("simulates and processes a real consultation", async () => {
+  it("simulates and processes a real consultation", async ({ expect }) => {
     const voices = ctx().simulatorVoices;
     expect(voices.length).toBeGreaterThan(0);
     const voiceAt = (index: number) => voices[index % voices.length]!.id;
