@@ -29,9 +29,21 @@ const updateBodySchema = z.object({
   notes: z.string().optional(),
 });
 
+// Multipart bodies carry every field as a string: accept a JSON-encoded array
+// (what the web client sends), a single plain tag, or the field repeated once per tag.
+const multipartTagsSchema = z.preprocess((value) => {
+  if (typeof value !== "string") return value;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [value];
+  } catch {
+    return [value];
+  }
+}, z.array(z.string()));
+
 const createBodySchema = z.object({
   title: z.string().optional(),
-  userTags: z.array(z.string()).optional(),
+  userTags: multipartTagsSchema.optional(),
   notes: z.string().optional(),
 });
 
