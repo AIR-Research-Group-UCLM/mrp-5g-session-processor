@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { usersController } from "../controllers/users.controller.js";
+import { apiKeysController } from "../controllers/api-keys.controller.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { requireAdmin } from "../middleware/admin.middleware.js";
 
@@ -12,3 +13,8 @@ usersRoutes.get("/", usersController.list);
 usersRoutes.post("/", usersController.create);
 usersRoutes.patch("/:id", usersController.update);
 usersRoutes.delete("/:id", usersController.delete);
+
+// API keys owned by a user (admin-managed, never usable with API key auth)
+usersRoutes.get("/:userId/api-keys", apiKeysController.list);
+usersRoutes.post("/:userId/api-keys", apiKeysController.create);
+usersRoutes.delete("/:userId/api-keys/:keyId", apiKeysController.revoke);

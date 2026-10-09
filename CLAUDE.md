@@ -93,6 +93,7 @@ SQLite with better-sqlite3. WAL mode and foreign keys enabled.
 - `clinical_indicators` - urgency, diagnosis, treatment, etc.
 - `simulations` - simulator state and progress
 - `session_assignments` - user session sharing (read/write permissions)
+- `api_keys` - per-user API keys (SHA-256 hash only, optional expiry, soft revoke)
 - `transcript_fts` - FTS5 virtual table for full-text search
 
 ### Medical Sections
@@ -109,6 +110,8 @@ SQLite with better-sqlite3. WAL mode and foreign keys enabled.
 ## API Endpoints
 
 ### Authentication
+All endpoints accept a session cookie or an API key (`Authorization: Bearer mrp_...` or `X-API-Key`), except admin endpoints (users, assignments, API keys), which reject API keys. Use `req.userId` (never `req.session.userId`) to get the caller. External integration guide: `docs/API.md`.
+
 - `POST /api/auth/login` - Login
 - `POST /api/auth/logout` - Logout
 - `GET /api/auth/me` - Current user
@@ -136,6 +139,11 @@ SQLite with better-sqlite3. WAL mode and foreign keys enabled.
 - `GET /api/users/:userId/available-sessions` - Available sessions
 - `POST /api/users/:userId/assignments` - Create assignment
 - `DELETE /api/users/:userId/assignments/:sessionId` - Remove
+
+### API Keys (admin, session cookie only)
+- `GET /api/users/:userId/api-keys` - List keys
+- `POST /api/users/:userId/api-keys` - Create key (plaintext returned once)
+- `DELETE /api/users/:userId/api-keys/:keyId` - Revoke key
 
 ## Processing Flow
 
@@ -198,8 +206,8 @@ pnpm docker:down
 
 ## Key Middleware
 
-- `auth.middleware.ts` - Session authentication check
-- `admin.middleware.ts` - Admin role required
+- `auth.middleware.ts` - `authenticate` resolves `req.userId` from API key or session cookie; `requireAuth` checks it
+- `admin.middleware.ts` - Admin role required (rejects API key auth)
 - `write-access.middleware.ts` - Write permission check
 - `session-access.middleware.ts` - Session ownership/assignment check
 - `rate-limit.middleware.ts` - Rate limiting

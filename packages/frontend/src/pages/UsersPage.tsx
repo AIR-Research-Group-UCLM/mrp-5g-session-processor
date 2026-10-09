@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Spinner } from "@/components/ui/Spinner";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { UserFormModal } from "@/components/users/UserFormModal";
+import { ApiKeysModal } from "@/components/users/ApiKeysModal";
 import {
   useUsers,
   useCreateUser,
@@ -27,6 +28,7 @@ export function UsersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserListItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [apiKeysUser, setApiKeysUser] = useState<UserListItem | null>(null);
 
   const handleCreate = () => {
     setEditingUser(null);
@@ -133,6 +135,20 @@ export function UsersPage() {
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <Tooltip content={t("apiKeys.manage")} position="top">
+                        <button
+                          onClick={() => setApiKeysUser(user)}
+                          aria-label={t("apiKeys.manage")}
+                          className="relative rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                        >
+                          <KeyRound className="h-4 w-4" />
+                          {user.activeApiKeyCount > 0 && (
+                            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-medium text-white">
+                              {user.activeApiKeyCount}
+                            </span>
+                          )}
+                        </button>
+                      </Tooltip>
                       <Tooltip content={t("common.edit")} position="top">
                         <button
                           onClick={() => handleEdit(user)}
@@ -196,6 +212,12 @@ export function UsersPage() {
         user={editingUser}
         onSubmit={handleModalSubmit}
         isLoading={createUser.isPending || updateUser.isPending}
+      />
+
+      <ApiKeysModal
+        isOpen={!!apiKeysUser}
+        onClose={() => setApiKeysUser(null)}
+        user={apiKeysUser}
       />
     </div>
   );

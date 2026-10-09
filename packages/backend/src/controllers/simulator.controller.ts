@@ -29,7 +29,7 @@ const createBodySchema = z.object({
 const create: RequestHandler = async (req, res, next) => {
   try {
     const body = createBodySchema.parse(req.body);
-    const userId = req.session.userId;
+    const userId = req.userId;
     if (!userId) {
       res.status(401).json({ success: false, error: "Unauthorized" });
       return;
@@ -49,7 +49,7 @@ const create: RequestHandler = async (req, res, next) => {
 const getStatus: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id;
-    const userId = req.session.userId;
+    const userId = req.userId;
 
     if (!userId) {
       res.status(401).json({ success: false, error: "Unauthorized" });

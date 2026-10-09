@@ -10,8 +10,8 @@ function getIpKey(req: Request): string {
 // Helper to get client identifier (user ID if authenticated, IP otherwise)
 function getClientId(req: Request): string {
   // For authenticated users, use userId as the key
-  if (req.session?.userId) {
-    return req.session.userId;
+  if (req.userId) {
+    return req.userId;
   }
   // For unauthenticated users, use the proper IP key generator for IPv6 support
   return getIpKey(req);
@@ -57,7 +57,7 @@ export const simulatorLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: getClientId,
   handler: (req: Request, res: Response) => {
-    logger.warn({ userId: req.session?.userId }, "Simulator rate limit exceeded");
+    logger.warn({ userId: req.userId }, "Simulator rate limit exceeded");
     res.status(429).json({
       success: false,
       error: "Simulation limit reached, please try again in an hour",
@@ -73,7 +73,7 @@ export const uploadLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: getClientId,
   handler: (req: Request, res: Response) => {
-    logger.warn({ userId: req.session?.userId }, "Upload rate limit exceeded");
+    logger.warn({ userId: req.userId }, "Upload rate limit exceeded");
     res.status(429).json({
       success: false,
       error: "Upload limit reached, please try again later",

@@ -16,9 +16,20 @@ interface DbUser {
   role: string;
   created_at: string;
   updated_at: string;
+  active_api_key_count?: number;
 }
 
 const PROTECTED_EMAIL = "admin@user.com";
+
+const USER_LIST_SELECT = `
+  SELECT u.id, u.email, u.name, u.role, u.created_at,
+    (SELECT COUNT(*) FROM api_keys k
+      WHERE k.user_id = u.id
+        AND k.revoked_at IS NULL
+        AND (k.expires_at IS NULL OR k.expires_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    ) AS active_api_key_count
+  FROM users u
+`;
 
 function mapDbUserToListItem(row: DbUser): UserListItem {
   return {
@@ -27,15 +38,14 @@ function mapDbUserToListItem(row: DbUser): UserListItem {
     name: row.name,
     role: row.role as UserRole,
     createdAt: row.created_at,
+    activeApiKeyCount: row.active_api_key_count ?? 0,
   };
 }
 
 async function listAll(): Promise<UserListItem[]> {
   const db = getDb();
   const rows = db
-    .prepare(
-      "SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC"
-    )
+    .prepare(`${USER_LIST_SELECT} ORDER BY u.created_at DESC`)
     .all() as DbUser[];
   return rows.map(mapDbUserToListItem);
 }
@@ -52,7 +62,7 @@ async function create(input: CreateUserInput): Promise<UserListItem> {
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(id, input.email, passwordHash, input.name, role, now, now);
 
-  return { id, email: input.email, name: input.name, role, createdAt: now };
+  return { id, email: input.email, name: input.name, role, createdAt: now, activeApiKeyCount: 0 };
 }
 
 async function update(id: string, input: UpdateUserInput): Promise<UserListItem | null> {
@@ -88,7 +98,8 @@ async function update(id: string, input: UpdateUserInput): Promise<UserListItem 
   }
 
   if (updates.length === 0) {
-    return mapDbUserToListItem(existing);
+    const unchanged = db.prepare(`${USER_LIST_SELECT} WHERE u.id = ?`).get(id) as DbUser;
+    return mapDbUserToListItem(unchanged);
   }
 
   updates.push("updated_at = ?");
@@ -97,7 +108,7 @@ async function update(id: string, input: UpdateUserInput): Promise<UserListItem 
 
   db.prepare(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`).run(...params);
 
-  const updated = db.prepare("SELECT * FROM users WHERE id = ?").get(id) as DbUser;
+  const updated = db.prepare(`${USER_LIST_SELECT} WHERE u.id = ?`).get(id) as DbUser;
   return mapDbUserToListItem(updated);
 }
 

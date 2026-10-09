@@ -28,7 +28,7 @@ const listQuerySchema = z.object({
 const generate: RequestHandler = async (req, res, next) => {
   try {
     const body = generateBodySchema.parse(req.body);
-    const userId = req.session.userId!;
+    const userId = req.userId!;
 
     const summary = await generateReportSummaryService(
       userId,
@@ -45,7 +45,7 @@ const generate: RequestHandler = async (req, res, next) => {
 const list: RequestHandler = async (req, res, next) => {
   try {
     const query = listQuerySchema.parse(req.query);
-    const userId = req.session.userId!;
+    const userId = req.userId!;
 
     const result = listReportSummariesService(userId, query.page, query.pageSize);
 
@@ -66,7 +66,7 @@ const list: RequestHandler = async (req, res, next) => {
 const getById: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id!;
-    const userId = req.session.userId!;
+    const userId = req.userId!;
 
     const summary = getReportSummaryService(id, userId);
 
@@ -83,7 +83,7 @@ const getById: RequestHandler = async (req, res, next) => {
 const remove: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id!;
-    const userId = req.session.userId!;
+    const userId = req.userId!;
 
     const deleted = deleteReportSummaryService(id, userId);
 
@@ -104,7 +104,7 @@ const shareBodySchema = z.object({
 const createShareToken: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id!;
-    const userId = req.session.userId!;
+    const userId = req.userId!;
     const body = shareBodySchema.parse(req.body);
 
     const result = createShareTokenService(id, userId, body.expiryHours);
@@ -118,7 +118,7 @@ const createShareToken: RequestHandler = async (req, res, next) => {
 const revokeShareToken: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id!;
-    const userId = req.session.userId!;
+    const userId = req.userId!;
 
     revokeShareTokenService(id, userId);
 
@@ -153,7 +153,7 @@ const extractTextFromFile: RequestHandler = async (req, res, next) => {
 const confirm: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id!;
-    const userId = req.session.userId!;
+    const userId = req.userId!;
     const summary = confirmReportSummaryService(id, userId);
     res.json({ success: true, data: { summary } });
   } catch (error) {
@@ -164,7 +164,7 @@ const confirm: RequestHandler = async (req, res, next) => {
 const unconfirm: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id!;
-    const userId = req.session.userId!;
+    const userId = req.userId!;
     const summary = unconfirmReportSummaryService(id, userId);
     res.json({ success: true, data: { summary } });
   } catch (error) {
@@ -175,7 +175,7 @@ const unconfirm: RequestHandler = async (req, res, next) => {
 const getPatientView: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id!;
-    const userId = req.session.userId!;
+    const userId = req.userId!;
     const view = getReportSummaryPatientViewService(id, userId);
     if (!view) {
       throw new AppError(404, "Patient view is unavailable until the GP confirms the sheet");
@@ -189,7 +189,7 @@ const getPatientView: RequestHandler = async (req, res, next) => {
 const revalidate: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id!;
-    const userId = req.session.userId!;
+    const userId = req.userId!;
     const summary = await revalidateReportSummaryService(id, userId);
     res.json({ success: true, data: { summary } });
   } catch (error) {

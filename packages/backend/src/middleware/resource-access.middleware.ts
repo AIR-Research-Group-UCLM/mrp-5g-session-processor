@@ -25,7 +25,7 @@ export function createResourceAccessMiddleware(config: ResourceAccessConfig): {
 } {
   const requireRead: RequestHandler = async (req, _res, next) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       const resourceId = req.params[config.paramName];
 
       if (!userId) throw new AppError(401, "Authentication required");
@@ -42,7 +42,7 @@ export function createResourceAccessMiddleware(config: ResourceAccessConfig): {
 
   const requireWrite: RequestHandler = async (req, _res, next) => {
     try {
-      const userId = req.session.userId;
+      const userId = req.userId;
       const resourceId = req.params[config.paramName];
 
       if (!userId) throw new AppError(401, "Authentication required");

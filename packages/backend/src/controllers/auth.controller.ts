@@ -51,12 +51,12 @@ const logout: RequestHandler = (req, res) => {
 
 const me: RequestHandler = async (req, res, next) => {
   try {
-    if (!req.session.userId) {
+    if (!req.userId) {
       res.json({ success: true, data: { user: null } });
       return;
     }
 
-    const user = await authService.getUserById(req.session.userId);
+    const user = await authService.getUserById(req.userId);
 
     if (!user) {
       throw new AppError(401, "User not found");

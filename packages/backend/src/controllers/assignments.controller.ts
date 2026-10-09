@@ -57,7 +57,7 @@ const getUserAssignments: RequestHandler = async (req, res, next) => {
 const setUserAssignments: RequestHandler = async (req, res, next) => {
   try {
     const targetUserId = req.params.userId!;
-    const adminUserId = req.session.userId!;
+    const adminUserId = req.userId!;
     const { assignments } = setAssignmentsSchema.parse(req.body);
 
     await assignmentService.setAssignmentsForUser(
@@ -117,7 +117,7 @@ const setUserReportSummaryAssignments: RequestHandler = async (
 ) => {
   try {
     const targetUserId = req.params.userId!;
-    const adminUserId = req.session.userId!;
+    const adminUserId = req.userId!;
     const { assignments } = setReportSummaryAssignmentsSchema.parse(req.body);
 
     await assignmentService.setReportSummaryAssignmentsForUser(

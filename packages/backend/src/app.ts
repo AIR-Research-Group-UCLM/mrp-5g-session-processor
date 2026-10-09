@@ -10,6 +10,7 @@ import { createClient } from "redis";
 import { fileURLToPath } from "url";
 import { config } from "./config/index.js";
 import { logger } from "./config/logger.js";
+import { authenticate } from "./middleware/auth.middleware.js";
 import { errorMiddleware } from "./middleware/error.middleware.js";
 import { generalLimiter } from "./middleware/rate-limit.middleware.js";
 import { routes } from "./routes/index.js";
@@ -81,9 +82,10 @@ export async function createApp() {
     })
   );
 
-  // Mount API routes under base path with general rate limiting
+  // Mount API routes under base path. Authentication (session cookie or API key)
+  // is resolved first so the general rate limiter can key requests by user.
   const apiPath = basePath ? `${basePath}/api` : "/api";
-  app.use(apiPath, generalLimiter, routes);
+  app.use(apiPath, authenticate, generalLimiter, routes);
 
   // Health check at both root and base path
   const healthHandler = (_req: express.Request, res: express.Response) => {
