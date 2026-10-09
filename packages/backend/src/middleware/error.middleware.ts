@@ -1,6 +1,7 @@
 import type { ErrorRequestHandler } from "express";
 import { logger } from "../config/logger.js";
 import { ZodError } from "zod";
+import multer from "multer";
 
 export class AppError extends Error {
   constructor(
@@ -17,6 +18,14 @@ export const errorMiddleware: ErrorRequestHandler = (err, _req, res, _next) => {
 
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
+      success: false,
+      error: err.message,
+    });
+    return;
+  }
+
+  if (err instanceof multer.MulterError) {
+    res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({
       success: false,
       error: err.message,
     });

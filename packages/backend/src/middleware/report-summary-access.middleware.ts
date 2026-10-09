@@ -1,7 +1,7 @@
 import { assignmentService } from "../services/assignment.service.js";
 import { createResourceAccessMiddleware } from "./resource-access.middleware.js";
 
-const { requireRead, requireWrite } = createResourceAccessMiddleware({
+const { requireRead, requireWrite, requireOwner } = createResourceAccessMiddleware({
   paramName: "id",
   notFoundMessage: "Report summary not found",
   deleteForbiddenMessage: "Only report owner can delete",
@@ -11,3 +11,4 @@ const { requireRead, requireWrite } = createResourceAccessMiddleware({
 
 export const requireReportSummaryReadAccess = requireRead;
 export const requireReportSummaryWriteAccess = requireWrite;
+export const requireReportSummaryOwner = requireOwner;

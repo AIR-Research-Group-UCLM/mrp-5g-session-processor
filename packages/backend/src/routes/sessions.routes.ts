@@ -3,6 +3,7 @@ import { sessionsController } from "../controllers/sessions.controller.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { requireWriteAccess } from "../middleware/write-access.middleware.js";
 import {
+  requireSessionOwner,
   requireSessionReadAccess,
   requireSessionWriteAccess,
 } from "../middleware/session-access.middleware.js";
@@ -35,8 +36,7 @@ sessionsRoutes.post("/:id/consultation-summary/revalidate", requireSessionWriteA
 // Security: Rate limit uploads to prevent abuse, validate magic bytes
 sessionsRoutes.post("/", requireWriteAccess, uploadLimiter, ...uploadMiddleware.single("video"), sessionsController.create);
 
-// Write operations on specific sessions - require session write access
-// For PATCH: requires canWrite permission
-// For DELETE: requires ownership (handled in middleware)
+// Write operations on specific sessions
+// PATCH requires canWrite permission; deleting the session requires ownership
 sessionsRoutes.patch("/:id", requireSessionWriteAccess, sessionsController.update);
-sessionsRoutes.delete("/:id", requireSessionWriteAccess, sessionsController.delete);
+sessionsRoutes.delete("/:id", requireSessionOwner, sessionsController.delete);

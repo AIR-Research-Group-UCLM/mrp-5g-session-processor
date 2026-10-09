@@ -22,6 +22,7 @@ interface ResourceAccessConfig {
 export function createResourceAccessMiddleware(config: ResourceAccessConfig): {
   requireRead: RequestHandler;
   requireWrite: RequestHandler;
+  requireOwner: RequestHandler;
 } {
   const requireRead: RequestHandler = async (req, _res, next) => {
     try {
@@ -54,15 +55,8 @@ export function createResourceAccessMiddleware(config: ResourceAccessConfig): {
         throw new AppError(403, "Write access required");
       }
 
-      const { canAccess, isOwner, canWrite } = await config.checkAccess(
-        userId,
-        resourceId
-      );
+      const { canAccess, canWrite } = await config.checkAccess(userId, resourceId);
       if (!canAccess) throw new AppError(404, config.notFoundMessage);
-
-      if (req.method === "DELETE" && !isOwner) {
-        throw new AppError(403, config.deleteForbiddenMessage);
-      }
       if (!canWrite) {
         throw new AppError(403, config.writeForbiddenMessage);
       }
@@ -73,5 +67,33 @@ export function createResourceAccessMiddleware(config: ResourceAccessConfig): {
     }
   };
 
-  return { requireRead, requireWrite };
+  // Deleting the resource itself is owner-only. Other DELETE routes on a
+  // resource (revoking a share link, unconfirming) only need write access.
+  const requireOwner: RequestHandler = async (req, _res, next) => {
+    try {
+      const userId = req.userId;
+      const resourceId = req.params[config.paramName];
+
+      if (!userId) throw new AppError(401, "Authentication required");
+      if (!resourceId) throw new AppError(400, `${config.paramName} required`);
+
+      const user = await authService.getUserById(userId);
+      if (!user) throw new AppError(401, "User not found");
+      if (user.role === "readonly") {
+        throw new AppError(403, "Write access required");
+      }
+
+      const { canAccess, isOwner } = await config.checkAccess(userId, resourceId);
+      if (!canAccess) throw new AppError(404, config.notFoundMessage);
+      if (!isOwner) {
+        throw new AppError(403, config.deleteForbiddenMessage);
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  return { requireRead, requireWrite, requireOwner };
 }

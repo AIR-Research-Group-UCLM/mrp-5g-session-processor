@@ -20,10 +20,11 @@ import {
 import { AppError } from "../middleware/error.middleware.js";
 import { runSafetyValidation } from "./safety-validator.service.js";
 
+// No ownerColumn: share links can be managed by the owner and by write
+// assignees; access is enforced by requireReportSummaryWriteAccess.
 const TABLE_CFG = {
   table: "report_summaries",
   idColumn: "id",
-  ownerColumn: "user_id",
   label: "Report summary",
 } as const;
 
@@ -251,21 +252,23 @@ export function deleteReportSummary(id: string, userId: string): boolean {
   return true;
 }
 
-export function createShareToken(summaryId: string, userId: string, expiryHours?: number | null): { token: string; expiresAt: string | null } {
-  return createShareTokenUtil(TABLE_CFG, summaryId, userId, expiryHours);
+export function createShareToken(summaryId: string, expiryHours?: number | null): { token: string; expiresAt: string | null } {
+  return createShareTokenUtil(TABLE_CFG, summaryId, undefined, expiryHours);
 }
 
-export function revokeShareToken(summaryId: string, userId: string): void {
-  revokeShareTokenUtil(TABLE_CFG, summaryId, userId);
+export function revokeShareToken(summaryId: string): void {
+  revokeShareTokenUtil(TABLE_CFG, summaryId);
 }
 
 export function getByShareToken(token: string): ConsultationSummaryPublic | null {
   return getByShareTokenUtil(
     {
+      // share_expires_at is stored as ISO 8601 (toISOString); compare in the same
+      // format, since datetime('now') sorts before any ISO value of the same day.
       query: `SELECT * FROM report_summaries
               WHERE share_token = ?
                 AND confirmed_at IS NOT NULL
-                AND (share_expires_at IS NULL OR share_expires_at > datetime('now'))`,
+                AND (share_expires_at IS NULL OR share_expires_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
       titleColumn: "title",
       dateColumn: "created_at",
     },
@@ -375,7 +378,7 @@ export async function revalidateReportSummary(
          confirmed_at = NULL, confirmed_by = NULL,
          share_token = NULL, share_expires_at = NULL,
          updated_at = datetime('now')
-     WHERE id = ? AND user_id = ?`,
+     WHERE id = ?`,
   ).run(
     newSourceText,
     validation.model,
@@ -383,7 +386,6 @@ export async function revalidateReportSummary(
     validation.report ? JSON.stringify(validation.report) : null,
     validation.runAt,
     id,
-    userId,
   );
 
   const summary = getReportSummary(id, userId);

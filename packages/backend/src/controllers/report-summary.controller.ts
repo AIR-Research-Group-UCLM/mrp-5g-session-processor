@@ -104,10 +104,9 @@ const shareBodySchema = z.object({
 const createShareToken: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id!;
-    const userId = req.userId!;
     const body = shareBodySchema.parse(req.body);
 
-    const result = createShareTokenService(id, userId, body.expiryHours);
+    const result = createShareTokenService(id, body.expiryHours);
 
     res.json({ success: true, data: result });
   } catch (error) {
@@ -118,9 +117,7 @@ const createShareToken: RequestHandler = async (req, res, next) => {
 const revokeShareToken: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params.id!;
-    const userId = req.userId!;
-
-    revokeShareTokenService(id, userId);
+    revokeShareTokenService(id);
 
     res.json({ success: true });
   } catch (error) {
