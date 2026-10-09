@@ -11,7 +11,7 @@ const searchQuerySchema = z.object({
 const search: RequestHandler = async (req, res, next) => {
   try {
     const { q, limit } = searchQuerySchema.parse(req.query);
-    const userId = req.session.userId!;
+    const userId = req.userId!;
 
     const results = await searchService.search(userId, q, limit);
 

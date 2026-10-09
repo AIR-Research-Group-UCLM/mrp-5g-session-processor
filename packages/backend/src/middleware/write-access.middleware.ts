@@ -4,11 +4,11 @@ import { AppError } from "./error.middleware.js";
 
 export const requireWriteAccess: RequestHandler = async (req, _res, next) => {
   try {
-    if (!req.session.userId) {
+    if (!req.userId) {
       throw new AppError(401, "Authentication required");
     }
 
-    const user = await authService.getUserById(req.session.userId);
+    const user = await authService.getUserById(req.userId);
 
     if (!user) {
       throw new AppError(401, "User not found");

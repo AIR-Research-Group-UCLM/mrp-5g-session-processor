@@ -249,6 +249,24 @@ CREATE TABLE IF NOT EXISTS report_summary_assignments (
 CREATE INDEX IF NOT EXISTS idx_report_summary_assignments_report_summary_id ON report_summary_assignments(report_summary_id);
 CREATE INDEX IF NOT EXISTS idx_report_summary_assignments_user_id ON report_summary_assignments(user_id);
 
+-- API keys for programmatic access (only the SHA-256 hash of the key is stored)
+CREATE TABLE IF NOT EXISTS api_keys (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    key_prefix TEXT NOT NULL,             -- first characters of the key, for display
+    key_hash TEXT NOT NULL UNIQUE,        -- SHA-256 hex digest of the full key
+    created_by TEXT,                      -- admin user_id who created the key
+    expires_at TEXT,                      -- NULL = never expires
+    last_used_at TEXT,
+    revoked_at TEXT,                      -- NULL = active
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
+
 -- FTS5 virtual table for full-text search on transcripts
 CREATE VIRTUAL TABLE IF NOT EXISTS transcript_fts USING fts5(
     session_id,

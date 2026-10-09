@@ -323,6 +323,39 @@
     "deleteError": "Error al eliminar el usuario",
     "loadError": "Error al cargar los usuarios"
   },
+  "apiKeys": {
+    "manage": "API keys",
+    "title": "API keys de {{name}}",
+    "description": "Las API keys permiten a sistemas externos usar la API en nombre de este usuario, con sus mismos permisos. Envíalas en la cabecera Authorization: Bearer <key> o X-API-Key. No dan acceso a los endpoints de administración.",
+    "name": "Nombre",
+    "namePlaceholder": "p. ej. Integración HIS",
+    "nameRequired": "El nombre es obligatorio",
+    "expiry": "Caducidad",
+    "expiryDays": "{{count}} días",
+    "noExpiry": "Sin caducidad",
+    "create": "Crear API key",
+    "key": "Clave",
+    "status": "Estado",
+    "createdAt": "Creada",
+    "lastUsed": "Último uso",
+    "expiresAt": "Caduca",
+    "neverUsed": "Nunca",
+    "revoke": "Revocar",
+    "empty": "Este usuario no tiene API keys",
+    "copy": "Copiar",
+    "copied": "API key copiada al portapapeles",
+    "copyWarning": "Copia esta API key ahora y guárdala en un lugar seguro. Por seguridad no se volverá a mostrar.",
+    "done": "Hecho",
+    "statuses": {
+      "active": "Activa",
+      "revoked": "Revocada",
+      "expired": "Caducada"
+    },
+    "createSuccess": "API key creada correctamente",
+    "createError": "Error al crear la API key",
+    "revokeSuccess": "API key revocada correctamente",
+    "revokeError": "Error al revocar la API key"
+  },
   "permissions": {
     "noWriteAccess": "No tienes permisos para realizar esta acción"
   },

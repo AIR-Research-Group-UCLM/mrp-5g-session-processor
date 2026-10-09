@@ -24,6 +24,7 @@
 - **Asynchronous processing** with job queue
 - **Role-based access control (RBAC)**: admin, user, and readonly roles with different permissions
 - **Session sharing**: admins can assign sessions to other users with read-only or read-write permissions
+- **External API access**: admins can issue per-user API keys so external systems can upload recordings and retrieve sessions and summaries (see [docs/API.md](docs/API.md))
 
 ## Tech Stack
 

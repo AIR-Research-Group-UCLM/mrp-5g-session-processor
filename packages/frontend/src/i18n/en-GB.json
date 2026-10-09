@@ -323,6 +323,39 @@
     "deleteError": "Error deleting user",
     "loadError": "Error loading users"
   },
+  "apiKeys": {
+    "manage": "API keys",
+    "title": "API keys for {{name}}",
+    "description": "API keys let external systems use the API on behalf of this user, with the same permissions. Send them in the Authorization: Bearer <key> or X-API-Key header. They do not grant access to admin endpoints.",
+    "name": "Name",
+    "namePlaceholder": "e.g. HIS integration",
+    "nameRequired": "Name is required",
+    "expiry": "Expiry",
+    "expiryDays": "{{count}} days",
+    "noExpiry": "No expiry",
+    "create": "Create API key",
+    "key": "Key",
+    "status": "Status",
+    "createdAt": "Created",
+    "lastUsed": "Last used",
+    "expiresAt": "Expires",
+    "neverUsed": "Never",
+    "revoke": "Revoke",
+    "empty": "This user has no API keys",
+    "copy": "Copy",
+    "copied": "API key copied to clipboard",
+    "copyWarning": "Copy this API key now and store it somewhere safe. For security reasons it will not be shown again.",
+    "done": "Done",
+    "statuses": {
+      "active": "Active",
+      "revoked": "Revoked",
+      "expired": "Expired"
+    },
+    "createSuccess": "API key created successfully",
+    "createError": "Failed to create API key",
+    "revokeSuccess": "API key revoked successfully",
+    "revokeError": "Failed to revoke API key"
+  },
   "permissions": {
     "noWriteAccess": "You do not have permission to perform this action"
   },

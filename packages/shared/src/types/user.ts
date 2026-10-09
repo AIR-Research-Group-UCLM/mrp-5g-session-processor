@@ -43,4 +43,5 @@ export interface UserListItem {
   name: string;
   role: UserRole;
   createdAt: string;
+  activeApiKeyCount: number;
 }

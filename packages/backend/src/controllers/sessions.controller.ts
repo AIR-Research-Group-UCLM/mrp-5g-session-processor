@@ -38,7 +38,7 @@ const createBodySchema = z.object({
 const list: RequestHandler = async (req, res, next) => {
   try {
     const query = listQuerySchema.parse(req.query);
-    const userId = req.session.userId!;
+    const userId = req.userId!;
 
     const result = await sessionService.listByUser(userId, query);
 
@@ -58,7 +58,7 @@ const create: RequestHandler = async (req, res, next) => {
     }
 
     const body = createBodySchema.parse(req.body);
-    const userId = req.session.userId!;
+    const userId = req.userId!;
 
     const session = await sessionService.create(userId, req.file, body);
 
@@ -335,7 +335,7 @@ const revokeShareToken: RequestHandler = async (req, res, next) => {
 const confirmConsultationSummary: RequestHandler = async (req, res, next) => {
   try {
     const sessionId = req.params.id!;
-    const userId = req.session.userId!;
+    const userId = req.userId!;
     const summary = confirmConsultationSummaryService(sessionId, userId);
     res.json({ success: true, data: { summary } });
   } catch (error) {
