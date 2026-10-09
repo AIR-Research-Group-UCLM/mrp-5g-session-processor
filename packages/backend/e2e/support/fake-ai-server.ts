@@ -74,18 +74,50 @@ function validatorAxis(systemPrompt: string): string | null {
   return systemPrompt.match(/on a single axis: (\w+)/)?.[1] ?? null;
 }
 
+function renameKey<T extends object>(item: T, from: string, to: string): Record<string, unknown> {
+  const { [from]: value, ...rest } = item as Record<string, unknown>;
+  return { ...rest, [to]: value };
+}
+
+// Real models occasionally misspell a key in a few items of a long JSON
+// response (seen in production: "EndTime" in 1-2 of 232 sections). Reproduce
+// that so the backend's tolerant parsing stays covered.
+function segmentationWithKeyQuirks() {
+  const sections = FAKE_SEGMENTATION.sections.map((section, index) => {
+    if (index === 1) return renameKey(section, "endTime", "EndTime");
+    if (index === 3) return renameKey(section, "startTime", "start_time");
+    return section;
+  });
+  return { ...FAKE_SEGMENTATION, sections };
+}
+
+function metadataWithKeyQuirks() {
+  return renameKey(
+    { ...FAKE_METADATA, clinicalIndicators: renameKey(FAKE_METADATA.clinicalIndicators, "urgencyLevel", "UrgencyLevel") },
+    "keywords",
+    "Keywords"
+  );
+}
+
+function conversationWithKeyQuirks() {
+  const segments = FAKE_CONVERSATION.segments.map((segment, index) =>
+    index === 0 ? renameKey(segment, "speaker", "Speaker") : segment
+  );
+  return { segments };
+}
+
 function chatContent(kind: FakeAiCallKind, axis: string | null): string {
   switch (kind) {
     case "language-detection":
       return FAKE_DETECTED_LANGUAGE;
     case "segmentation":
-      return JSON.stringify(FAKE_SEGMENTATION);
+      return JSON.stringify(segmentationWithKeyQuirks());
     case "metadata":
-      return JSON.stringify(FAKE_METADATA);
+      return JSON.stringify(metadataWithKeyQuirks());
     case "context-suggestion":
       return FAKE_CONTEXT_SUGGESTION;
     case "conversation":
-      return JSON.stringify(FAKE_CONVERSATION);
+      return JSON.stringify(conversationWithKeyQuirks());
     case "summary":
       return JSON.stringify(FAKE_PATIENT_SUMMARY);
     case "tooltips":

@@ -6,6 +6,7 @@ import { config } from "../../config/index.js";
 import { getDb } from "../../db/connection.js";
 import { logger } from "../../config/logger.js";
 import { withRetry } from "../../utils/retry.js";
+import { createKeyNormalizer } from "../../utils/json-keys.js";
 
 // Security: Zod schemas for validating OpenAI metadata response
 const clinicalIndicatorsSchema = z
@@ -55,6 +56,9 @@ const metadataResponseSchema = z.object({
   userTags: z.array(z.string()).optional(),
   clinicalIndicators: clinicalIndicatorsSchema,
 });
+
+// LLMs occasionally misspell keys (e.g. "EndTime") in a few items of long responses
+const normalizeMetadataKeys = createKeyNormalizer(metadataResponseSchema);
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
@@ -261,7 +265,7 @@ export async function processMetadata(sessionId: string): Promise<MetadataCostRe
     throw new Error("Failed to parse metadata response as JSON");
   }
 
-  const validationResult = metadataResponseSchema.safeParse(parsedContent);
+  const validationResult = metadataResponseSchema.safeParse(normalizeMetadataKeys(parsedContent));
   if (!validationResult.success) {
     logger.error(
       { errors: validationResult.error.issues, content },

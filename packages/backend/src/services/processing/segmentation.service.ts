@@ -7,6 +7,7 @@ import { config } from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 import { getDb } from "../../db/connection.js";
 import { withRetry } from "../../utils/retry.js";
+import { createKeyNormalizer } from "../../utils/json-keys.js";
 import { s3Service } from "../s3.service.js";
 
 // Section descriptions in English for the prompt
@@ -52,6 +53,9 @@ const segmentationResponseSchema = z.object({
   sections: z.array(segmentedSectionSchema),
   sectionSummaries: z.array(sectionSummarySchema).optional(),
 });
+
+// LLMs occasionally misspell keys (e.g. "EndTime") in a few items of long responses
+const normalizeSegmentationKeys = createKeyNormalizer(segmentationResponseSchema);
 
 export interface SegmentationCostResult {
   inputTokens: number;
@@ -155,7 +159,7 @@ export async function processSegmentation(sessionId: string): Promise<Segmentati
         throw new Error("Failed to parse segmentation response as JSON");
       }
 
-      const validationResult = segmentationResponseSchema.safeParse(parsedContent);
+      const validationResult = segmentationResponseSchema.safeParse(normalizeSegmentationKeys(parsedContent));
       if (!validationResult.success) {
         logger.error(
           { errors: validationResult.error.issues, content },

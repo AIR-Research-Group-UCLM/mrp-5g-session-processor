@@ -177,6 +177,25 @@ describe("session upload and processing (API key)", () => {
     expect(session.transcript.length).toBeGreaterThan(0);
   });
 
+  it("accepts model responses with misspelled keys without retrying", async () => {
+    // The fake AI returns "EndTime", "start_time", "Keywords" and "UrgencyLevel"
+    // in some items, as real models occasionally do
+    const countCalls = async (kind: string) => (await fakeAi.calls()).filter((c) => c.kind === kind).length;
+    const segmentationBefore = await countCalls("segmentation");
+    const metadataBefore = await countCalls("metadata");
+
+    const id = await uploadSession(apiClient, { title: "Claves mal escritas" });
+    expect((await waitForProcessing(apiClient, id)).status).toBe("completed");
+
+    expect(await countCalls("segmentation")).toBe(segmentationBefore + 1);
+    expect(await countCalls("metadata")).toBe(metadataBefore + 1);
+    const session = (await apiClient.get(`/sessions/${id}`)).body.data.session;
+    expect(session.transcript[1].endTimeSeconds).toBe(FAKE_SEGMENTATION.sections[1]!.endTime);
+    expect(session.transcript[3].startTimeSeconds).toBe(FAKE_SEGMENTATION.sections[3]!.startTime);
+    expect(session.keywords).toEqual(FAKE_METADATA.keywords);
+    expect(session.clinicalIndicators.urgencyLevel).toBe(FAKE_METADATA.clinicalIndicators.urgencyLevel);
+  });
+
   it("sends the audio to the transcription model", async () => {
     const calls = await fakeAi.calls();
     const kinds = new Set(calls.map((c) => c.kind));
