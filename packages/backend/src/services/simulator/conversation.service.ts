@@ -4,6 +4,7 @@ import { config } from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 import { getLanguageName } from "@mrp/shared";
 import type { SimulatedTranscript } from "@mrp/shared";
+import { createKeyNormalizer } from "../../utils/json-keys.js";
 
 // Security: Zod schema for validating OpenAI conversation response
 const conversationSegmentSchema = z.object({
@@ -14,6 +15,9 @@ const conversationSegmentSchema = z.object({
 const simulatedTranscriptSchema = z.object({
   segments: z.array(conversationSegmentSchema).min(1),
 });
+
+// LLMs occasionally misspell keys (e.g. "EndTime") in a few items of long responses
+const normalizeConversationKeys = createKeyNormalizer(simulatedTranscriptSchema);
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
@@ -119,7 +123,7 @@ Remember to:
     throw new Error("Failed to parse conversation response as JSON");
   }
 
-  const validationResult = simulatedTranscriptSchema.safeParse(parsedContent);
+  const validationResult = simulatedTranscriptSchema.safeParse(normalizeConversationKeys(parsedContent));
   if (!validationResult.success) {
     logger.error(
       { errors: validationResult.error.issues, content },

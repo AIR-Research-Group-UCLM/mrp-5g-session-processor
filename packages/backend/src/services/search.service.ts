@@ -66,11 +66,13 @@ async function search(
   const seenSessions = new Set<string>();
   const searchTerms = query.toLowerCase().trim();
 
-  // 1. Search in transcript using FTS
+  // 1. Search in transcript using FTS. Each term becomes a quoted prefix
+  // phrase: embedded quotes are doubled (FTS5 escaping) and terms without any
+  // letter or digit are dropped, so user input can never break MATCH syntax.
   const ftsQuery = query
     .split(/\s+/)
-    .filter(Boolean)
-    .map((term) => `"${term}"*`)
+    .filter((term) => /[\p{L}\p{N}]/u.test(term))
+    .map((term) => `"${term.replace(/"/g, '""')}"*`)
     .join(" OR ");
 
   if (ftsQuery) {

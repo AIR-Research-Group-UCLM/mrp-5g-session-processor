@@ -62,6 +62,7 @@ A key owned by a `readonly` user can only read sessions and report summaries ass
 | `401` | Missing, invalid, revoked or expired API key |
 | `403` | Authenticated, but the user lacks permission (readonly user, admin endpoint, not owner…) |
 | `404` | Resource not found **or not accessible** to this user |
+| `413` | Uploaded file exceeds the size limit |
 | `429` | Rate limit exceeded |
 
 ## Typical flow: audio → session → results
@@ -137,7 +138,7 @@ curl -H "Authorization: Bearer $MRP_API_KEY" "$MRP_URL/sessions/$SESSION_ID/stat
 curl -H "Authorization: Bearer $MRP_API_KEY" "$MRP_URL/sessions/$SESSION_ID"
 ```
 
-`data` contains the session plus everything generated during processing:
+`data.session` contains the session plus everything generated during processing, and `data.videoUrl` a temporary (1 hour) presigned URL to download the original recording:
 
 | Field | Description |
 |---|---|
@@ -246,7 +247,7 @@ curl -X POST "$MRP_URL/report-summaries/extract-text" \
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/sessions?page=1&pageSize=20&status=completed&search=…` | List sessions owned by or assigned to the user |
+| `GET` | `/sessions?page=1&pageSize=20&status=completed` | List sessions owned by or assigned to the user (use `/search` for text search) |
 | `PATCH` | `/sessions/:id` | Update `title`, `userTags` (array) or `notes` (JSON body) |
 | `DELETE` | `/sessions/:id` | Delete a session (owner only) |
 | `GET` | `/sessions/:id/video/stream` | Stream the original recording (supports `Range` requests) |
@@ -274,6 +275,6 @@ while true; do
   sleep 15
 done
 
-curl -sf -H "$AUTH" "$MRP_URL/sessions/$SESSION_ID" > session.json
+curl -sf -H "$AUTH" "$MRP_URL/sessions/$SESSION_ID" | jq '.data.session' > session.json
 curl -sf -H "$AUTH" "$MRP_URL/sessions/$SESSION_ID/consultation-summary" > consultation-summary.json
 ```

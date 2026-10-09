@@ -58,3 +58,6 @@ temp/
 
 tsconfig.tsbuildinfo
 .claude/worktrees
+
+# E2E test artifacts
+packages/backend/e2e/.artifacts/

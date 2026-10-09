@@ -2,9 +2,11 @@ import { Router } from "express";
 import multer from "multer";
 import { DOCUMENT_MIME_TYPE_LIST } from "@mrp/shared";
 import { reportSummaryController } from "../controllers/report-summary.controller.js";
+import { AppError } from "../middleware/error.middleware.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
 import { requireWriteAccess } from "../middleware/write-access.middleware.js";
 import {
+  requireReportSummaryOwner,
   requireReportSummaryReadAccess,
   requireReportSummaryWriteAccess,
 } from "../middleware/report-summary-access.middleware.js";
@@ -16,7 +18,7 @@ const documentUpload = multer({
     if ((DOCUMENT_MIME_TYPE_LIST as readonly string[]).includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`Unsupported file type: ${file.mimetype}`));
+      cb(new AppError(400, `Unsupported file type: ${file.mimetype}`));
     }
   },
 });
@@ -34,7 +36,7 @@ reportSummaryRoutes.post(
   reportSummaryController.extractTextFromFile
 );
 reportSummaryRoutes.get("/:id", requireReportSummaryReadAccess, reportSummaryController.getById);
-reportSummaryRoutes.delete("/:id", requireReportSummaryWriteAccess, reportSummaryController.remove);
+reportSummaryRoutes.delete("/:id", requireReportSummaryOwner, reportSummaryController.remove);
 reportSummaryRoutes.post("/:id/share", requireReportSummaryWriteAccess, reportSummaryController.createShareToken);
 reportSummaryRoutes.delete("/:id/share", requireReportSummaryWriteAccess, reportSummaryController.revokeShareToken);
 reportSummaryRoutes.post("/:id/confirm", requireReportSummaryWriteAccess, reportSummaryController.confirm);

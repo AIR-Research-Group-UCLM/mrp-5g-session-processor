@@ -1,7 +1,7 @@
 import { assignmentService } from "../services/assignment.service.js";
 import { createResourceAccessMiddleware } from "./resource-access.middleware.js";
 
-const { requireRead, requireWrite } = createResourceAccessMiddleware({
+const { requireRead, requireWrite, requireOwner } = createResourceAccessMiddleware({
   paramName: "id",
   notFoundMessage: "Session not found",
   deleteForbiddenMessage: "Only session owner can delete",
@@ -11,3 +11,4 @@ const { requireRead, requireWrite } = createResourceAccessMiddleware({
 
 export const requireSessionReadAccess = requireRead;
 export const requireSessionWriteAccess = requireWrite;
+export const requireSessionOwner = requireOwner;

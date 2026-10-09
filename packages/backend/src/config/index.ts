@@ -35,6 +35,7 @@ const envSchema = z.object({
 
   // ElevenLabs
   ELEVENLABS_API_KEY: z.string(),
+  ELEVENLABS_BASE_URL: z.string().optional(), // Override API host (used by e2e tests)
 
   // Simulator
   // Format: ID#Name;ID#Name;... (e.g., "abc123#Dr. Smith;def456#Patient Voice;ghi789#Specialist")
@@ -123,6 +124,7 @@ export const config = {
 
   elevenlabs: {
     apiKey: env.ELEVENLABS_API_KEY,
+    baseUrl: env.ELEVENLABS_BASE_URL,
   },
 
   simulator: {

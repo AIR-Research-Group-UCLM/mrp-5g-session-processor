@@ -226,12 +226,14 @@ export function revokeShareToken(sessionId: string): void {
 export function getByShareToken(token: string): ConsultationSummaryPublic | null {
   return getByShareTokenUtil(
     {
+      // share_expires_at is stored as ISO 8601 (toISOString); compare in the same
+      // format, since datetime('now') sorts before any ISO value of the same day.
       query: `SELECT cs.*, ms.title AS session_title, ms.created_at AS session_date
               FROM consultation_summaries cs
               JOIN medical_sessions ms ON ms.id = cs.session_id
               WHERE cs.share_token = ?
                 AND cs.confirmed_at IS NOT NULL
-                AND (cs.share_expires_at IS NULL OR cs.share_expires_at > datetime('now'))`,
+                AND (cs.share_expires_at IS NULL OR cs.share_expires_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
       titleColumn: "session_title",
       dateColumn: "session_date",
     },

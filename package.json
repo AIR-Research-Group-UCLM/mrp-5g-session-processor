@@ -7,6 +7,8 @@
     "dev:frontend": "pnpm --filter frontend run dev",
     "build": "pnpm -r run build",
     "test": "pnpm -r run test",
+    "test:e2e": "pnpm --filter @mrp/backend run test:e2e",
+    "test:e2e:real": "pnpm --filter @mrp/backend run test:e2e:real",
     "lint": "pnpm -r run lint",
     "docker:up": "docker compose -f docker/docker-compose.yml up",
     "docker:down": "docker compose -f docker/docker-compose.yml down",
