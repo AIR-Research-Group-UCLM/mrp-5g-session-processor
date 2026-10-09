@@ -281,15 +281,16 @@ export function confirmReportSummary(
   userId: string,
 ): StoredReportSummary {
   const db = getDb();
-  // Only the owner can confirm — assignment write access is not enough,
-  // because confirmation carries clinical responsibility.
+  // The owner and write assignees can confirm (access is enforced by
+  // requireReportSummaryWriteAccess, as for consultation summaries);
+  // confirmed_by records who took the clinical responsibility.
   // Server-side gate: confirmation requires the safety validator to have
   // succeeded (Step 3). Mirrors the paper's release condition.
   const status = db
     .prepare(
-      `SELECT validator_status, confirmed_at FROM report_summaries WHERE id = ? AND user_id = ?`,
+      `SELECT validator_status, confirmed_at FROM report_summaries WHERE id = ?`,
     )
-    .get(id, userId) as { validator_status: string | null; confirmed_at: string | null } | undefined;
+    .get(id) as { validator_status: string | null; confirmed_at: string | null } | undefined;
   if (!status) throw new AppError(404, "Report summary not found");
   if (!status.confirmed_at && status.validator_status !== "completed") {
     throw new AppError(
@@ -302,9 +303,9 @@ export function confirmReportSummary(
     .prepare(
       `UPDATE report_summaries
        SET confirmed_at = datetime('now'), confirmed_by = ?, updated_at = datetime('now')
-       WHERE id = ? AND user_id = ? AND confirmed_at IS NULL`,
+       WHERE id = ? AND confirmed_at IS NULL`,
     )
-    .run(userId, id, userId);
+    .run(userId, id);
 
   if (result.changes === 0 && !status.confirmed_at) {
     throw new AppError(404, "Report summary not found");
@@ -404,9 +405,9 @@ export function unconfirmReportSummary(
        SET confirmed_at = NULL, confirmed_by = NULL,
            share_token = NULL, share_expires_at = NULL,
            updated_at = datetime('now')
-       WHERE id = ? AND user_id = ?`,
+       WHERE id = ?`,
     )
-    .run(id, userId);
+    .run(id);
 
   if (result.changes === 0) {
     throw new AppError(404, "Report summary not found");

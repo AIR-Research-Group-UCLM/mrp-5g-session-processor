@@ -177,20 +177,25 @@ describe("report summary assignments", () => {
     expect((await assignee.client.post(`/report-summaries/${reportId}/confirm`)).status).toBe(403);
   });
 
-  it("lets write assignees manage share links, but only the owner confirms or deletes", async () => {
+  it("lets write assignees confirm and manage share links, but never delete", async () => {
     await setAssignments(assignee.id, [{ reportSummaryId: reportId, canWrite: true }]);
     const report = (await assignee.client.get(`/report-summaries/${reportId}`)).body.data.summary;
     expect(report).toMatchObject({ isOwner: false, canWrite: true });
 
-    // Confirmation carries clinical responsibility: owner only, by design
-    expect((await assignee.client.post(`/report-summaries/${reportId}/confirm`)).status).toBe(404);
-    expect((await owner.client.post(`/report-summaries/${reportId}/confirm`)).status).toBe(200);
+    const confirm = await assignee.client.post(`/report-summaries/${reportId}/confirm`);
+    expect(confirm.status).toBe(200);
+    expect(confirm.body.data.summary.confirmation.confirmedBy).toBe(assignee.id);
+    expect((await owner.client.get(`/report-summaries/${reportId}`)).body.data.summary.confirmation.confirmedBy).toBe(assignee.id);
 
     const share = await assignee.client.post(`/report-summaries/${reportId}/share`, { expiryHours: 24 });
     expect(share.status).toBe(200);
     expect((await ApiClient.anonymous().get(`/consultation-summary/${share.body.data.token}`)).status).toBe(200);
     expect((await assignee.client.delete(`/report-summaries/${reportId}/share`)).status).toBe(200);
     expect((await ApiClient.anonymous().get(`/consultation-summary/${share.body.data.token}`)).status).toBe(404);
+
+    const unconfirm = await assignee.client.delete(`/report-summaries/${reportId}/confirm`);
+    expect(unconfirm.status).toBe(200);
+    expect(unconfirm.body.data.summary.confirmation).toEqual({ confirmedAt: null, confirmedBy: null });
 
     const remove = await assignee.client.delete(`/report-summaries/${reportId}`);
     expect(remove.status).toBe(403);
@@ -210,8 +215,10 @@ describe("report summary assignments", () => {
     expect((await owner.client.get(`/report-summaries/${id}`)).body.data.summary.validator.status).toBe("completed");
   });
 
-  it("does not let read assignees revalidate or share", async () => {
+  it("does not let read assignees confirm, revalidate or share", async () => {
     await setAssignments(assignee.id, [{ reportSummaryId: reportId, canWrite: false }]);
+    expect((await assignee.client.post(`/report-summaries/${reportId}/confirm`)).status).toBe(403);
+    expect((await assignee.client.delete(`/report-summaries/${reportId}/confirm`)).status).toBe(403);
     expect((await assignee.client.post(`/report-summaries/${reportId}/share`, { expiryHours: 1 })).status).toBe(403);
     expect((await assignee.client.post(`/report-summaries/${reportId}/revalidate`)).status).toBe(403);
   });
