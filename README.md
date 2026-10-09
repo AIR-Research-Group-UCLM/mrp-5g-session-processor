@@ -184,6 +184,17 @@ Admins can assign any session to other users with either:
 - **Read-only**: User can view the session but not modify it
 - **Read-write**: User can view and edit session metadata
 
+## Testing
+
+The backend has an end-to-end test suite that exercises the whole API over HTTP against a real backend process, with ephemeral Redis and Garage (S3) containers and a deterministic fake of the AI providers (OpenAI, Open WebUI, ElevenLabs). It requires Docker, `ffmpeg` and `ffprobe`.
+
+```bash
+pnpm test:e2e        # Full suite, ~30 seconds, no external calls
+pnpm test:e2e:real   # Opt-in smoke test with the real AI providers (uses packages/backend/.env, costs money)
+```
+
+Run `pnpm test:e2e` before merging any change to the backend.
+
 ## Production Deployment
 
 The application is deployed with Docker Compose. Express serves both the API and the static frontend.

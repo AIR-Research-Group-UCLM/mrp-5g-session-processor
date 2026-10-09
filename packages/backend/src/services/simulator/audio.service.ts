@@ -29,6 +29,7 @@ async function runFfprobe(args: string[]): Promise<string> {
 
 const elevenlabs = new ElevenLabsClient({
   apiKey: config.elevenlabs.apiKey,
+  baseUrl: config.elevenlabs.baseUrl,
 });
 
 export interface SegmentAudioResult {

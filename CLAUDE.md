@@ -234,4 +234,17 @@ pnpm docker:down
 
 ## Testing
 
-**Status:** No test framework currently configured. Tests not implemented.
+Black-box end-to-end suite for the whole backend API (Vitest + Testcontainers), in `packages/backend/e2e/`.
+
+```bash
+pnpm test:e2e         # Full suite (~30 s). Requires Docker, ffmpeg and ffprobe
+pnpm test:e2e:real    # Opt-in smoke test against the real AI providers (costs money)
+```
+
+- `support/global-setup.ts` starts ephemeral Redis + Garage containers, a fake AI server and the real backend (`tsx src/index.ts`) with an isolated env and temp SQLite DB, then seeds the protected root admin.
+- `support/fake-ai-server.ts` impersonates OpenAI, Open WebUI and ElevenLabs by recognising each backend prompt; `support/fake-data.ts` holds the deterministic responses tests assert on. When a backend prompt changes, update `classifyChat()` accordingly.
+- Tests talk HTTP only (`support/api.ts`). Each file creates its own users via `createFileAdmin()` / `createUser()` because rate limits are per user; `withDb()` is only for states the API cannot produce (e.g. expired keys).
+- Failure paths use `fakeAi.failNext(kind, count)`; always reset with `failNext(kind, 0)` in a `finally`.
+- Real mode reads provider credentials from `packages/backend/.env` (shell variables take precedence) and runs only `e2e/real/`.
+- The backend log of the last run is kept in `packages/backend/e2e/.artifacts/backend.log`.
+- Add or update e2e tests with every API change.
