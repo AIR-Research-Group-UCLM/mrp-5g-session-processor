@@ -1,12 +1,12 @@
 import type { SectionType } from "@mrp/shared";
 import { getLanguageName } from "@mrp/shared";
-import OpenAI from "openai";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { config } from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 import { getDb } from "../../db/connection.js";
 import { withRetry } from "../../utils/retry.js";
+import { createPipelineOpenAIClient } from "../../utils/openai-client.js";
 import { createKeyNormalizer } from "../../utils/json-keys.js";
 import { s3Service } from "../s3.service.js";
 
@@ -21,10 +21,7 @@ const SECTION_DESCRIPTIONS: Record<SectionType, string> = {
 
 const SECTION_TYPES_LIST: SectionType[] = ["introduction", "symptoms", "diagnosis", "treatment", "closing"];
 
-const openai = new OpenAI({
-  apiKey: config.openai.apiKey,
-  timeout: config.openai.timeoutMs,
-});
+const openai = createPipelineOpenAIClient();
 
 interface TranscriptData {
   text: string;

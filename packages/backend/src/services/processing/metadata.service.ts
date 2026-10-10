@@ -1,11 +1,11 @@
 import { getLanguageName } from "@mrp/shared";
-import OpenAI from "openai";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { config } from "../../config/index.js";
 import { getDb } from "../../db/connection.js";
 import { logger } from "../../config/logger.js";
 import { withRetry } from "../../utils/retry.js";
+import { createPipelineOpenAIClient } from "../../utils/openai-client.js";
 import { createKeyNormalizer } from "../../utils/json-keys.js";
 
 // Security: Zod schemas for validating OpenAI metadata response
@@ -60,10 +60,7 @@ const metadataResponseSchema = z.object({
 // LLMs occasionally misspell keys (e.g. "EndTime") in a few items of long responses
 const normalizeMetadataKeys = createKeyNormalizer(metadataResponseSchema);
 
-const openai = new OpenAI({
-  apiKey: config.openai.apiKey,
-  timeout: config.openai.timeoutMs,
-});
+const openai = createPipelineOpenAIClient();
 
 interface TranscriptSection {
   section_type: string;
