@@ -3,6 +3,7 @@
 
   <h3>Application for processing medical session videos</h3>
   <p>MRP 5G Session Processor allows uploading medical consultation recordings, automatically transcribing them, identifying speakers (doctor/patient/specialist), and segmenting the content into structured clinical sections with automatic summaries.</p>
+  <p><a href="https://doi.org/10.5281/zenodo.23288821"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.23288821.svg" alt="DOI"></a></p>
 </div>
 
 ## Screenshots
