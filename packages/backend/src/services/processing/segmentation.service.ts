@@ -23,6 +23,7 @@ const SECTION_TYPES_LIST: SectionType[] = ["introduction", "symptoms", "diagnosi
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
+  timeout: config.openai.timeoutMs,
 });
 
 interface TranscriptData {
@@ -126,7 +127,7 @@ export async function processSegmentation(sessionId: string): Promise<Segmentati
 
   logger.info({ sessionId, model: config.openai.models.segmentation, outputLanguage }, "Segmenting transcript");
 
-  // Timeout: 10 minutes, retries: 3 attempts
+  // Timeout: OPENAI_TIMEOUT_MS per attempt, retries: 3 attempts
   const { result, completion } = await withRetry(
     async () => {
       const completion = await openai.chat.completions.create({
@@ -172,6 +173,7 @@ export async function processSegmentation(sessionId: string): Promise<Segmentati
     },
     {
       operationName: "segmentation",
+      timeoutMs: config.openai.timeoutMs,
       sessionId,
     }
   );
