@@ -61,3 +61,7 @@ tsconfig.tsbuildinfo
 
 # E2E test artifacts
 packages/backend/e2e/.artifacts/
+
+# Python
+__pycache__/
+*.pyc
