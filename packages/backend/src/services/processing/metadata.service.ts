@@ -62,6 +62,7 @@ const normalizeMetadataKeys = createKeyNormalizer(metadataResponseSchema);
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
+  timeout: config.openai.timeoutMs,
 });
 
 interface TranscriptSection {
@@ -226,7 +227,7 @@ export async function processMetadata(sessionId: string): Promise<MetadataCostRe
 
   const prompt = buildMetadataPrompt(needsTitle, needsTags, outputLanguage);
 
-  // Timeout: 10 minutes, retries: 3 attempts
+  // Timeout: OPENAI_TIMEOUT_MS per attempt, retries: 3 attempts
   const completion = await withRetry(
     async () => {
       return openai.chat.completions.create({
@@ -247,6 +248,7 @@ export async function processMetadata(sessionId: string): Promise<MetadataCostRe
     },
     {
       operationName: "metadata-generation",
+      timeoutMs: config.openai.timeoutMs,
       sessionId,
     }
   );

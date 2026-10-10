@@ -26,6 +26,9 @@ const envSchema = z.object({
   OPENAI_MODEL_TRANSCRIPTION: z.string().default("gpt-4o-transcribe-diarize"),
   OPENAI_MODEL_SEGMENTATION: z.string().default("gpt-5.1"),
   OPENAI_MODEL_METADATA: z.string().default("gpt-5.1"),
+  // Per-attempt timeout of the pipeline OpenAI calls (transcription, segmentation, metadata).
+  // Long real-world recordings can take well over 10 minutes to transcribe and segment.
+  OPENAI_TIMEOUT_MS: z.coerce.number().int().positive().default(30 * 60 * 1000),
 
   // Open WebUI (optional - consultation summary feature)
   OPEN_WEBUI_BASE_URL: z.string().optional(),
@@ -109,6 +112,7 @@ export const config = {
       segmentation: env.OPENAI_MODEL_SEGMENTATION,
       metadata: env.OPENAI_MODEL_METADATA,
     },
+    timeoutMs: env.OPENAI_TIMEOUT_MS,
   },
 
   openWebUi: {

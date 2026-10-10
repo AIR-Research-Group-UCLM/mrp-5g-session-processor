@@ -33,6 +33,7 @@ async function runFfprobe(args: string[]): Promise<string> {
 
 const openai = new OpenAI({
   apiKey: config.openai.apiKey,
+  timeout: config.openai.timeoutMs,
 });
 
 interface LanguageDetectionResult {
@@ -232,7 +233,7 @@ export async function processTranscription(sessionId: string): Promise<Transcrip
     logger.debug({ sessionId, fileSizeBytes: audioFile.length }, "Audio file prepared for OpenAI");
 
     // Use transcription model with diarization support
-    // Timeout: 10 minutes, retries: 3 attempts
+    // Timeout: OPENAI_TIMEOUT_MS per attempt, retries: 3 attempts
     const transcription = await withRetry<TranscriptionResponse>(
       async () => {
         try {
@@ -258,6 +259,7 @@ export async function processTranscription(sessionId: string): Promise<Transcrip
       },
       {
         operationName: "transcription",
+      timeoutMs: config.openai.timeoutMs,
         sessionId,
       }
     );

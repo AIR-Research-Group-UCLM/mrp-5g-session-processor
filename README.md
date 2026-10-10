@@ -227,6 +227,7 @@ Edit `docker/.env` with actual values:
 | `OPENAI_MODEL_TRANSCRIPTION` | Transcription model (default: `gpt-4o-transcribe-diarize`) |
 | `OPENAI_MODEL_SEGMENTATION` | Segmentation model (default: `gpt-5.1`) |
 | `OPENAI_MODEL_METADATA` | Metadata model (default: `gpt-5.1`) |
+| `OPENAI_TIMEOUT_MS` | Per-attempt timeout of the transcription, segmentation and metadata calls (default: `1800000`, 30 min) |
 | `ELEVENLABS_API_KEY` | ElevenLabs API key |
 | `SIMULATOR_VOICES` | ElevenLabs voice IDs (format: `id1:Name1;id2:Name2`) |
 | `SIMULATOR_PAUSE_BETWEEN_SEGMENTS_MS` | Pause between segments in ms (default: `1000`) |
