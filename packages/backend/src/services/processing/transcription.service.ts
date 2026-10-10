@@ -3,10 +3,10 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import OpenAI from "openai";
 import { config } from "../../config/index.js";
 import { logger } from "../../config/logger.js";
 import { getDb } from "../../db/connection.js";
+import { createPipelineOpenAIClient } from "../../utils/openai-client.js";
 import { withRetry } from "../../utils/retry.js";
 import { s3Service } from "../s3.service.js";
 
@@ -31,10 +31,7 @@ async function runFfprobe(args: string[]): Promise<string> {
   return stdout;
 }
 
-const openai = new OpenAI({
-  apiKey: config.openai.apiKey,
-  timeout: config.openai.timeoutMs,
-});
+const openai = createPipelineOpenAIClient();
 
 interface LanguageDetectionResult {
   language: string;
